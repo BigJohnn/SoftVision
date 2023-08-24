@@ -126,6 +126,7 @@ Pod::Spec.new do |spec|
 #  
   spec.subspec 'system' do |ss|
       ss.source_files = "src/system/*.{h,hpp,cpp}"
+      ss.exclude_files = "src/system/Progress*.*"
   end
 
 #  spec.ios.resource_bundle = { 'nonFree' => 'src/nonFree/**/*.{hpp,cpp,h,c}' }
@@ -186,5 +187,6 @@ Pod::Spec.new do |spec|
   spec.compiler_flags = '-DEIGEN_MAX_STATIC_ALIGN_BYTES=0 -DEIGEN_MAX_ALIGN_BYTES=0 -DVL_DISABLE_SSE2'
 #   spec.dependency "JSONKit", "~> 1.4"
   spec.dependency "Eigen"
+  spec.dependency "libpng"
 
 end
