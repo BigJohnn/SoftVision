@@ -138,6 +138,10 @@ Pod::Spec.new do |spec|
   spec.subspec 'stl' do |ss|
       ss.source_files = "src/stl/*.{h,hpp,cpp}"
   end
+  
+  spec.subspec 'utils' do |ss|
+      ss.source_files = "src/utils/*.{h,cpp}"
+  end
 
   
 
@@ -188,5 +192,6 @@ Pod::Spec.new do |spec|
 #   spec.dependency "JSONKit", "~> 1.4"
   spec.dependency "Eigen"
   spec.dependency "libpng"
+  spec.dependency "libyuv"
 
 end

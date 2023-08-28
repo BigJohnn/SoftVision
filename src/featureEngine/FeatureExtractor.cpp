@@ -14,8 +14,9 @@
 #include <SoftVisionLog.h>
 #include <image/convertion.hpp>
 
+#include <utils/YuvImageProcessor.h>
 
-#include "png.h"
+#include "PngUtils.h"
 
 namespace featureEngine {
 
@@ -190,70 +191,16 @@ void FeatureExtractor::computeViewJob(const FeatureExtractorViewJob& job, bool u
     auto&& view = job.view();
     image::byteBuffer2EigenMatrix(view.getWidth(), view.getHeight(), view.getBuffer(), imageBGRA);
     
-    //TODO: bytebuffer 2 png file
+    auto&& folder_name = _outputFolder.substr(7,_outputFolder.size()-7);
+    std::string file_name = folder_name + "test.png";
+    
     {
-        auto&& folder_name = _outputFolder.substr(7,_outputFolder.size()-7);
-        std::string file_name = folder_name + "test.png";
-        FILE *fp = fopen(file_name.c_str(), "wb");
-        if (!fp)
-        {
-            LOG_ERROR("PNG file cannot open for write!!");
-        }
-        
-        png_structp png_ptr = png_create_write_struct_2
-        (PNG_LIBPNG_VER_STRING, NULL,
-         NULL, NULL, (png_voidp)view.getBuffer(), NULL, NULL);
-        
-//        png_structp png_ptr = png_create_write_struct
-//        (PNG_LIBPNG_VER_STRING, NULL,
-//         NULL, NULL);
-        
-        if (!png_ptr)
-            LOG_ERROR("PNG ptr null!");
-        png_infop info_ptr = png_create_info_struct(png_ptr);
-        if (!info_ptr)
-        {
-            png_destroy_write_struct(&png_ptr,
-            (png_infopp)NULL);
-                LOG_ERROR("info ptr null!");
-        }
-        
-        if (setjmp(png_jmpbuf(png_ptr)))
-        {
-            png_destroy_write_struct(&png_ptr, &info_ptr);
-            fclose(fp);
-            LOG_ERROR("PNG error!");
-        }
-        
-        
-        png_init_io(png_ptr, fp);
-        
-//        void write_row_callback(png_ptr, png_uint_32 row,
-//        int pass);
-//        {
-//        /* put your code here */
-//        }
-//        png_set_write_status_fn(png_ptr, write_row_callback);
-        
-        /* turn on or off filtering, and/or choose
-        specific filters. You can use either a single
-        PNG_FILTER_VALUE_NAME or the bitwise OR of one
-        or more PNG_FILTER_NAME masks. */
-//        png_set_filter(png_ptr, 0,
-//        PNG_FILTER_NONE | PNG_FILTER_VALUE_NONE |
-//        PNG_FILTER_SUB | PNG_FILTER_VALUE_SUB |
-//        PNG_FILTER_UP | PNG_FILTER_VALUE_UP |
-//        PNG_FILTER_AVG | PNG_FILTER_VALUE_AVG |
-//        PNG_FILTER_PAETH | PNG_FILTER_VALUE_PAETH|
-//        PNG_ALL_FILTERS);
-        
-        png_set_IHDR(png_ptr, info_ptr, view.getWidth(), view.getHeight(),
-        8, PNG_COLOR_TYPE_RGB_ALPHA, PNG_INTERLACE_NONE,
-                     PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
-        
-//        png_set_rows(png_ptr, info_ptr, (png_bytepp)view.getBuffer());
-        
-        png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_BGR, NULL);
+        auto* buffer = new uint8_t[view.getWidth() * view.getHeight() * 4];
+        int w,h;
+        Convert2Portrait(view.getWidth(), view.getHeight(), view.getBuffer(), w, h, buffer);
+    //    write2png(file_name.c_str(), view.getWidth(), view.getHeight(), view.getBuffer());
+        write2png(file_name.c_str(), w, h, buffer);
+        delete buffer;
     }
     
     
