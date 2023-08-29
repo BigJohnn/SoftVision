@@ -183,29 +183,31 @@ void FeatureExtractor::computeViewJob(const FeatureExtractorViewJob& job, bool u
 {
     image::Image<float> imageGrayFloat;
     
-    image::Image<image::RGBAColor> imageBGRA;
+    image::Image<image::RGBAColor> imageRGBA;
     
     image::Image<unsigned char> imageGrayUChar;
     image::Image<unsigned char> mask;
 
     auto&& view = job.view();
-    image::byteBuffer2EigenMatrix(view.getWidth(), view.getHeight(), view.getBuffer(), imageBGRA);
     
-    auto&& folder_name = _outputFolder.substr(7,_outputFolder.size()-7);
-    std::string file_name = folder_name + "test.png";
-    
+
     {
         auto* buffer = new uint8_t[view.getWidth() * view.getHeight() * 4];
         int w,h;
         Convert2Portrait(view.getWidth(), view.getHeight(), view.getBuffer(), w, h, buffer);
+        
+        auto&& folder_name = _outputFolder.substr(7,_outputFolder.size()-7);
+//        auto&& folder_name = _outputFolder;
+        std::string file_name = folder_name + "test.png";
     //    write2png(file_name.c_str(), view.getWidth(), view.getHeight(), view.getBuffer());
         write2png(file_name.c_str(), w, h, buffer);
+        
+        image::byteBuffer2EigenMatrix(view.getWidth(), view.getHeight(), buffer, imageRGBA);
         delete buffer;
     }
     
     
-    //TODO: BGRA to RGBA!!!
-    image::ConvertPixelType(imageBGRA, &imageGrayUChar);
+    image::ConvertPixelType(imageRGBA, &imageGrayUChar);
     image::ConvertPixelType(imageGrayUChar, &imageGrayFloat);
     
 //    image::readImage(job.view().getImagePath(), imageGrayFloat, workingColorSpace); // TODO: byte array to eigen matrix
