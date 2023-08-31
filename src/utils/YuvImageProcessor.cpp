@@ -40,3 +40,8 @@ void Convert2Portrait(int in_w, int in_h, const uint8_t* in_buffer,
     delete i420_u_rot90;
     delete i420_v_rot90;
 }
+
+void FlipY(int in_w, int in_h, const uint8_t* in_buffer, uint8_t*out_buffer)
+{
+    ARGBMirror(in_buffer, in_w * 4, out_buffer, in_w * 4, in_w, in_h);
+}

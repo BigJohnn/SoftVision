@@ -131,9 +131,9 @@ Pod::Spec.new do |spec|
 
 #  spec.ios.resource_bundle = { 'nonFree' => 'src/nonFree/**/*.{hpp,cpp,h,c}' }
   
-#  spec.subspec 'nonFree' do |ss|
-#      ss.source_files = "src/nonFree/**/*.{hpp,cpp,h,c}"
-#  end
+  spec.subspec 'matching' do |ss|
+      ss.source_files = "src/matching/*.{hpp,cpp}"
+  end
   
   spec.subspec 'stl' do |ss|
       ss.source_files = "src/stl/*.{h,hpp,cpp}"
@@ -143,7 +143,9 @@ Pod::Spec.new do |spec|
       ss.source_files = "src/utils/*.{h,cpp}"
   end
 
-  
+  spec.subspec 'vectorGraphics' do |ss|
+      ss.source_files = "src/vectorGraphics/*.hpp"
+  end
 
   spec.libraries             = 'stdc++'
   # ――― Resources ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #

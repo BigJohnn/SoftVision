@@ -9,9 +9,13 @@
 #define types_h
 
 #include <limits>
-
+#include <set>
 typedef uint32_t IndexT;
+typedef std::pair<IndexT,IndexT> Pair;
+typedef std::set<Pair> PairSet;
+
 static const IndexT UndefinedIndexT = std::numeric_limits<IndexT>::max();
+
 
 //=============for Eigen Containers Storage=================
 #include <map>

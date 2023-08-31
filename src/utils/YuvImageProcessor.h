@@ -15,4 +15,6 @@
 void Convert2Portrait(int in_w, int in_h, const uint8_t* in_buffer,
                      int &out_w, int &out_h, uint8_t*out_buffer);
 
+void FlipY(int in_w, int in_h, const uint8_t* in_buffer,
+           uint8_t*out_buffer);
 #endif /* YuvImageProcessor_h */

@@ -86,7 +86,7 @@ bool ReconPipeline::FeatureExtraction()
     int rangeStart = 0, rangeSize = m_sfmData->views.size();
     extractor.setRange(rangeStart, rangeSize);
     
-    std::string describerTypesName = feature::EImageDescriberType_enumToString(feature::EImageDescriberType::SIFT);
+    std::string describerTypesName = feature::EImageDescriberType_enumToString(feature::EImageDescriberType::DSPSIFT);
     {
         std::vector<feature::EImageDescriberType> imageDescriberTypes = feature::EImageDescriberType_stringToEnums(describerTypesName);
 
