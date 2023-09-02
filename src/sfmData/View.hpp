@@ -41,7 +41,7 @@ public:
            IndexT poseId = UndefinedIndexT,
            IndexT width = 0,
            IndexT height = 0,
-           uint8_t* buffer = nullptr,
+           std::vector<uint8_t> buffer = {},
            const std::map<std::string, std::string>& metadata = std::map<std::string, std::string>())
         : _width(width)
         , _height(height)
@@ -51,6 +51,10 @@ public:
         , _buffer(buffer)
         , _metadata(metadata)
       {}
+    
+//    ~View(){
+//        printf("View destroyed!!\n");
+//    }
     
       /**
        * @brief Set the given frame id
@@ -79,9 +83,9 @@ public:
         return _height;
       }
     
-      uint8_t* getBuffer() const
+      const uint8_t* getBuffer() const
       {
-          return _buffer;
+          return _buffer.data();
       }
 
       /**
@@ -172,7 +176,7 @@ public:
       /// list of ancestors
       std::vector<IndexT> _ancestors;
     
-      uint8_t* _buffer;
+      std::vector<uint8_t> _buffer;
 };
 
 }

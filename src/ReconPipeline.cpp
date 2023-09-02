@@ -16,6 +16,12 @@
 #include <system/Timer.hpp>
 #include <SoftVisionLog.h>
 
+std::vector<std::vector<uint8_t>> ReconPipeline::m_cachedBuffers;
+
+#ifdef SOFTVISION_DEBUG
+#include <thread>
+#endif
+
 ReconPipeline ReconPipeline::GetInstance()
 {
     static ReconPipeline pipeline;
@@ -26,6 +32,9 @@ ReconPipeline::~ReconPipeline()
 {
     delete m_sfmData;
     LOG_DEBUG("ReconPipeline Destruction");
+    
+    ///TODO: check
+    m_cachedBuffers.clear();
 }
 
 void ReconPipeline::CameraInit(void) {
@@ -47,30 +56,53 @@ void ReconPipeline::AppendSfMData(uint32_t viewId,
                   uint32_t height,
                    const uint8_t* bufferData)
 {
+    
     printf("%p Do AppendSfMData ...\n", this);
     
     printf("ReconPipeline viewId, poseId, intrinsicId: %u %u %u\n", viewId, poseId,intrinsicId);
     printf("ReconPipeline width, height, bufferData: %d %d %p\n",width, height,bufferData);
     
+    std::cout<<"[tid] AppendSfMData"<<std::this_thread::get_id()<<std::endl;
+    
     std::map<std::string, std::string> metadata_; //TODO: fill this
+    
+    const int buffer_n_bytes = width * height * 4;
+    
+    std::vector<uint8_t> buf(buffer_n_bytes, 0);
+    m_cachedBuffers.push_back(buf); //TODO: check??
+    memcpy(buf.data(), bufferData, buffer_n_bytes);
+    
     auto pView = std::make_shared<sfmData::View>(viewId,
                                                  intrinsicId,
-                                                  poseId,
+                                                    poseId,
                                                   width,
                                                   height,
-                                                  (uint8_t*)bufferData,
+                                                  buf,
                                                   metadata_);
+    
     
     pView->setFrameId(frameId);
     auto&& views = m_sfmData->views;
-    views[IndexT(views.size() - 1)] = pView;
+//    views[IndexT(views.size() - 1)] = pView;
+    views.insert(std::make_pair(IndexT(views.size()), pView));
     
     auto pIntrinsic = std::make_shared<camera::IntrinsicBase>(width, height);
     auto&& intrinsics = m_sfmData->intrinsics;
     intrinsics[IndexT(intrinsics.size() - 1)] = pIntrinsic;
     
+#ifdef SOFTVISION_DEBUG
+    printf("views addr ===%p\n", &views);
     
-    
+    for(int i=0;i<views.size();i++)
+    {
+        if(views[i]->getBuffer()){
+            LOG_INFO("buffer[%d]: addr %p, %.*s", i,&views[i], 100,views[i]->getBuffer());
+        }
+        else {
+            LOG_INFO("buffer[%d]: NULL!!",i);
+        }
+    }
+#endif
 }
 
 void ReconPipeline::SetOutputDataDir(const char* directory)
@@ -81,6 +113,23 @@ void ReconPipeline::SetOutputDataDir(const char* directory)
 
 bool ReconPipeline::FeatureExtraction()
 {
+#ifdef SOFTVISION_DEBUG
+    std::cout<<"[tid] FeatureExtraction"<<std::this_thread::get_id()<<std::endl;
+    
+    auto&& views = m_sfmData->views;
+    printf("views addr ===%p\n", &views);
+    
+    for(int i=0;i<views.size();i++)
+    {
+        if(views[i]->getBuffer()){
+            LOG_INFO("buffer[%d]:%.*s", i,100,views[i]->getBuffer());
+        }
+        else {
+            LOG_INFO("buffer[%d]: NULL!!",i);
+        }
+    }
+#endif
+    
     printf("%p Do FeatureExtraction ...\n", this);
     featureEngine::FeatureExtractor extractor(*m_sfmData);
     int rangeStart = 0, rangeSize = m_sfmData->views.size();

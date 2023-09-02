@@ -10,6 +10,7 @@
 
 #include <cstdint>
 #include <string>
+
 namespace sfmData{
 class SfMData;
 }
@@ -51,6 +52,7 @@ private:
 //    static ReconPipeline* pPipeline;
     sfmData::SfMData* m_sfmData = nullptr;
     std::string m_outputFolder;
+    static std::vector<std::vector<uint8_t>> m_cachedBuffers;
 };
 
 #endif /* ReconPipeline_h */

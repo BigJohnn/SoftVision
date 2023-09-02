@@ -88,6 +88,7 @@ void FeatureExtractor::process(const HardwareContext & hContext, const image::EI
     for (auto it = itViewBegin; it != itViewEnd; ++it)
     {
         const sfmData::View& view = *(it->second.get());
+
         FeatureExtractorViewJob viewJob(view, _outputFolder);
 
         viewJob.setImageDescribers(_imageDescribers);
@@ -191,7 +192,7 @@ void FeatureExtractor::computeViewJob(const FeatureExtractorViewJob& job, bool u
 
     auto&& view = job.view();
     
-    auto&& folder_name = _outputFolder.substr(7,_outputFolder.size()-7);
+    auto&& folder_name = _outputFolder.substr(7, _outputFolder.size() - 7);
     int w,h;
     //        auto&& folder_name = _outputFolder;
     std::string testimg_file_name = folder_name + "test.png";
@@ -199,7 +200,6 @@ void FeatureExtractor::computeViewJob(const FeatureExtractorViewJob& job, bool u
         auto* buffer = new uint8_t[view.getWidth() * view.getHeight() * 4];
         
         Convert2Portrait(view.getWidth(), view.getHeight(), view.getBuffer(), w, h, buffer);
-        
         
     //    write2png(testimg_file_name.c_str(), view.getWidth(), view.getHeight(), view.getBuffer());
         write2png(testimg_file_name.c_str(), w, h, buffer);
