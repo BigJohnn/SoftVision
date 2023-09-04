@@ -11,7 +11,7 @@
 #include <feature/ImageDescriber.hpp>
 #include <feature/regionsFactory.hpp>
 //#include <config.hpp>
-//#include <system/Logger.hpp>
+//#include <SoftVisionLog.h>
 
 #include <feature/imageStats.hpp>
 

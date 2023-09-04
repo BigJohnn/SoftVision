@@ -8,7 +8,6 @@
 
 #include <geometry/Pose3.hpp>
 
- {
 namespace sfmData {
 
 class CameraPose
@@ -93,4 +92,3 @@ public:
 };
 
 } // namespace sfmData
-} // 

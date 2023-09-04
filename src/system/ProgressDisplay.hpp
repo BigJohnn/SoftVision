@@ -10,8 +10,7 @@
 #include <memory>
 #include <string>
 
-namespace aliceVision {
-namespace system {
+namespace system2 {
 
 class ProgressDisplayImpl {
 public:
@@ -76,4 +75,3 @@ ProgressDisplay createConsoleProgressDisplay(unsigned long expectedCount,
                                              const std::string& s3 = "");
 
 } // namespace system
-} // namespace aliceVision

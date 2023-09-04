@@ -50,7 +50,7 @@ struct RetrieveValue
 
 }
 
-namespace aliceVision {
+
 
 template<typename Map>
 const typename Map::mapped_type& map_get_with_default(const Map& m, const typename Map::key_type& key, const typename Map::mapped_type& defval)

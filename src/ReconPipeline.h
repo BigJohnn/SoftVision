@@ -42,6 +42,7 @@ public:
     
     bool FeatureExtraction();
     
+    bool FeatureMatching();
     void SetOutputDataDir(const char* directory);
     
 private:

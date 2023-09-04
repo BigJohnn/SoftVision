@@ -119,14 +119,14 @@ Pod::Spec.new do |spec|
       ss.source_files = "src/camera/*.{hpp,cpp}"
   end
 #
-#  spec.subspec 'geometry' do |ss|
-#      ss.source_files = "src/geometry/*.{h,hpp,cpp}"
+  spec.subspec 'geometry' do |ss|
+      ss.source_files = "src/geometry/*.{hpp,cpp}"
 #      ss.exclude_files = "src/geometry/*test.{h,hpp,cpp}"
-#  end
+  end
 #  
   spec.subspec 'system' do |ss|
       ss.source_files = "src/system/*.{h,hpp,cpp}"
-      ss.exclude_files = "src/system/Progress*.*"
+#      ss.exclude_files = "src/system/Progress*.*"
   end
 
 #  spec.ios.resource_bundle = { 'nonFree' => 'src/nonFree/**/*.{hpp,cpp,h,c}' }
@@ -145,6 +145,15 @@ Pod::Spec.new do |spec|
 
   spec.subspec 'vectorGraphics' do |ss|
       ss.source_files = "src/vectorGraphics/*.hpp"
+  end
+  
+  spec.subspec 'imageMatching' do |ss|
+      ss.source_files = "src/imageMatching/*.{hpp,cpp}"
+  end
+  
+  spec.subspec 'voctree' do |ss|
+      ss.source_files = "src/voctree/*.{hpp,cpp}"
+      ss.exclude_files = "src/voctree/*Loader.*"
   end
 
   spec.libraries             = 'stdc++'
@@ -195,5 +204,7 @@ Pod::Spec.new do |spec|
   spec.dependency "Eigen"
   spec.dependency "libpng"
   spec.dependency "libyuv"
+  
+  spec.ios.resource_bundle = { 'vocabulary' => 'voc' }
 
 end

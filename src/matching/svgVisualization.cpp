@@ -6,11 +6,11 @@
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "svgVisualization.hpp"
-//#include <aliceVision/config.hpp>
-//#include <aliceVision/system/Logger.hpp>
+//#include <config.hpp>
+//#include <SoftVisionLog.h>
 
 //#if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_CCTAG)
-//#include <aliceVision/feature/cctag/ImageDescriber_CCTAG.hpp>
+//#include <feature/cctag/ImageDescriber_CCTAG.hpp>
 //#endif
 #include <vectorGraphics/svgDrawer.hpp>
 #include <SoftVisionLog.h>

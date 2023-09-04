@@ -13,7 +13,7 @@
 //#include <config.hpp>
 
 //#if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_SSE)
-//#include <system/Logger.hpp>
+//#include <SoftVisionLog.h>
 //#include <xmmintrin.h>
 //#endif
 

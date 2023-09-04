@@ -16,6 +16,9 @@
 #include <system/Timer.hpp>
 #include <SoftVisionLog.h>
 
+#include <imageMatching/ImageMatching.hpp>
+#include "voctree/descriptorLoader.hpp"
+
 std::vector<std::vector<uint8_t>> ReconPipeline::m_cachedBuffers;
 
 #ifdef SOFTVISION_DEBUG
@@ -165,5 +168,20 @@ bool ReconPipeline::FeatureExtraction()
         LOG_INFO("Task done in (s):%s " , std::to_string(timer.elapsed()).c_str());
     }
     
+    return true;
+}
+
+bool ReconPipeline::FeatureMatching()
+{
+    // user optional parameters
+    imageMatching::EImageMatchingMethod method = imageMatching::EImageMatchingMethod::VOCABULARYTREE;
+    /// minimal number of images to use the vocabulary tree
+    std::size_t minNbImages = 200;
+    /// the file containing the list of features
+    std::size_t nbMaxDescriptors = 500;
+    /// the number of matches to retrieve for each image in Vocabulary Tree Mode
+    std::size_t numImageQuery = 50;
+    /// the number of neighbors to retrieve for each image in Sequential Mode
+    std::size_t numImageQuerySequential = 50;
     return true;
 }

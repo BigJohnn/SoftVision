@@ -5,11 +5,10 @@
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "ProgressDisplay.hpp"
-#include <boost/timer/progress_display.hpp>
+//#include <boost/timer/progress_display.hpp>
 #include <mutex>
 
-namespace aliceVision {
-namespace system {
+namespace system2 {
 
 ProgressDisplayImpl::~ProgressDisplayImpl() = default;
 
@@ -31,7 +30,7 @@ public:
                                      const std::string& s1,
                                      const std::string& s2,
                                      const std::string& s3) :
-        _display{expectedCount, os, s1, s2, s3}
+        m_expectedCount(expectedCount)
     {
     }
 
@@ -39,29 +38,35 @@ public:
 
     void restart(unsigned long expectedCount) override
     {
-        _display.restart(expectedCount);
+        m_count = 0;
+        m_expectedCount = expectedCount;
+//        _display.restart(expectedCount);
     }
 
     void increment(unsigned long count) override
     {
         std::lock_guard<std::mutex> lock{_mutex};
-        _display += count;
+        m_count += count;
+//        _display += count;
     }
 
     unsigned long count() override
     {
         std::lock_guard<std::mutex> lock{_mutex};
-        return _display.count();
+        return m_count;
+//        return _display.count();
     }
 
     unsigned long expectedCount() override
     {
-        return _display.expected_count();
+        return m_expectedCount;
     }
 
 private:
     std::mutex _mutex;
-    boost::timer::progress_display _display;
+    unsigned long m_expectedCount;
+    unsigned long m_count;
+//    boost::timer::progress_display _display;
 };
 
 
@@ -75,5 +80,4 @@ ProgressDisplay createConsoleProgressDisplay(unsigned long expectedCount,
     return ProgressDisplay(impl);
 }
 
-} // namespace system
-} // namespace aliceVision
+} // namespace system2

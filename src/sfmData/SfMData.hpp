@@ -12,6 +12,7 @@
 #include <memory>
 
 #include <common/types.h>
+#include <CameraPose.hpp>
 
 namespace camera {
 class IntrinsicBase;
@@ -26,7 +27,7 @@ class CameraPose;
 using Views = std::map<IndexT, std::shared_ptr<View> >;
 
 /// Define a collection of Pose (indexed by view.getPoseId())
-//using Poses = HashMap<IndexT, CameraPose>;
+using Poses = HashMap<IndexT, CameraPose>;
 
 /// Define a collection of IntrinsicParameter (indexed by view.getIntrinsicId())
 using Intrinsics = std::map<IndexT, std::shared_ptr<camera::IntrinsicBase> >;
@@ -56,16 +57,30 @@ public:
         Intrinsics& getIntrinsics() {return intrinsics;}
     
     /**
+         * @brief List the view indexes that have valid camera intrinsic and pose.
+         * @return view indexes list
+         */
+        std::set<IndexT> getValidViews() const;
+    
+    /**
      * @brief Get poses
      * @return poses
     */
-//    const Poses& getPoses() const {return _poses;}
-//    Poses& getPoses() {return _poses;}
+    const Poses& getPoses() const {return _poses;}
+    Poses& getPoses() {return _poses;}
 //    ~SfMData();
+    
+    /**
+     * @brief Check if the given view have defined intrinsic and pose
+     * @param[in] view The given view
+     * @return true if intrinsic and pose defined
+     */
+    bool isPoseAndIntrinsicDefined(const View* view) const;
+    
     
 private:
     /// Considered poses (indexed by view.getPoseId())
-//    Poses _poses;
+    Poses _poses;
 };
 }
 #endif /* SfMData_hpp */
