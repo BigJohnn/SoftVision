@@ -11,7 +11,7 @@
 //#include <config.hpp>
 #include <softvision_omp.hpp>
 
-#include "flann/flann.hpp"
+#include <flann/flann.h>
 
 #include <memory>
 
@@ -148,4 +148,4 @@ class ArrayMatcher_kdtreeFlann : public ArrayMatcher<Scalar, Metric>
 };
 
 } // namespace matching
-} // namespace aliceVision
+

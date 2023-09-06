@@ -57,7 +57,7 @@ std::string getDefaultColorConfigFilePath()
 //            }
 //            else
 //            {
-//                ALICEVISION_LOG_WARNING("ALICEVISION_OCIO configuration file is not valid: '" << configOCIOFilePath << "'.\n"
+//                LOG_INFO("ALICEVISION_OCIO configuration file is not valid: '" << configOCIOFilePath << "'.\n"
 //                                        "The scene_linear role named \"scene-linear Rec.709-sRGB\" is required.\n"
 //                                        "Skip this OCIO configuration file and use the embedded one.");
 //            }
@@ -68,7 +68,7 @@ std::string getDefaultColorConfigFilePath()
 //        }
 //        else
 //        {
-//            ALICEVISION_LOG_WARNING("ALICEVISION_OCIO is defined but does not point to an existing file: '" << configOCIOFilePath << "'");
+//            LOG_INFO("ALICEVISION_OCIO is defined but does not point to an existing file: '" << configOCIOFilePath << "'");
 //        }
     }
 

@@ -79,7 +79,7 @@
 //        const std::string forcedColorSpace = (ext == "exr" || ext == "EXR") ? "linear" : "sRGB";
 //
 //        LOG_INFO("The color space [] detected for [] is not supported. Force Color space to [].");
-////        ALICEVISION_LOG_WARNING("The color space " << colorSpace << " detected for " << imagePath << " is not supported. Force Color space to " << forcedColorSpace << ".");
+////        LOG_INFO("The color space " << colorSpace << " detected for " << imagePath << " is not supported. Force Color space to " << forcedColorSpace << ".");
 //        colorSpace = forcedColorSpace;
 //    }
 //
@@ -562,7 +562,7 @@
 ////            if (!imgMetadata.getattribute("raw:cam_mul", cam_mul))
 ////            {
 ////                cam_mul = "{1024, 1024, 1024, 1024}";
-//////                ALICEVISION_LOG_WARNING("[readImage]: cam_mul metadata not available, the openImageIO version might be too old (>= 2.4.5.0 requested for dcp management).");
+//////                LOG_INFO("[readImage]: cam_mul metadata not available, the openImageIO version might be too old (>= 2.4.5.0 requested for dcp management).");
 ////            }
 ////
 ////            std::vector<float> v_mult;
@@ -732,7 +732,7 @@
 ////        if (!imgMetadata.getattribute("raw:cam_mul", cam_mul))
 ////        {
 ////            cam_mul = "{1024, 1024, 1024, 1024}";
-////            ALICEVISION_LOG_WARNING("[readImage]: cam_mul metadata not available, the openImageIO version might be too old (>= 2.4.5.0 requested for dcp management).");
+////            LOG_INFO("[readImage]: cam_mul metadata not available, the openImageIO version might be too old (>= 2.4.5.0 requested for dcp management).");
 ////        }
 ////
 ////        std::vector<float> v_mult;

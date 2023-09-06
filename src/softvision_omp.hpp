@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include <omp.h>
+#include "omp.h"
 
-using omp_lock_t = char;
+//using omp_lock_t = char;
 
 inline int omp_get_thread_num() { return 0; }
 inline int omp_get_max_threads() { return 1; }
@@ -21,4 +21,4 @@ inline void omp_destroy_lock(omp_lock_t *lock) {}
 
 inline void omp_set_lock(omp_lock_t *lock) {}
 inline void omp_unset_lock(omp_lock_t *lock) {}
-#endif
+

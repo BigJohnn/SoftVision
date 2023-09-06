@@ -36,13 +36,13 @@ void ImageCollectionMatcher_generic::Match(
   feature::EImageDescriberType descType,
   matching::PairwiseMatches & map_PutativesMatches)const // the pairwise photometric corresponding points
 {
-#if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_OPENMP)
-  ALICEVISION_LOG_DEBUG("Using the OPENMP thread interface");
-#endif
+
+  LOG_DEBUG("Using the OPENMP thread interface");
+
   const bool b_multithreaded_pair_search = (_matcherType == CASCADE_HASHING_L2);
   // -> set to true for CASCADE_HASHING_L2, since OpenMP instructions are not used in this matcher
 
-  auto progressDisplay = system::createConsoleProgressDisplay(pairs.size(), std::cout);
+  auto progressDisplay = system2::createConsoleProgressDisplay(pairs.size(), std::cout);
 
   // Sort pairs according the first index to minimize the MatcherT build operations
   typedef std::map<size_t, std::vector<size_t> > Map_vectorT;

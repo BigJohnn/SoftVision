@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include <aliceVision/numeric/numeric.hpp>
-#include <aliceVision/feature/metric.hpp>
-#include <aliceVision/matching/IndMatch.hpp>
-#include <aliceVision/stl/DynamicBitset.hpp>
+#include <numeric/numeric.hpp>
+#include <feature/metric.hpp>
+#include <matching/IndMatch.hpp>
+#include <stl/DynamicBitset.hpp>
 
 #include <iostream>
 #include <random>

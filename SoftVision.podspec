@@ -208,6 +208,7 @@ Pod::Spec.new do |spec|
   spec.dependency "Eigen"
   spec.dependency "libpng"
   spec.dependency "libyuv"
+  spec.dependency "openmp"
   
   spec.ios.resource_bundle = { 'vocabulary' => 'voc' }
 

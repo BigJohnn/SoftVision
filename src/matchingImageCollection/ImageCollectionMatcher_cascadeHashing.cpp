@@ -10,7 +10,7 @@
 #include <matching/IndMatchDecorator.hpp>
 #include <matching/filters.hpp>
 #include <system/ProgressDisplay.hpp>
-#include <config.hpp>
+//#include <config.hpp>
 
 
 namespace matchingImageCollection {
@@ -39,7 +39,7 @@ void Match
   PairwiseMatches & map_PutativesMatches // the pairwise photometric corresponding points
 )
 {
-  auto progressDisplay = system::createConsoleProgressDisplay(pairs.size(), std::cout);
+  auto progressDisplay = system2::createConsoleProgressDisplay(pairs.size(), std::cout);
 
   // Collect used view indexes
   std::set<IndexT> used_index;
@@ -216,9 +216,7 @@ void ImageCollectionMatcher_cascadeHashing::Match
 ) const
 {
 
-#if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_OPENMP)
-  ALICEVISION_LOG_DEBUG("Using the OPENMP thread interface");
-#endif
+  LOG_DEBUG("Using the OPENMP thread interface");
 
   if (regionsPerView.isEmpty())
     return;
@@ -251,7 +249,7 @@ void ImageCollectionMatcher_cascadeHashing::Match
   }
   else
   {
-    ALICEVISION_LOG_WARNING("Matcher not implemented for this region type");
+    LOG_INFO("Matcher not implemented for this region type");
   }
 }
 

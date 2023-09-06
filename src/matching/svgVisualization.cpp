@@ -612,7 +612,7 @@ void saveEpipolarGeometry2SVG(const std::string &imagePath,
       }
       
 //      LOG_INFO("F has kernel of size %d:\n", <#args...#>)
-//    ALICEVISION_LOG_WARNING("F has kernel of size " << epipole.cols() << ":\n" << epipole);
+//    LOG_INFO("F has kernel of size " << epipole.cols() << ":\n" << epipole);
   }
   else
   {
@@ -821,7 +821,7 @@ void saveMatchesAsMotion(const std::string &imagePath,
 //    const IndexT cctagIdRight = feature::getCCTagId(descRight[m._j]);
 //    if ( cctagIdLeft == UndefinedIndexT || cctagIdRight == UndefinedIndexT )
 //    {
-//      ALICEVISION_LOG_WARNING("[svg]\tWarning! cctagIdLeft " << cctagIdLeft << " " << "cctagIdRight " << cctagIdRight);
+//      LOG_INFO("[svg]\tWarning! cctagIdLeft " << cctagIdLeft << " " << "cctagIdRight " << cctagIdRight);
 //      continue;
 //    }
 //    

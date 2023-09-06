@@ -83,7 +83,7 @@ class ArrayMatcher_cascadeHashing  : public ArrayMatcher<Scalar, Metric>
   bool SearchNeighbour( const Scalar * query,
                         int * indice, DistanceType * distance)
   {
-    ALICEVISION_LOG_WARNING("This matcher is not made to match a single query");
+    LOG_INFO("This matcher is not made to match a single query");
     return false;
   }
 

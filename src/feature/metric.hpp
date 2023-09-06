@@ -114,7 +114,7 @@ struct L2_Vectorized
 //    }
 //    else
 //    {
-//      ALICEVISION_LOG_WARNING("/!\\ size is not modulus 4, distance cannot be performed in SSE");
+//      LOG_INFO("/!\\ size is not modulus 4, distance cannot be performed in SSE");
 //      return 0.0f;
 //    }
 //  }
