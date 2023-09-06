@@ -11,13 +11,19 @@
 //#include <feature/feature.hpp>
 #include <sfmData/SfMData.hpp>
 #include <sfmData/View.hpp>
-#include <camera/IntrinsicBase.hpp>
+#include <camera/PinholeRadial.hpp>
 #include <featureEngine/FeatureExtractor.hpp>
 #include <system/Timer.hpp>
 #include <SoftVisionLog.h>
 
 #include <imageMatching/ImageMatching.hpp>
 #include "voctree/descriptorLoader.hpp"
+
+#include <matching/IndMatch.hpp>
+#include <matching/matcherType.hpp>
+
+#include <matchingImageCollection/IImageCollectionMatcher.hpp>
+#include <matchingImageCollection/matchingCommon.hpp>
 
 std::vector<std::vector<uint8_t>> ReconPipeline::m_cachedBuffers;
 
@@ -38,6 +44,8 @@ ReconPipeline::~ReconPipeline()
     
     ///TODO: check
     m_cachedBuffers.clear();
+    
+    delete m_extractor;
 }
 
 void ReconPipeline::CameraInit(void) {
@@ -83,13 +91,13 @@ void ReconPipeline::AppendSfMData(uint32_t viewId,
                                                   buf,
                                                   metadata_);
     
-    
     pView->setFrameId(frameId);
     auto&& views = m_sfmData->views;
 //    views[IndexT(views.size() - 1)] = pView;
     views.insert(std::make_pair(IndexT(views.size()), pView));
     
-    auto pIntrinsic = std::make_shared<camera::IntrinsicBase>(width, height);
+    //TODO:
+    auto pIntrinsic = std::make_shared<camera::PinholeRadialK3>(width, height);
     auto&& intrinsics = m_sfmData->intrinsics;
     intrinsics[IndexT(intrinsics.size() - 1)] = pIntrinsic;
     
@@ -134,13 +142,16 @@ bool ReconPipeline::FeatureExtraction()
 #endif
     
     printf("%p Do FeatureExtraction ...\n", this);
-    featureEngine::FeatureExtractor extractor(*m_sfmData);
+    
+    m_extractor = new featureEngine::FeatureExtractor(*m_sfmData);
+//    featureEngine::FeatureExtractor extractor(*m_sfmData);
+    auto&& extractor = *m_extractor;
     int rangeStart = 0, rangeSize = m_sfmData->views.size();
     extractor.setRange(rangeStart, rangeSize);
     
-    std::string describerTypesName = feature::EImageDescriberType_enumToString(feature::EImageDescriberType::DSPSIFT);
+    m_describerTypesName = feature::EImageDescriberType_enumToString(feature::EImageDescriberType::DSPSIFT);
     {
-        std::vector<feature::EImageDescriberType> imageDescriberTypes = feature::EImageDescriberType_stringToEnums(describerTypesName);
+        std::vector<feature::EImageDescriberType> imageDescriberTypes = feature::EImageDescriberType_stringToEnums(m_describerTypesName);
 
         for(const auto& imageDescriberType: imageDescriberTypes)
         {
@@ -173,8 +184,12 @@ bool ReconPipeline::FeatureExtraction()
 
 bool ReconPipeline::FeatureMatching()
 {
+    LOG_INFO("FeatureMatching\n"
+             "- Compute putative local feature matches (descriptors matching)\n"
+             "- Compute geometric coherent feature matches (robust model estimation from putative matches)\n");
+    
     // user optional parameters
-    imageMatching::EImageMatchingMethod method = imageMatching::EImageMatchingMethod::VOCABULARYTREE;
+    imageMatching::EImageMatchingMethod method = imageMatching::EImageMatchingMethod::SEQUENTIAL_AND_VOCABULARYTREE;
     /// minimal number of images to use the vocabulary tree
     std::size_t minNbImages = 200;
     /// the file containing the list of features
@@ -183,5 +198,88 @@ bool ReconPipeline::FeatureMatching()
     std::size_t numImageQuery = 50;
     /// the number of neighbors to retrieve for each image in Sequential Mode
     std::size_t numImageQuerySequential = 50;
+    
+    PairSet pairs;
+    std::set<IndexT> filter;
+
+    // We assume that there is only one pair for (I,J) and (J,I)
+    pairs = exhaustivePairs(m_sfmData->getViews(), 0, m_sfmData->getViews().size());
+    
+    if(pairs.empty())
+      {
+        LOG_INFO("No image pair to match.");
+        // if we only compute a selection of matches, we may have no match.
+        return m_sfmData->getViews().size() ? EXIT_SUCCESS : EXIT_FAILURE;
+      }
+    
+    LOG_INFO("Number of pairs: %lu" , pairs.size());
+    
+    // filter creation
+    for(const auto& pair: pairs)
+    {
+    filter.insert(pair.first);
+    filter.insert(pair.second);
+    }
+
+    matching::PairwiseMatches mapPutativesMatches;
+
+    std::string nearestMatchingMethod = "ANN_L2";
+    // allocate the right Matcher according the Matching requested method
+    matching::EMatcherType collectionMatcherType = matching::EMatcherType_stringToEnum(nearestMatchingMethod);
+    
+    using namespace matchingImageCollection;
+    //"Distance ratio to discard non meaningful matches."
+    float distRatio;
+//    "Make sure that the matching process is symmetric (same matches for I->J than fo J->I)."
+    bool crossMatching;
+    std::unique_ptr<IImageCollectionMatcher> imageCollectionMatcher = createImageCollectionMatcher(collectionMatcherType, distRatio, crossMatching);
+
+    const std::vector<feature::EImageDescriberType> imageDescriberTypes = feature::EImageDescriberType_stringToEnums(m_describerTypesName);
+
+    LOG_INFO("There are %lu views and %lu image pairs.", m_sfmData->getViews().size(), pairs.size());
+
+    LOG_INFO("Load features and descriptors");
+
+    using namespace feature;
+    // load the corresponding view regions
+    RegionsPerView regionsPerView;
+    
+    std::atomic_bool invalid(false);
+#pragma omp parallel num_threads(3)
+ for(auto iter = m_sfmData->getViews().begin(); iter != m_sfmData->getViews().end() && !invalid; ++iter)
+ {
+#pragma omp single nowait
+   {
+     for(std::size_t i = 0; i < imageDescriberTypes.size(); ++i)
+     {
+       if(filter.empty() || filter.find(iter->second.get()->getViewId()) != filter.end())
+       {
+           std::unique_ptr<feature::Regions> regionsPtr = std::move(m_extractor->getRegionsList()[i]);
+         if(regionsPtr)
+         {
+#pragma omp critical
+           {
+             regionsPerView.addRegions(iter->second.get()->getViewId(), imageDescriberTypes.at(i), regionsPtr.release());
+//             ++progressDisplay;
+           }
+         }
+         else
+         {
+           invalid = true;
+         }
+       }
+     }
+   }
+ }
+
+    //TODO:
+    
+//    if(!sfm::loadRegionsPerView(regionPerView, m_sfmData, featuresFolders, describerTypes, filter))
+//    {
+//        LOG_ERROR("Invalid regions in '%s'", sfmDataFilename.c_str());
+//        return EXIT_FAILURE;
+//    }
+
+    
     return true;
 }

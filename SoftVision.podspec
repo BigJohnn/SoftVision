@@ -71,7 +71,7 @@ Pod::Spec.new do |spec|
   #  Not including the public_header_files will make all headers public.
   #
 
-  spec.source_files  = "src/*.{h,cpp}"
+  spec.source_files  = "src/*.{h,hpp,cpp}"
                         
 #  spec.source_files  = "Classes", "Classes/**/*.{h,cpp}"
 #  spec.exclude_files = "src/*test.{h,hpp,cpp}"
@@ -156,6 +156,10 @@ Pod::Spec.new do |spec|
       ss.exclude_files = "src/voctree/*Loader.*"
   end
 
+  spec.subspec 'matchingImageCollection' do |ss|
+      ss.source_files = "src/matchingImageCollection/*.{hpp,cpp}"
+  end
+  
   spec.libraries             = 'stdc++'
   # ――― Resources ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
   #

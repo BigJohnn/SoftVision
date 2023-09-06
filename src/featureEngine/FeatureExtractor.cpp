@@ -331,6 +331,8 @@ void FeatureExtractor::computeViewJob(const FeatureExtractorViewJob& job, bool u
 //        keypoints.getRegions<feature::Regions>(imageDescriberType) = regions;
 //        keypoints[imageDescriberType] = regions;
         matching::saveFeatures2SVG("/Users/hph/Documents/test.png", std::make_pair(w, h), keypoints, folder_name + "test.svg");
+        
+        _mvRegions.push_back(regions);
     }
 }
 

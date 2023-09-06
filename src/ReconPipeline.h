@@ -14,6 +14,9 @@
 namespace sfmData{
 class SfMData;
 }
+namespace featureEngine{
+class FeatureExtractor;
+}
 
 class ReconPipeline {
     
@@ -54,6 +57,8 @@ private:
     sfmData::SfMData* m_sfmData = nullptr;
     std::string m_outputFolder;
     static std::vector<std::vector<uint8_t>> m_cachedBuffers;
+    std::string m_describerTypesName;
+    featureEngine::FeatureExtractor* m_extractor = nullptr;
 };
 
 #endif /* ReconPipeline_h */
