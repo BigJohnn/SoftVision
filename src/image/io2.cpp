@@ -780,8 +780,8 @@
 ////    DCPProfile dcpProf;
 ////    if ((fromColorSpaceName == "no_conversion") && (imageReadOptions.workingColorSpace != EImageColorSpace::NO_CONVERSION))
 ////    {
-////        ALICEVISION_LOG_INFO("Source image is in a raw color space and must be converted into " << imageReadOptions.workingColorSpace << ".");
-////        ALICEVISION_LOG_INFO("Check if a DCP profile is available in the metadata to be applied.");
+////        LOG_INFO("Source image is in a raw color space and must be converted into " << imageReadOptions.workingColorSpace << ".");
+////        LOG_INFO("Check if a DCP profile is available in the metadata to be applied.");
 ////        if (inBuf.spec().nchannels < 3)
 ////        {
 ////            ALICEVISION_THROW_ERROR("A DCP profile cannot be applied on an image containing less than 3 channels.");
@@ -1228,7 +1228,7 @@
 ////  cache->getattribute("stat:bytes_read", oiio::TypeDesc::INT64, &bytesRead);
 ////
 ////    LOG_INFO("OIIO image cache info:  ...");
-//////  ALICEVISION_LOG_INFO("OIIO image cache info: " <<
+//////  LOG_INFO("OIIO image cache info: " <<
 //////                      "\n * max open files: " << maxOpenFiles <<
 //////                      "\n * total files: " << totalFiles <<
 //////                      "\n * max memory (MB): " << maxMemoryMB <<

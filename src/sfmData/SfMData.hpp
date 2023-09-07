@@ -13,6 +13,7 @@
 
 #include <common/types.h>
 #include <CameraPose.hpp>
+#include <sfmData/Landmark.hpp>
 
 namespace camera {
 class IntrinsicBase;
@@ -32,6 +33,9 @@ using Poses = HashMap<IndexT, CameraPose>;
 /// Define a collection of IntrinsicParameter (indexed by view.getIntrinsicId())
 using Intrinsics = std::map<IndexT, std::shared_ptr<camera::IntrinsicBase> >;
 
+/// Define a collection of landmarks are indexed by their TrackId
+using Landmarks = HashMap<IndexT, Landmark>;
+
 //class IntrinsicBase;
 class SfMData{
 public:
@@ -39,15 +43,48 @@ public:
     Views views;
     /// Considered camera intrinsics (indexed by view.getIntrinsicId())
     Intrinsics intrinsics;
+    /// Structure (3D points with their 2D observations)
+    Landmarks structure;
+/// Controls points (stored as Landmarks (id_feat has no meaning here))
+    Landmarks control_points;
+//    /// Uncertainty per pose
+//    PosesUncertainty _posesUncertainty;
+//    /// Uncertainty per landmark
+//    LandmarksUncertainty _landmarksUncertainty;
+//    /// 2D Constraints
+//    Constraints2D constraints2d;
+//    /// Rotation priors
+//    RotationPriors rotationpriors;
+    
     
     SfMData() = default;
     
     /**
-         * @brief Get views
-         * @return views
-         */
-        const Views& getViews() const {return views;}
-        Views& getViews() {return views;}
+     * @brief Get views
+     * @return views
+     */
+    const Views& getViews() const {return views;}
+    Views& getViews() {return views;}
+    
+    /**
+     * @brief Gives the view of the input view id.
+     * @param[in] viewId The given view id
+     * @return the corresponding view reference
+     */
+    View& getView(IndexT viewId)
+    {
+        return *(views.at(viewId));
+    }
+
+    /**
+     * @brief Gives the view of the input view id.
+     * @param[in] viewId The given view id
+     * @return the corresponding view reference
+     */
+    const View& getView(IndexT viewId) const
+    {
+        return *(views.at(viewId));
+    }
     
     /**
          * @brief Get intrinsics
@@ -76,6 +113,23 @@ public:
      * @return true if intrinsic and pose defined
      */
     bool isPoseAndIntrinsicDefined(const View* view) const;
+    
+    /**
+     * @brief Check if the given view have defined intrinsic and pose
+     * @param[in] viewID The given viewID
+     * @return true if intrinsic and pose defined
+     */
+    bool isPoseAndIntrinsicDefined(IndexT viewId) const
+    {
+        return isPoseAndIntrinsicDefined(views.at(viewId).get());
+    }
+    
+    /**
+     * @brief Get landmarks
+     * @return landmarks
+     */
+    const Landmarks& getLandmarks() const {return structure;}
+    Landmarks& getLandmarks() {return structure;}
     
     
 private:

@@ -9,6 +9,9 @@
 //#include <featureEngine/FeatureExtractor.hpp>
 
 //#include <feature/feature.hpp>
+#include <utils/YuvImageProcessor.h>
+#include "PngUtils.h"
+
 #include <sfmData/SfMData.hpp>
 #include <sfmData/View.hpp>
 #include <camera/PinholeRadial.hpp>
@@ -21,9 +24,13 @@
 
 #include <matching/IndMatch.hpp>
 #include <matching/matcherType.hpp>
+#include <matching/matchesFiltering.hpp>
 
 #include <matchingImageCollection/IImageCollectionMatcher.hpp>
 #include <matchingImageCollection/matchingCommon.hpp>
+
+#include <sfm/pipeline/structureFromKnownPoses/StructureEstimationFromKnownPoses.hpp>
+
 
 std::vector<std::vector<uint8_t>> ReconPipeline::m_cachedBuffers;
 
@@ -83,11 +90,29 @@ void ReconPipeline::AppendSfMData(uint32_t viewId,
     m_cachedBuffers.push_back(buf); //TODO: check??
     memcpy(buf.data(), bufferData, buffer_n_bytes);
     
+    int width_new, height_new;
+    {
+        auto* buffer = new uint8_t[width * height * 4];
+        Convert2Portrait(width, height, buf.data(), width_new, height_new, buffer);
+        
+        if(m_outputFolder.empty()) {
+            LOG_ERROR("OUTPUT DIR NOT SET!!");
+        }
+        auto&& folder_name = m_outputFolder.substr(7, m_outputFolder.size() - 7);
+        std::string testimg_file_name = folder_name + "test.png";
+        write2png(testimg_file_name.c_str(), width_new, height_new, buffer);
+
+//        image::Image<image::RGBAColor> imageRGBA_flipY;
+//        uint8_t *buffer_flipY  = new uint8_t[view.getWidth() * view.getHeight() * 4];
+        FlipY(width_new, height_new, buffer, buf.data());
+        delete buffer;
+    }
+    
     auto pView = std::make_shared<sfmData::View>(viewId,
                                                  intrinsicId,
-                                                    poseId,
-                                                  width,
-                                                  height,
+                                                 poseId,
+                                                  width_new,
+                                                  height_new,
                                                   buf,
                                                   metadata_);
     
@@ -198,6 +223,10 @@ bool ReconPipeline::FeatureMatching()
     std::size_t numImageQuery = 50;
     /// the number of neighbors to retrieve for each image in Sequential Mode
     std::size_t numImageQuerySequential = 50;
+
+    //      "Maximum error (in pixels) allowed for features matching guided by geometric information from known camera poses. "
+    //            "If set to 0 it lets the ACRansac select an optimal value.")
+    double knownPosesGeometricErrorMax = 4.0;
     
     PairSet pairs;
     std::set<IndexT> filter;
@@ -222,10 +251,14 @@ bool ReconPipeline::FeatureMatching()
     }
 
     matching::PairwiseMatches mapPutativesMatches;
-
+    
+    // allocate the right Matcher according the Matching requested method
+//    matching::EMatcherType collectionMatcherType = EMatcherType_stringToEnum(nearestMatchingMethod);
+//      std::unique_ptr<IImageCollectionMatcher> imageCollectionMatcher = createImageCollectionMatcher(collectionMatcherType, distRatio, crossMatching);
     std::string nearestMatchingMethod = "ANN_L2";
     // allocate the right Matcher according the Matching requested method
     matching::EMatcherType collectionMatcherType = matching::EMatcherType_stringToEnum(nearestMatchingMethod);
+    
     
     using namespace matchingImageCollection;
     //"Distance ratio to discard non meaningful matches."
@@ -271,6 +304,110 @@ bool ReconPipeline::FeatureMatching()
      }
    }
  }
+    
+    // perform the matching
+      system2::Timer timer;
+      PairSet pairsPoseKnown;
+      PairSet pairsPoseUnknown;
+
+    
+//    "Enable the usage of geometric information from known camera poses to guide the feature matching. "
+//          "If some cameras have unknown poses (so there is no geometric prior), the standard feature matching will be performed."
+    bool matchFromKnownCameraPoses = false;
+      if(matchFromKnownCameraPoses)
+      {
+          for(const auto& p: pairs)
+          {
+            if(m_sfmData->isPoseAndIntrinsicDefined(p.first) && m_sfmData->isPoseAndIntrinsicDefined(p.second))
+            {
+                pairsPoseKnown.insert(p);
+            }
+            else
+            {
+                pairsPoseUnknown.insert(p);
+            }
+          }
+      }
+      else
+      {
+          pairsPoseUnknown = pairs;
+      }
+    
+    if(!pairsPoseKnown.empty())
+      {
+        // compute matches from known camera poses when you have an initialization on the camera poses
+        LOG_INFO("Putative matches from known poses: %lu image pairs.",pairsPoseKnown.size());
+
+        sfm::StructureEstimationFromKnownPoses structureEstimator;
+        
+        structureEstimator.match(*m_sfmData, pairsPoseKnown, regionsPerView, knownPosesGeometricErrorMax);
+        mapPutativesMatches = structureEstimator.getPutativesMatches();
+      }
+
+      if(!pairsPoseUnknown.empty())
+      {
+          LOG_INFO("Putative matches (unknown poses): %lu image pairs.", pairsPoseUnknown.size());
+          // match feature descriptors between them without geometric notion
+          
+          int randomSeed = std::mt19937::default_seed;
+          std::mt19937 randomNumberGenerator(randomSeed == -1 ? std::random_device()() : randomSeed);
+          
+          for(const feature::EImageDescriberType descType : imageDescriberTypes)
+          {
+            assert(descType != feature::EImageDescriberType::UNINITIALIZED);
+            LOG_INFO("%s Regions Matching", EImageDescriberType_enumToString(descType).c_str());
+
+            // photometric matching of putative pairs
+            imageCollectionMatcher->Match(randomNumberGenerator, regionsPerView, pairsPoseUnknown, descType, mapPutativesMatches);
+
+            // TODO: DELI
+            // if(!guided_matching) regionPerView.clearDescriptors()
+          }
+
+      }
+
+//    "A match is invalid if the 2d motion between the 2 points is less than a threshold (or -1 to disable this filter)."
+      double minRequired2DMotion = -1.0;
+    
+      filterMatchesByMin2DMotion(mapPutativesMatches, regionsPerView, minRequired2DMotion);
+
+      if(mapPutativesMatches.empty())
+      {
+        LOG_INFO("No putative feature matches.");
+        // If we only compute a selection of matches, we may have no match.
+        return rangeSize ? EXIT_SUCCESS : EXIT_FAILURE;
+      }
+
+      if(geometricFilterType == EGeometricFilterType::HOMOGRAPHY_GROWING)
+      {
+        // sort putative matches according to their Lowe ratio
+        // This is suggested by [F.Srajer, 2016]: the matches used to be the seeds of the homographies growing are chosen according
+        // to the putative matches order. This modification should improve recall.
+        for(auto& imgPair: mapPutativesMatches)
+        {
+          for(auto& descType: imgPair.second)
+          {
+            IndMatches & matches = descType.second;
+            sortMatches_byDistanceRatio(matches);
+          }
+        }
+      }
+
+      // when a range is specified, generate a file prefix to reflect the current iteration (rangeStart/rangeSize)
+      // => with matchFilePerImage: avoids overwriting files if a view is present in several iterations
+      // => without matchFilePerImage: avoids overwriting the unique resulting file
+      const std::string filePrefix = rangeSize > 0 ? std::to_string(rangeStart/rangeSize) + "." : "";
+
+      LOG_INFO(std::to_string(mapPutativesMatches.size()) << " putative image pair matches");
+
+      for(const auto& imageMatch: mapPutativesMatches)
+        LOG_INFO("\t- image pair (" + std::to_string(imageMatch.first.first) << ", " + std::to_string(imageMatch.first.second) + ") contains " + std::to_string(imageMatch.second.getNbAllMatches()) + " putative matches.");
+
+      // export putative matches
+      if(savePutativeMatches)
+        Save(mapPutativesMatches, (fs::path(matchesFolder) / "putativeMatches").string(), fileExtension, matchFilePerImage, filePrefix);
+
+      LOG_INFO("Task (Regions Matching) done in (s): " + std::to_string(timer.elapsed()));
 
     //TODO:
     

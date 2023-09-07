@@ -111,6 +111,10 @@ Pod::Spec.new do |spec|
 #      ss.exclude_files = "src/sfmData/*test.{h,hpp,cpp}"
   end
   
+  spec.subspec 'sfm' do |ss|
+      ss.source_files = "src/sfm/**/*.{hpp,cpp}"
+  end
+  
   spec.subspec 'common' do |ss|
       ss.source_files = "src/common/*.{h}"
   end
@@ -159,6 +163,20 @@ Pod::Spec.new do |spec|
   spec.subspec 'matchingImageCollection' do |ss|
       ss.source_files = "src/matchingImageCollection/*.{hpp,cpp}"
   end
+  
+  spec.subspec 'multiview' do |ss|
+      ss.source_files = "src/multiview/**/*.{hpp,cpp}"
+  end
+  
+  spec.subspec 'track' do |ss|
+      ss.source_files = "src/track/**/*.{hpp,cpp}"
+  end
+  
+  spec.subspec 'robustEstimation' do |ss|
+      ss.source_files = "src/robustEstimation/**/*.{hpp,cpp}"
+  end
+  
+  
   
   spec.libraries             = 'stdc++'
   # ――― Resources ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
@@ -209,6 +227,7 @@ Pod::Spec.new do |spec|
   spec.dependency "libpng"
   spec.dependency "libyuv"
   spec.dependency "openmp"
+  spec.dependency "lemon"
   
   spec.ios.resource_bundle = { 'vocabulary' => 'voc' }
 

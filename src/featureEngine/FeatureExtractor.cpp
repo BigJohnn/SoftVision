@@ -17,7 +17,7 @@
 #include <utils/YuvImageProcessor.h>
 #include <matching/svgVisualization.hpp>
 
-#include "PngUtils.h"
+//#include "PngUtils.h"
 
 namespace featureEngine {
 
@@ -95,7 +95,7 @@ void FeatureExtractor::process(const HardwareContext & hContext, const image::EI
         jobMaxMemoryConsuption = std::max(jobMaxMemoryConsuption, viewJob.memoryConsuption());
 
 //        if (viewJob.useCPU())
-            cpuJobs.push_back(viewJob);
+        cpuJobs.push_back(viewJob);
 
 //        if (viewJob.useGPU())
 //            gpuJobs.push_back(viewJob);
@@ -195,21 +195,22 @@ void FeatureExtractor::computeViewJob(const FeatureExtractorViewJob& job, bool u
     auto&& folder_name = _outputFolder.substr(7, _outputFolder.size() - 7);
     int w,h;
     //        auto&& folder_name = _outputFolder;
-    std::string testimg_file_name = folder_name + "test.png";
+//    std::string testimg_file_name = folder_name + "test.png";
     {
-        auto* buffer = new uint8_t[view.getWidth() * view.getHeight() * 4];
-        
-        Convert2Portrait(view.getWidth(), view.getHeight(), view.getBuffer(), w, h, buffer);
-        
-    //    write2png(testimg_file_name.c_str(), view.getWidth(), view.getHeight(), view.getBuffer());
-        write2png(testimg_file_name.c_str(), w, h, buffer);
-    
-        image::Image<image::RGBAColor> imageRGBA_flipY;
-        uint8_t *buffer_flipY  = new uint8_t[view.getWidth() * view.getHeight() * 4];
-        FlipY(w, h, buffer, buffer_flipY);
-        image::byteBuffer2EigenMatrix(w, h, buffer_flipY, imageRGBA);
-        delete buffer;
-        delete buffer_flipY;
+//        auto* buffer = new uint8_t[view.getWidth() * view.getHeight() * 4];
+//
+//        Convert2Portrait(view.getWidth(), view.getHeight(), view.getBuffer(), w, h, buffer);
+//
+//    //    write2png(testimg_file_name.c_str(), view.getWidth(), view.getHeight(), view.getBuffer());
+//        write2png(testimg_file_name.c_str(), w, h, buffer);
+//
+//        image::Image<image::RGBAColor> imageRGBA_flipY;
+//        uint8_t *buffer_flipY  = new uint8_t[view.getWidth() * view.getHeight() * 4];
+//        FlipY(w, h, buffer, buffer_flipY);
+//        image::byteBuffer2EigenMatrix(w, h, buffer_flipY, imageRGBA);
+        image::byteBuffer2EigenMatrix(view.getWidth(), view.getHeight(), view.getBuffer(), imageRGBA);
+//        delete buffer;
+//        delete buffer_flipY;
     }
     
     image::ConvertPixelType(imageRGBA, &imageGrayUChar);

@@ -69,4 +69,3 @@ bool map_has_non_empty_value(const Map& m, const typename Map::key_type& key)
     return !it->second.empty();
 }
 
-}
