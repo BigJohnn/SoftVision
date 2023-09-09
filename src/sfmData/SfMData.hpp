@@ -14,6 +14,7 @@
 #include <common/types.h>
 #include <CameraPose.hpp>
 #include <sfmData/Landmark.hpp>
+#include <sfmData/View.hpp>
 
 namespace camera {
 class IntrinsicBase;
@@ -21,7 +22,6 @@ class IntrinsicBase;
 
 namespace sfmData {
 
-class View;
 class CameraPose;
 
 /// Define a collection of View
@@ -131,6 +131,29 @@ public:
     const Landmarks& getLandmarks() const {return structure;}
     Landmarks& getLandmarks() {return structure;}
     
+    /**
+     * @brief Gives the pose of the input view. If this view is part of a rig, it returns rigPose + rigSubPose.
+     * @param[in] view The given view
+     *
+     * @warning: This function returns a CameraPose (a temporary object and not a reference),
+     *           because in the RIG context, this pose is the composition of the rig pose and the sub-pose.
+     */
+    CameraPose getPose(const View& view) const
+    {
+        // check the view has valid pose / rig etc
+        if (view.isPoseIndependant())
+        {
+            return _poses.at(view.getPoseId());
+        }
+
+//        // get the pose of the rig
+//        CameraPose pose = getRigPose(view);
+//
+//        // multiply rig pose by camera subpose
+//        pose.setTransform(getRigSubPose(view).pose * pose.getTransform());
+
+//        return pose;
+    }
     
 private:
     /// Considered poses (indexed by view.getPoseId())

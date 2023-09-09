@@ -9,6 +9,11 @@
 #include <multiview/triangulation/Triangulation.hpp>
 #include <robustEstimation/randSampling.hpp>
 #include <system/ProgressDisplay.hpp>
+
+#include <sfmData/View.hpp>
+#include <camera/Pinhole.hpp>
+
+#include <SoftVisionLog.h>
 //#include <config.hpp>
 
 #include <deque>
@@ -58,7 +63,7 @@ void StructureComputation_blind::triangulate(sfmData::SfMData& sfmData, std::mt1
           std::shared_ptr<IntrinsicBase> cam = sfmData.getIntrinsics().at(view->getIntrinsicId());
           std::shared_ptr<camera::Pinhole> pinHoleCam = std::dynamic_pointer_cast<camera::Pinhole>(cam);
           if (!pinHoleCam) {
-            ALICEVISION_LOG_ERROR("Camera is not pinhole in triangulate");
+            LOG_ERROR("Camera is not pinhole in triangulate");
             continue;
           }
 
@@ -256,7 +261,7 @@ Vec3 StructureComputation_robust::track_sample_triangulation(const sfmData::SfMD
     std::shared_ptr<camera::IntrinsicBase> cam = sfmData.getIntrinsics().at(view->getIntrinsicId());
     std::shared_ptr<camera::Pinhole> camPinHole = std::dynamic_pointer_cast<camera::Pinhole>(cam);
     if (!camPinHole) {
-      ALICEVISION_LOG_ERROR("Camera is not pinhole in filter");
+      LOG_ERROR("Camera is not pinhole in filter");
       return Vec3();
     }
 

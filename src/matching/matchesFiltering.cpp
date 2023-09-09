@@ -5,18 +5,18 @@
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "matchesFiltering.hpp"
-
+#include <SoftVisionLog.h>
 
 namespace matching {
 
 
-void sortMatches_byFeaturesScale(const aliceVision::matching::IndMatches& inputMatches,
-                                 const aliceVision::feature::Regions& regionsI,
-                                 const aliceVision::feature::Regions& regionsJ,
-                                 aliceVision::matching::IndMatches& outputMatches)
+void sortMatches_byFeaturesScale(const matching::IndMatches& inputMatches,
+                                 const feature::Regions& regionsI,
+                                 const feature::Regions& regionsJ,
+                                 matching::IndMatches& outputMatches)
 {
-    const std::vector<aliceVision::feature::PointFeature>& vecFeatureI = regionsI.Features();
-    const std::vector<aliceVision::feature::PointFeature>& vecFeatureJ = regionsJ.Features();
+    const std::vector<feature::PointFeature>& vecFeatureI = regionsI.Features();
+    const std::vector<feature::PointFeature>& vecFeatureJ = regionsJ.Features();
 
     // outputMatches will contain the sorted matches if inputMatches.
     outputMatches.reserve(inputMatches.size());
@@ -41,7 +41,7 @@ void sortMatches_byFeaturesScale(const aliceVision::matching::IndMatches& inputM
     }
 }
 
-void sortMatches_byDistanceRatio(aliceVision::matching::IndMatches& matches)
+void sortMatches_byDistanceRatio(matching::IndMatches& matches)
 {
     struct
     {
@@ -59,7 +59,7 @@ bool matchCompare(const std::pair<float, size_t>& firstElem, const std::pair<flo
     return firstElem.first > secondElem.first;
 }
 
-void thresholdMatches(aliceVision::matching::IndMatches& outputMatches, const std::size_t uNumMatchesToKeep)
+void thresholdMatches(matching::IndMatches& outputMatches, const std::size_t uNumMatchesToKeep)
 {
     if(outputMatches.size() > uNumMatchesToKeep)
     {
@@ -67,29 +67,29 @@ void thresholdMatches(aliceVision::matching::IndMatches& outputMatches, const st
     }
 }
 
-void matchesGridFiltering(const aliceVision::feature::Regions& lRegions,
+void matchesGridFiltering(const feature::Regions& lRegions,
                           const std::pair<std::size_t, std::size_t>& lImgSize,
-                          const aliceVision::feature::Regions& rRegions,
+                          const feature::Regions& rRegions,
                           const std::pair<std::size_t, std::size_t>& rImgSize,
-                          const aliceVision::Pair& indexImagePair,
-                          aliceVision::matching::IndMatches& outMatches, size_t gridSize)
+                          const Pair& indexImagePair,
+                          matching::IndMatches& outMatches, size_t gridSize)
 {
     const size_t leftCellWidth = divideRoundUp(lImgSize.first, gridSize);
     const size_t leftCellHeight = divideRoundUp(lImgSize.second, gridSize);
     const size_t rightCellWidth = divideRoundUp(rImgSize.first, gridSize);
     const size_t rightCellHeight = divideRoundUp(rImgSize.second, gridSize);
 
-    std::vector<aliceVision::matching::IndMatches> completeGrid(gridSize * gridSize * 2);
+    std::vector<matching::IndMatches> completeGrid(gridSize * gridSize * 2);
     // Reserve all cells
-    for(aliceVision::matching::IndMatches& cell : completeGrid)
+    for(matching::IndMatches& cell : completeGrid)
     {
         cell.reserve(outMatches.size() / completeGrid.size());
     }
     // Split matches in grid cells
     for(const auto& match : outMatches)
     {
-        const aliceVision::feature::PointFeature& leftPoint = lRegions.Features()[match._i];
-        const aliceVision::feature::PointFeature& rightPoint = rRegions.Features()[match._j];
+        const feature::PointFeature& leftPoint = lRegions.Features()[match._i];
+        const feature::PointFeature& rightPoint = rRegions.Features()[match._j];
 
         const float leftGridIndex_f = std::floor(leftPoint.x() / (float)leftCellWidth) +
                                       std::floor(leftPoint.y() / (float)leftCellHeight) * gridSize;
@@ -99,8 +99,8 @@ void matchesGridFiltering(const aliceVision::feature::Regions& lRegions,
         const std::size_t leftGridIndex = clamp(leftGridIndex_f, 0.f, float(gridSize - 1));
         const std::size_t rightGridIndex = clamp(rightGridIndex_f, 0.f, float(gridSize - 1));
 
-        aliceVision::matching::IndMatches& currentCaseL = completeGrid[leftGridIndex];
-        aliceVision::matching::IndMatches& currentCaseR = completeGrid[rightGridIndex + gridSize * gridSize];
+        matching::IndMatches& currentCaseL = completeGrid[leftGridIndex];
+        matching::IndMatches& currentCaseR = completeGrid[rightGridIndex + gridSize * gridSize];
 
         if(currentCaseL.size() <= currentCaseR.size())
         {
@@ -122,7 +122,7 @@ void matchesGridFiltering(const aliceVision::feature::Regions& lRegions,
         }
     }
 
-    aliceVision::matching::IndMatches finalMatches;
+    matching::IndMatches finalMatches;
     finalMatches.reserve(outMatches.size());
 
     // Combine all cells into a global ordered vector
@@ -165,7 +165,7 @@ void matchesGridFilteringForAllPairs(const PairwiseMatches& geometricMatches,
             if(rRegions && lRegions)
             {
                 // sorting function:
-                aliceVision::matching::IndMatches outMatches;
+                matching::IndMatches outMatches;
                 sortMatches_byFeaturesScale(inputMatches, *lRegions, *rRegions, outMatches);
 
                 if(useGridSort)
@@ -187,7 +187,7 @@ void matchesGridFilteringForAllPairs(const PairwiseMatches& geometricMatches,
             }
             else
             {
-              ALICEVISION_LOG_INFO("You cannot perform the grid filtering with these regions");
+              LOG_INFO("You cannot perform the grid filtering with these regions");
             }
         }
     }

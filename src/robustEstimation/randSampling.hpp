@@ -16,7 +16,7 @@
 #include <numeric>
 #include <cassert>
 
-namespace aliceVision {
+
 namespace robustEstimation{
 
 
@@ -165,4 +165,4 @@ inline void uniformSample(std::mt19937 & randomNumberGenerator,
 }
 
 } // namespace robustEstimation
-} // namespace aliceVision
+

@@ -70,4 +70,3 @@ bool line_to_endPoints(const Vec3& line, int W, int H, Vec2& x0, Vec2& x1)
 }
 
 }
-}

@@ -28,6 +28,7 @@
 
 #include <matchingImageCollection/IImageCollectionMatcher.hpp>
 #include <matchingImageCollection/matchingCommon.hpp>
+#include <matchingImageCollection/GeometricFilterType.hpp>
 
 #include <sfm/pipeline/structureFromKnownPoses/StructureEstimationFromKnownPoses.hpp>
 
@@ -228,6 +229,9 @@ bool ReconPipeline::FeatureMatching()
     //            "If set to 0 it lets the ACRansac select an optimal value.")
     double knownPosesGeometricErrorMax = 4.0;
     
+    int rangeSize = m_sfmData->views.size();
+    int rangeStart = 0;
+    
     PairSet pairs;
     std::set<IndexT> filter;
 
@@ -375,9 +379,13 @@ bool ReconPipeline::FeatureMatching()
       {
         LOG_INFO("No putative feature matches.");
         // If we only compute a selection of matches, we may have no match.
-        return rangeSize ? EXIT_SUCCESS : EXIT_FAILURE;
+        return !m_sfmData->views.empty() ? EXIT_SUCCESS : EXIT_FAILURE;
       }
-
+    
+    std::string geometricFilterTypeName = matchingImageCollection::EGeometricFilterType_enumToString(matchingImageCollection::EGeometricFilterType::FUNDAMENTAL_MATRIX);
+    const matchingImageCollection::EGeometricFilterType geometricFilterType = matchingImageCollection::EGeometricFilterType_stringToEnum(geometricFilterTypeName);
+    
+    using namespace matchingImageCollection;
       if(geometricFilterType == EGeometricFilterType::HOMOGRAPHY_GROWING)
       {
         // sort putative matches according to their Lowe ratio
@@ -387,7 +395,7 @@ bool ReconPipeline::FeatureMatching()
         {
           for(auto& descType: imgPair.second)
           {
-            IndMatches & matches = descType.second;
+              matching::IndMatches & matches = descType.second;
             sortMatches_byDistanceRatio(matches);
           }
         }
@@ -398,16 +406,19 @@ bool ReconPipeline::FeatureMatching()
       // => without matchFilePerImage: avoids overwriting the unique resulting file
       const std::string filePrefix = rangeSize > 0 ? std::to_string(rangeStart/rangeSize) + "." : "";
 
-      LOG_INFO(std::to_string(mapPutativesMatches.size()) << " putative image pair matches");
+      LOG_INFO("%s putative image pair matches", std::to_string(mapPutativesMatches.size()).c_str());
 
       for(const auto& imageMatch: mapPutativesMatches)
-        LOG_INFO("\t- image pair (" + std::to_string(imageMatch.first.first) << ", " + std::to_string(imageMatch.first.second) + ") contains " + std::to_string(imageMatch.second.getNbAllMatches()) + " putative matches.");
+          LOG_INFO("\t- image pair (%s, %s) contains %s putative matches.",std::to_string(imageMatch.first.first).c_str(),
+                   std::to_string(imageMatch.first.second).c_str(),
+                   std::to_string(imageMatch.second.getNbAllMatches()).c_str());
+//        LOG_INFO("\t- image pair (" + std::to_string(imageMatch.first.first) << ", " + std::to_string(imageMatch.first.second) + ") contains " + std::to_string(imageMatch.second.getNbAllMatches()) + " putative matches.");
 
       // export putative matches
-      if(savePutativeMatches)
-        Save(mapPutativesMatches, (fs::path(matchesFolder) / "putativeMatches").string(), fileExtension, matchFilePerImage, filePrefix);
+//      if(savePutativeMatches)
+//        Save(mapPutativesMatches, (fs::path(matchesFolder) / "putativeMatches").string(), fileExtension, matchFilePerImage, filePrefix);
 
-      LOG_INFO("Task (Regions Matching) done in (s): " + std::to_string(timer.elapsed()));
+      LOG_INFO("Task (Regions Matching) done in (s): %.2f", timer.elapsed());
 
     //TODO:
     

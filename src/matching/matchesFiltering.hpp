@@ -23,16 +23,16 @@ namespace matching {
  * @param[in] regionsJ Reference to the regions of the right image.
  * @param[out] outputMatches Subset of inputMatches containing the best n matches, sorted.
  */
-void sortMatches_byFeaturesScale(const aliceVision::matching::IndMatches& inputMatches,
-                                 const aliceVision::feature::Regions& regionsI,
-                                 const aliceVision::feature::Regions& regionsJ,
-                                 aliceVision::matching::IndMatches& outputMatches);
+void sortMatches_byFeaturesScale(const matching::IndMatches& inputMatches,
+                                 const feature::Regions& regionsI,
+                                 const feature::Regions& regionsJ,
+                                 matching::IndMatches& outputMatches);
 
 /**
  * @brief Sort matches according to their Lowe ratio (ascending order).
  * @param[in,out] matches Set of indices for (putative) matches.
  */
-void sortMatches_byDistanceRatio(aliceVision::matching::IndMatches& matches);
+void sortMatches_byDistanceRatio(matching::IndMatches& matches);
 
 /**
  * @brief Compare method used in the match sorting.
@@ -48,7 +48,7 @@ bool matchCompare(const std::pair<float, size_t>& firstElem, const std::pair<flo
  * uNumMatchesToKeep.
  * @param[in] uNumMatchesToKeep The N best matches to keep.
  */
-void thresholdMatches(aliceVision::matching::IndMatches& outputMatches, const std::size_t uNumMatchesToKeep);
+void thresholdMatches(matching::IndMatches& outputMatches, const std::size_t uNumMatchesToKeep);
 
 /**
  * @brief Perform the gris filtering on the matches
@@ -60,12 +60,12 @@ void thresholdMatches(aliceVision::matching::IndMatches& outputMatches, const st
  * @param[out] outMatches The remaining matches
  * @param[in] gridSize Number of cell per axis
  */
-void matchesGridFiltering(const aliceVision::feature::Regions& lRegions,
+void matchesGridFiltering(const feature::Regions& lRegions,
                           const std::pair<std::size_t, std::size_t>& lImgSize,
-                          const aliceVision::feature::Regions& rRegions,
+                          const feature::Regions& rRegions,
                           const std::pair<std::size_t, std::size_t>& rImgSize,
-                          const aliceVision::Pair& indexImagePair,
-                          aliceVision::matching::IndMatches& outMatches, size_t gridSize = 3);
+                          const Pair& indexImagePair,
+                          matching::IndMatches& outMatches, size_t gridSize = 3);
 
 void matchesGridFilteringForAllPairs(const PairwiseMatches& geometricMatches,
                                      const sfmData::SfMData& sfmData,

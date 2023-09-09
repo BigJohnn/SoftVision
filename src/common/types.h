@@ -29,4 +29,15 @@ using HashMap = std::map<K, V, std::less<K>, Eigen::aligned_allocator<std::pair<
 
 typedef std::pair<IndexT,IndexT> Pair;
 
+struct EstimationStatus
+{
+  EstimationStatus(bool valid, bool strongSupport)
+    : isValid(valid)
+    , hasStrongSupport(strongSupport)
+  {}
+
+  bool isValid = false;
+  bool hasStrongSupport = false;
+};
+
 #endif /* types_h */

@@ -155,6 +155,17 @@ public:
       double readRealNumber(const std::string& str) const;
     
       /**
+       * @brief If the view is part of a camera rig, the camera can be a sub-pose of the rig pose but can also be temporarily solved independently.
+       * @return true if the view is not part of a rig.
+       *         true if the view is part of a rig and the camera is solved separately.
+       *         false if the view is part of a rig and the camera is solved as a sub-pose of the rig pose.
+       */
+      bool isPoseIndependant() const
+      {
+        return _isPoseIndependent;
+      }
+    
+      /**
        * @brief Get an iterator on the map of metadata from a given name.
        */
       std::map<std::string, std::string>::const_iterator findMetadataIterator(const std::string& name) const;
@@ -177,6 +188,9 @@ public:
       std::vector<IndexT> _ancestors;
     
       std::vector<uint8_t> _buffer;
+    
+    /// pose independent of other view(s)
+      bool _isPoseIndependent = true;
 };
 
 }
