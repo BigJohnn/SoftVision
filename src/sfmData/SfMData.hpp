@@ -165,6 +165,16 @@ public:
         return output;
     }
     
+    /**
+     * @brief Return a pointer to an intrinsic if available or nullptr otherwise.
+     * @param[in] intrinsicId
+     */
+    const camera::IntrinsicBase* getIntrinsicPtr(IndexT intrinsicId) const
+    {
+        if (intrinsics.count(intrinsicId))
+            return intrinsics.at(intrinsicId).get();
+        return nullptr;
+    }
 private:
     /// Considered poses (indexed by view.getPoseId())
     Poses _poses;

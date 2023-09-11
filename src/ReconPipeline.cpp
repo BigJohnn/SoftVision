@@ -29,8 +29,12 @@
 #include <matchingImageCollection/IImageCollectionMatcher.hpp>
 #include <matchingImageCollection/matchingCommon.hpp>
 #include <matchingImageCollection/GeometricFilterType.hpp>
+#include <matchingImageCollection/GeometricFilter.hpp>
+#include <matchingImageCollection/GeometricFilterMatrix_F_AC.hpp>
 
 #include <sfm/pipeline/structureFromKnownPoses/StructureEstimationFromKnownPoses.hpp>
+
+#include <robustEstimation/estimators.hpp>
 
 
 std::vector<std::vector<uint8_t>> ReconPipeline::m_cachedBuffers;
@@ -38,6 +42,32 @@ std::vector<std::vector<uint8_t>> ReconPipeline::m_cachedBuffers;
 #ifdef SOFTVISION_DEBUG
 #include <thread>
 #endif
+
+void getStatsMap(const matching::PairwiseMatches& map)
+{
+#ifdef ALICEVISION_DEBUG_MATCHING
+  std::map<int,int> stats;
+  for(const auto& imgMatches: map)
+  {
+    for(const auto& featMatchesPerDesc: imgMatches.second)
+    {
+      for(const matching::IndMatch& featMatches: featMatchesPerDesc.second)
+      {
+        int d = std::floor(featMatches._distance / 1000.0);
+        if( stats.find(d) != stats.end() )
+          stats[d] += 1;
+        else
+          stats[d] = 1;
+      }
+    }
+  }
+  for(const auto& stat: stats)
+  {
+    LOG_DEBUG("%s\t%s", std::to_string(stat.first).c_str(), std::to_string(stat.second).c_str());
+  }
+#endif
+}
+
 
 ReconPipeline ReconPipeline::GetInstance()
 {
@@ -420,13 +450,129 @@ bool ReconPipeline::FeatureMatching()
 
       LOG_INFO("Task (Regions Matching) done in (s): %.2f", timer.elapsed());
 
-    //TODO:
+#ifdef ALICEVISION_DEBUG_MATCHING
+    {
+      LOG_DEBUG("PUTATIVE");
+      getStatsMap(mapPutativesMatches);
+    }
+#endif
     
-//    if(!sfm::loadRegionsPerView(regionPerView, m_sfmData, featuresFolders, describerTypes, filter))
-//    {
-//        LOG_ERROR("Invalid regions in '%s'", sfmDataFilename.c_str());
-//        return EXIT_FAILURE;
-//    }
+    // c. Geometric filtering of putative matches
+      //    - AContrario Estimation of the desired geometric model
+      //    - Use an upper bound for the a contrario estimated threshold
+
+      timer.reset();
+      
+
+      matching::PairwiseMatches geometricMatches;
+
+      LOG_INFO("Geometric filtering: using %s", matchingImageCollection::EGeometricFilterType_enumToString(geometricFilterType).c_str());
+
+    //    "Maximum error (in pixels) allowed for features matching during geometric verification. "
+    //          "If set to 0 it lets the ACRansac select an optimal value."
+    double geometricErrorMax = 0.0; //< the maximum reprojection error allowed for image matching with geometric validation
+    
+    //Maximum number of iterations allowed in ransac step.
+    int maxIteration = 2048;
+    
+    robustEstimation::ERobustEstimator geometricEstimator = robustEstimation::ERobustEstimator::ACRANSAC;
+    
+      switch(geometricFilterType)
+      {
+
+        case EGeometricFilterType::NO_FILTERING:
+          geometricMatches = mapPutativesMatches;
+        break;
+
+        case EGeometricFilterType::FUNDAMENTAL_MATRIX:
+        {
+          matchingImageCollection::robustModelEstimation(geometricMatches,
+            m_sfmData,
+            regionsPerView,
+            GeometricFilterMatrix_F_AC(geometricErrorMax, maxIteration, geometricEstimator),
+            mapPutativesMatches,
+            randomNumberGenerator,
+            guidedMatching);
+        }
+        break;
+
+//      case EGeometricFilterType::FUNDAMENTAL_WITH_DISTORTION:
+//      {
+//        matchingImageCollection::robustModelEstimation(geometricMatches,
+//          &sfmData,
+//          regionPerView,
+//          GeometricFilterMatrix_F_AC(geometricErrorMax, maxIteration, geometricEstimator, true),
+//          mapPutativesMatches,
+//          randomNumberGenerator,
+//          guidedMatching);
+//      }
+//      break;
+//
+//        case EGeometricFilterType::ESSENTIAL_MATRIX:
+//        {
+//          matchingImageCollection::robustModelEstimation(geometricMatches,
+//            &sfmData,
+//            regionPerView,
+//            GeometricFilterMatrix_E_AC(geometricErrorMax, maxIteration),
+//            mapPutativesMatches,
+//            randomNumberGenerator,
+//            guidedMatching);
+//
+//          removePoorlyOverlappingImagePairs(geometricMatches, mapPutativesMatches, 0.3f, 50);
+//        }
+//        break;
+//
+//        case EGeometricFilterType::HOMOGRAPHY_MATRIX:
+//        {
+//          const bool onlyGuidedMatching = true;
+//          matchingImageCollection::robustModelEstimation(geometricMatches,
+//            &sfmData,
+//            regionPerView,
+//            GeometricFilterMatrix_H_AC(geometricErrorMax, maxIteration),
+//            mapPutativesMatches, randomNumberGenerator, guidedMatching,
+//            onlyGuidedMatching ? -1.0 : 0.6);
+//        }
+//        break;
+//
+//        case EGeometricFilterType::HOMOGRAPHY_GROWING:
+//        {
+//          matchingImageCollection::robustModelEstimation(geometricMatches,
+//            &sfmData,
+//            regionPerView,
+//            GeometricFilterMatrix_HGrowing(geometricErrorMax, maxIteration),
+//            mapPutativesMatches,
+//            randomNumberGenerator,
+//            guidedMatching);
+//        }
+//        break;
+      }
+
+      ALICEVISION_LOG_INFO(std::to_string(geometricMatches.size()) + " geometric image pair matches:");
+      for(const auto& matchGeo: geometricMatches)
+        ALICEVISION_LOG_INFO("\t- image pair (" + std::to_string(matchGeo.first.first) + ", " + std::to_string(matchGeo.first.second) + ") contains " + std::to_string(matchGeo.second.getNbAllMatches()) + " geometric matches.");
+
+      // grid filtering
+      ALICEVISION_LOG_INFO("Grid filtering");
+
+      PairwiseMatches finalMatches;
+      matchesGridFilteringForAllPairs(geometricMatches, sfmData, regionPerView, useGridSort,
+                                      numMatchesToKeep, finalMatches);
+
+        ALICEVISION_LOG_INFO("After grid filtering:");
+        for (const auto& matchGridFiltering: finalMatches)
+        {
+            ALICEVISION_LOG_INFO("\t- image pair (" << matchGridFiltering.first.first << ", "
+                                 << matchGridFiltering.first.second << ") contains "
+                                 << matchGridFiltering.second.getNbAllMatches()
+                                 << " geometric matches.");
+        }
+
+      // export geometric filtered matches
+      ALICEVISION_LOG_INFO("Save geometric matches.");
+      Save(finalMatches, matchesFolder, fileExtension, matchFilePerImage, filePrefix);
+      ALICEVISION_LOG_INFO("Task done in (s): " + std::to_string(timer.elapsed()));
+
+    
 
     
     return true;
