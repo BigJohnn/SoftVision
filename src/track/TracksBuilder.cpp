@@ -9,7 +9,7 @@
 
 #include <lemon/list_graph.h>
 #include <lemon/unionfind.h>
-
+#include <stl/FlatMap.hpp>
 
 
 namespace track {

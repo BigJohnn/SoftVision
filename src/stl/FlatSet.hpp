@@ -7,17 +7,12 @@
 
 #pragma once
 
-#include <set>
+#include <boost/container/flat_set.hpp>
 
 namespace stl
 {
-//  template <class Key
-//         ,class Compare  = std::less<Key>
-//         ,class Allocator = std::allocator<Key> >
-//  using flat_set = boost::container::flat_set<Key, Compare, Allocator>;
-
-    //TODO: use some real flat_set!
-    template <class _Key, class _Compare = std::less<_Key>,
-          class _Allocator = std::allocator<_Key> >
-    using flat_set = std::set<_Key, _Compare, _Allocator>;
+  template <class Key
+         ,class Compare  = std::less<Key>
+         ,class Allocator = std::allocator<Key> >
+  using flat_set = boost::container::flat_set<Key, Compare, Allocator>;
 }

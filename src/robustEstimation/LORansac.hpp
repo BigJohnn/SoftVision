@@ -122,7 +122,7 @@ double iterativeReweightedLeastSquares(const Kernel &kernel,
     {
       if(verbose)
       {
-        LOG_INFO("[IRLS] found "<< models.size() << " models, aborting...");
+        LOG_INFO("[IRLS] found %lu models, aborting...", models.size());
       }
       return std::numeric_limits<double>::infinity();
     }
@@ -137,8 +137,7 @@ double iterativeReweightedLeastSquares(const Kernel &kernel,
   const double score = scorer.score(kernel, best_model, all_samples, inliers, theta);
   if(verbose)
   {
-    LOG_DEBUG("[IRLS] returning with num inliers: " << inliers.size()
-            << " and score " << score);
+    LOG_DEBUG("[IRLS] returning with num inliers: %lu and score %f", inliers.size(), score);
   }
   return score;
 }
@@ -391,11 +390,12 @@ typename Kernel::ModelT LO_RANSAC(const Kernel& kernel,
 
         if(bVerbose)
         {
-          LOG_DEBUG(" inliers=" << bestNumInliers << "/" << total_samples
-                    << " (iter=" << iteration
-                    << " ,i=" << i
-                    << " ,sample=" << sample
-                    << ")");
+            LOG_DEBUG(" inliers=%lu/%lu (iter=%lu ,i=%lu ,sample=%p)",bestNumInliers, total_samples, iteration, i, sample);
+//          LOG_DEBUG(" inliers=" << bestNumInliers << "/" << total_samples
+//                    << " (iter=" << iteration
+//                    << " ,i=" << i
+//                    << " ,sample=" << sample
+//                    << ")");
         }
         if (bestInlierRatio) 
         {
@@ -405,7 +405,7 @@ typename Kernel::ModelT LO_RANSAC(const Kernel& kernel,
           // safeguard to not get stuck in a big number of iterations
           max_iterations = std::min(max_iterations, really_max_iterations);
           if(bVerbose)
-            LOG_DEBUG("New max_iteration: " << max_iterations);
+            LOG_DEBUG("New max_iteration: %lu", max_iterations);
         }
       }
     }

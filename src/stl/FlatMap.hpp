@@ -7,18 +7,18 @@
 
 #pragma once
 
-#include <map>
+#include <boost/container/flat_map.hpp>
 
 namespace stl
 {
-//  template <class Key
-//         ,class T
-//         ,class Compare = std::less<Key>
-//         ,class Allocator = std::allocator<std::pair<Key, T> > >
-//  using flat_map = boost::container::flat_map<Key, T, Compare, Allocator>;
+  template <class Key
+         ,class T
+         ,class Compare = std::less<Key>
+         ,class Allocator = std::allocator<std::pair<Key, T> > >
+  using flat_map = boost::container::flat_map<Key, T, Compare, Allocator>;
 
     //TODO: use some real flat_map!
-    template <class _Key, class _Tp, class _Compare = std::less<_Key>,
-          class _Allocator = std::allocator<std::pair<const _Key, _Tp> > >
-    using flat_map = std::map<_Key, _Tp, _Compare, _Allocator>;
+//    template <class _Key, class _Tp, class _Compare = std::less<_Key>,
+//          class _Allocator = std::allocator<std::pair<const _Key, _Tp> > >
+//    using flat_map = std::flat_map<_Key, _Tp, _Compare, _Allocator>;
 }

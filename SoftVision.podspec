@@ -176,6 +176,10 @@ Pod::Spec.new do |spec|
       ss.source_files = "src/robustEstimation/**/*.{hpp,cpp}"
   end
   
+  spec.subspec 'boost' do |ss|
+      ss.source_files = "src/boost/**/*.{hpp,cpp}"
+  end
+  
   
   
   spec.libraries             = 'stdc++'
