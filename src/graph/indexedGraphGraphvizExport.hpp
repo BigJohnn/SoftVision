@@ -11,7 +11,7 @@
 #include <fstream>
 #include <cstdlib>
 
-namespace aliceVision {
+
 namespace graph {
 
 // Export an Image connection graph
@@ -132,9 +132,9 @@ template <typename GraphT>
 void exportToGraphvizData(const std::string& sfile, const GraphT & graph)
 {
   std::ofstream file(sfile);
-  aliceVision::graph::exportToGraphvizFormat_Nodal(graph, file);
+  graph::exportToGraphvizFormat_Nodal(graph, file);
   file.close();
 }
 
 } // namespace graph
-} // namespace aliceVision
+

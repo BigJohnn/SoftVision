@@ -240,13 +240,14 @@ std::pair<double, double> ACRANSAC(const Kernel& kernel,
           errorMax = vec_residuals[best.second-1].first; // Error threshold
           if(model) *model = vec_models[k];
 
-          ALICEVISION_LOG_TRACE("  nfa=" << minNFA
-            << " inliers=" << best.second << "/" << nData
-            << " precisionNormalized=" << errorMax
-            << " precision=" << kernel.unormalizeError(errorMax)
-            << " (iter=" << iter
-            << ",sample=" << vec_sample
-            << ")");
+            LOG_INFO(" [ACRansac] nfa= ..... todo");
+//          ALICEVISION_LOG_TRACE("  nfa=" << minNFA
+//            << " inliers=" << best.second << "/" << nData
+//            << " precisionNormalized=" << errorMax
+//            << " precision=" << kernel.unormalizeError(errorMax)
+//            << " (iter=" << iter
+//            << ",sample=" << vec_sample
+//            << ")");
         }
       } //if(bACRansacMode)
     } //for(size_t k...

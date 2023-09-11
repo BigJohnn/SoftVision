@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "aliceVision/types.hpp"
-#include "aliceVision/graph/IndexedGraph.hpp"
-#include "aliceVision/graph/indexedGraphGraphvizExport.hpp"
-#include "aliceVision/graph/connectedComponent.hpp"
-#include "aliceVision/graph/Triplet.hpp"
+#include <common/types.h>
+#include "graph/IndexedGraph.hpp"
+#include "graph/indexedGraphGraphvizExport.hpp"
+#include "graph/connectedComponent.hpp"
+#include "graph/Triplet.hpp"

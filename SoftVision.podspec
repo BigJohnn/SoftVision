@@ -180,6 +180,9 @@ Pod::Spec.new do |spec|
       ss.source_files = "src/boost/**/*.{hpp,cpp}"
   end
   
+  spec.subspec 'graph' do |ss|
+      ss.source_files = "src/graph/**/*.{hpp,cpp}"
+  end
   
   
   spec.libraries             = 'stdc++'

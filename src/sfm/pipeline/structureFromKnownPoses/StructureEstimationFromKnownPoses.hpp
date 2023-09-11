@@ -10,7 +10,7 @@
 #include <sfmData/SfMData.hpp>
 #include <feature/RegionsPerView.hpp>
 #include <matching/IndMatch.hpp>
-
+#include <random>
 
 namespace sfm {
 

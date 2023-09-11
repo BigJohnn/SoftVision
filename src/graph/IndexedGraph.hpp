@@ -14,7 +14,7 @@
 #include <map>
 #include <set>
 
-namespace aliceVision {
+
 namespace graph  {
 
 // Structure used to keep information of an image graph:
@@ -94,4 +94,4 @@ struct indexedGraph
 };
 
 } // namespace graph
-} // namespace aliceVision
+

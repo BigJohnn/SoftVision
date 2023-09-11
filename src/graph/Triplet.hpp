@@ -7,15 +7,15 @@
 
 #pragma once
 
-#include <aliceVision/types.hpp>
-#include <aliceVision/graph/graph.hpp>
+#include <common/types.h>
+#include <graph/graph.hpp>
 
 #include <lemon/list_graph.h>
 
 #include <algorithm>
 #include <vector>
 
-namespace aliceVision {
+
 namespace graph {
 
 using namespace lemon;
@@ -146,4 +146,4 @@ inline std::vector< graph::Triplet > tripletListing(
 }
 
 } // namespace graph
-} // namespace aliceVision
+

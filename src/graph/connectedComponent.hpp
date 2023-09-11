@@ -7,14 +7,14 @@
 
 #pragma once
 
-#include <aliceVision/config.hpp>
-#include <aliceVision/types.hpp>
-#include <aliceVision/system/Logger.hpp>
-#include <aliceVision/graph/graph.hpp>
+//#include <config.hpp>
+#include <common/types.h>
+#include <SoftVisionLog.h>
+#include <graph/graph.hpp>
 
 #include <set>
 
-namespace aliceVision {
+
 namespace graph {
 
 /// Export node of each CC (Connected Component) in a map
@@ -72,8 +72,8 @@ std::set<IndexT> CleanGraph_KeepLargestBiEdge_Nodes(
   // Graph is bi-edge connected, but still many connected components can exist
   // Keep only the largest one
   const int connectedComponentCount = lemon::countConnectedComponents(putativeGraph.g);
-  ALICEVISION_LOG_DEBUG("CleanGraph_KeepLargestBiEdge_Nodes():: => connected Component: "
-    << connectedComponentCount);
+  LOG_DEBUG("CleanGraph_KeepLargestBiEdge_Nodes():: => connected Component: %d",
+    connectedComponentCount);
   if (connectedComponentCount >= 1)
   {
     // Keep only the largest connected component
@@ -90,7 +90,7 @@ std::set<IndexT> CleanGraph_KeepLargestBiEdge_Nodes(
         count = iter->second.size();
         iterLargestCC = iter;
       }
-      ALICEVISION_LOG_DEBUG("Connected component of size: " << iter->second.size());
+      LOG_DEBUG("Connected component of size: %lu", iter->second.size());
     }
 
     //-- Keep only the nodes that are in the largest CC
@@ -125,13 +125,13 @@ std::set<IndexT> CleanGraph_KeepLargestBiEdge_Nodes(
     }
   }
 
-  ALICEVISION_LOG_DEBUG(
-    "Cardinal of nodes: " << lemon::countNodes(putativeGraph.g) << "\n" <<
-    "Cardinal of edges: " << lemon::countEdges(putativeGraph.g)
+  LOG_DEBUG(
+    "Cardinal of nodes: %d\n"
+    "Cardinal of edges: %d", lemon::countNodes(putativeGraph.g), lemon::countEdges(putativeGraph.g)
     );
 
   return largestBiEdgeCC;
 }
 
 } // namespace graph
-} // namespace aliceVision
+

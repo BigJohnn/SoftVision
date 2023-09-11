@@ -79,4 +79,3 @@ struct EpipolarSphericalDistanceError
 
 }  // namespace relativePose
 }  // namespace multiview
-}  // namespace aliceVision

@@ -7,7 +7,7 @@
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "Triangulation.hpp"
-//#include "NViewsTriangulationLORansac.hpp"
+#include "NViewsTriangulationLORansac.hpp"
 #include <numeric/projection.hpp>
 #include <robustEstimation/LORansac.hpp>
 #include <robustEstimation/ScoreEvaluator.hpp>

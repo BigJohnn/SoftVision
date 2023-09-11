@@ -206,9 +206,9 @@ double localOptimization(const Kernel& kernel,
   std::size_t bestNumInliers = bestInliers.size();
   if(verbose)
   {
-    LOG_DEBUG("[localOptim] so far best num inliers: " << bestNumInliers);
-    LOG_DEBUG("[localOptim] so far best model:\n" << bestModel.getMatrix());
-    LOG_DEBUG("[localOptim] so far best score: " << bestScore);
+    LOG_DEBUG("[localOptim] so far best num inliers: %lu", bestNumInliers);
+//    LOG_DEBUG("[localOptim] so far best model:\n", bestModel.getMatrix());
+    LOG_DEBUG("[localOptim] so far best score: %f", bestScore);
   }
      
   // find inliers from best model with larger threshold t*m over all the samples
@@ -236,7 +236,7 @@ double localOptimization(const Kernel& kernel,
   {
     if(verbose)
     {
-      LOG_DEBUG("breaking cause sampleSize is " << sampleSize);
+      LOG_DEBUG("breaking cause sampleSize is %lu", sampleSize);
     }
     return bestScore;
   }
@@ -271,7 +271,7 @@ double localOptimization(const Kernel& kernel,
       bestInliers.swap(inliers);
       if(verbose)
       {
-        LOG_DEBUG("[localOptim] new best num inliers: " << bestNumInliers);
+        LOG_DEBUG("[localOptim] new best num inliers: %lu", bestNumInliers);
       }
     }
   }
@@ -390,7 +390,7 @@ typename Kernel::ModelT LO_RANSAC(const Kernel& kernel,
 
         if(bVerbose)
         {
-            LOG_DEBUG(" inliers=%lu/%lu (iter=%lu ,i=%lu ,sample=%p)",bestNumInliers, total_samples, iteration, i, sample);
+            LOG_DEBUG(" inliers=%lu/%lu (iter=%lu ,i=%lu ,sample=%p)",bestNumInliers, total_samples, iteration, i, &sample);
 //          LOG_DEBUG(" inliers=" << bestNumInliers << "/" << total_samples
 //                    << " (iter=" << iteration
 //                    << " ,i=" << i

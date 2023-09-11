@@ -155,6 +155,16 @@ public:
 //        return pose;
     }
     
+    std::set<feature::EImageDescriberType> getLandmarkDescTypes() const
+    {
+        std::set<feature::EImageDescriberType> output;
+        for (auto s : getLandmarks())
+        {
+            output.insert(s.second.descType);
+        }
+        return output;
+    }
+    
 private:
     /// Considered poses (indexed by view.getPoseId())
     Poses _poses;

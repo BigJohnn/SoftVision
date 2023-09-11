@@ -15,6 +15,7 @@
 #include <track/TracksBuilder.hpp>
 #include <sfm/sfmTriangulation.hpp>
 #include <system/ProgressDisplay.hpp>
+#include <camera/Pinhole.hpp>
 //#include <config.hpp>
 
 
@@ -105,13 +106,13 @@ void StructureEstimationFromKnownPoses::match(const SfMData& sfmData,
       std::shared_ptr<IntrinsicBase> camL = iterIntrinsicL->second;
       std::shared_ptr<camera::Pinhole> pinHoleCamL = std::dynamic_pointer_cast<camera::Pinhole>(camL);
       if (!pinHoleCamL) {
-        ALICEVISION_LOG_ERROR("Camera is not pinhole in match");
+        LOG_ERROR("Camera is not pinhole in match");
       }
 
       std::shared_ptr<IntrinsicBase> camR = iterIntrinsicR->second;
       std::shared_ptr<camera::Pinhole> pinHoleCamR = std::dynamic_pointer_cast<camera::Pinhole>(camR);
       if (!pinHoleCamL) {
-        ALICEVISION_LOG_ERROR("Camera is not pinhole in match");
+        LOG_ERROR("Camera is not pinhole in match");
       }
       
       const Mat34 P_L = pinHoleCamL->getProjectiveEquivalent(poseL);
@@ -227,7 +228,7 @@ void StructureEstimationFromKnownPoses::filter(
               std::shared_ptr<camera::IntrinsicBase> cam = sfmData.getIntrinsics().at(view->getIntrinsicId());
               std::shared_ptr<camera::Pinhole> camPinHole = std::dynamic_pointer_cast<camera::Pinhole>(cam);
               if (!camPinHole) {
-                ALICEVISION_LOG_ERROR("Camera is not pinhole in filter");
+                LOG_ERROR("Camera is not pinhole in filter");
                 continue;
               }
 
