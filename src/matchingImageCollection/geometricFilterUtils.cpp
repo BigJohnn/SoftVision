@@ -424,4 +424,3 @@ bool refineHomography(const Mat2X& features_I,
   return true;
 }
 }
-}
