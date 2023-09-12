@@ -185,7 +185,7 @@ Pod::Spec.new do |spec|
   end
   
   
-  spec.libraries             = 'stdc++'
+  
   # ――― Resources ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
   #
   #  A list of resources included with the Pod. These are copied into the
@@ -235,6 +235,9 @@ Pod::Spec.new do |spec|
   spec.dependency "libyuv"
   spec.dependency "openmp"
   spec.dependency "lemon"
+  spec.dependency "Ceres"
+  
+  spec.libraries             = 'stdc++'
   
   spec.ios.resource_bundle = { 'vocabulary' => 'voc' }
 

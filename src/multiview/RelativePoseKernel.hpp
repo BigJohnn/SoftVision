@@ -221,4 +221,4 @@ protected:
 
 
 } // namespace multiview
-} // namespace aliceVision
+

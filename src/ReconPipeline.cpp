@@ -475,6 +475,13 @@ bool ReconPipeline::FeatureMatching()
     //Maximum number of iterations allowed in ransac step.
     int maxIteration = 2048;
     
+    //"This seed value will generate a sequence using a linear random generator. Set -1 to use a random seed."
+    int randomSeed = std::mt19937::default_seed;
+    std::mt19937 randomNumberGenerator(randomSeed == -1 ? std::random_device()() : randomSeed);
+    
+    //Use the found model to improve the pairwise correspondences.
+    bool guidedMatching = false;
+    
     robustEstimation::ERobustEstimator geometricEstimator = robustEstimation::ERobustEstimator::ACRANSAC;
     
       switch(geometricFilterType)
@@ -487,7 +494,7 @@ bool ReconPipeline::FeatureMatching()
         case EGeometricFilterType::FUNDAMENTAL_MATRIX:
         {
           matchingImageCollection::robustModelEstimation(geometricMatches,
-            m_sfmData,
+            (const sfmData::SfMData*)m_sfmData,
             regionsPerView,
             GeometricFilterMatrix_F_AC(geometricErrorMax, maxIteration, geometricEstimator),
             mapPutativesMatches,

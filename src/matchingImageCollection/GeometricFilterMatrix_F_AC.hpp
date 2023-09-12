@@ -26,6 +26,8 @@
 #include <feature/RegionsPerView.hpp>
 #include <sfmData/SfMData.hpp>
 
+#include <camera/Equidistant.hpp>
+
 
 namespace matchingImageCollection {
 
@@ -184,8 +186,7 @@ struct GeometricFilterMatrix_F_AC : public GeometricFilterMatrix
                                     std::mt19937 &randomNumberGenerator,
                                     std::vector<size_t>& out_inliers)
   {
-      using namespace aliceVision;
-      using namespace aliceVision::robustEstimation;
+      using namespace robustEstimation;
       out_inliers.clear();
 
       if(m_estimator != ERobustEstimator::ACRANSAC)
@@ -392,4 +393,4 @@ struct GeometricFilterMatrix_F_AC : public GeometricFilterMatrix
 };
 
 } // namespace matchingImageCollection
-} // namespace aliceVision
+

@@ -153,4 +153,4 @@ private:
 };
 
 } // namespace robustEstimation
-} // namespace aliceVision
+
