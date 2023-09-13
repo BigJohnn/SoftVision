@@ -12,7 +12,7 @@
 #include <memory>
 
 #include <common/types.h>
-#include <CameraPose.hpp>
+#include <sfmData/CameraPose.hpp>
 #include <sfmData/Landmark.hpp>
 #include <sfmData/View.hpp>
 

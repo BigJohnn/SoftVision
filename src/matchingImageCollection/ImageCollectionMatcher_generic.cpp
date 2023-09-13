@@ -14,6 +14,8 @@
 #include <system/ProgressDisplay.hpp>
 //#include <config.hpp>
 
+#include <SoftVisionLog.h>
+
 
 namespace matchingImageCollection {
 
@@ -60,6 +62,7 @@ void ImageCollectionMatcher_generic::Match(
     const std::vector<size_t> & indexToCompare = iter->second;
 
     const feature::Regions & regionsI = regionsPerView.getRegions(I, descType);
+
     if (regionsI.RegionCount() == 0)
     {
       progressDisplay += indexToCompare.size();
@@ -74,6 +77,7 @@ void ImageCollectionMatcher_generic::Match(
     {
       const size_t J = indexToCompare[j];
 
+        LOG_DEBUG("thread %d is running number %d", omp_get_thread_num(), j);
       const feature::Regions &regionsJ = regionsPerView.getRegions(J, descType);
       if (regionsJ.RegionCount() == 0
           || regionsI.Type_id() != regionsJ.Type_id())

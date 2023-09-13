@@ -13,6 +13,7 @@
 #include <sfmData/SfMData.hpp>
 #include <system/hardwareContext.hpp>
 #include <image/colorspace.hpp>
+#include <feature/RegionsPerView.hpp>
 
 namespace featureEngine {
 class FeatureExtractorViewJob
@@ -103,8 +104,8 @@ public:
 
     void process(const HardwareContext & hcontext, const image::EImageColorSpace workingColorSpace = image::EImageColorSpace::SRGB);
 
-    inline std::vector<std::unique_ptr<feature::Regions>>& getRegionsList() {
-        return _mvRegions;
+    inline feature::RegionsPerView& getRegionsPerView() {
+        return _mmapRegions;
     }
     
 private:
@@ -120,7 +121,7 @@ private:
     int _rangeStart = -1;
     int _rangeSize = -1;
     
-    std::vector<std::unique_ptr<feature::Regions>> _mvRegions;
+    feature::RegionsPerView _mmapRegions;
 };
 
 }

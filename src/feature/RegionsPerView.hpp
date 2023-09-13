@@ -14,6 +14,8 @@
 
 #include <memory>
 
+#include <SoftVisionLog.h>
+
 namespace feature {
 
 /// Regions per ViewId of the considered SfMData container
@@ -86,6 +88,10 @@ public:
 
   const feature::Regions& getRegions(IndexT viewId, feature::EImageDescriberType descType) const
   {
+      if(_data.empty()){
+          LOG_DEBUG("Data NULL, invalid access!");
+      }
+      
     assert(descType != feature::EImageDescriberType::UNINITIALIZED);
     return *(_data.at(viewId).at(descType).get());
   }

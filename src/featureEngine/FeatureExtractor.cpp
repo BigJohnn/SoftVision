@@ -174,6 +174,7 @@ void FeatureExtractor::process(const HardwareContext & hContext, const image::EI
             computeViewJob(cpuJobs.at(i), false, workingColorSpace);
     }
 
+    LOG_INFO("extraction done");
 //    if (!gpuJobs.empty())
 //    {
 //        for (const auto& job : gpuJobs)
@@ -333,7 +334,7 @@ void FeatureExtractor::computeViewJob(const FeatureExtractorViewJob& job, bool u
 //        keypoints[imageDescriberType] = regions;
         matching::saveFeatures2SVG("/Users/hph/Documents/test.png", std::make_pair(w, h), keypoints, folder_name + "test.svg");
         
-        _mvRegions.push_back(std::move(regions));
+        _mmapRegions.addRegions(view.getViewId(), imageDescriberType, regions.release());
     }
 }
 

@@ -150,7 +150,8 @@ void ReconPipeline::AppendSfMData(uint32_t viewId,
     pView->setFrameId(frameId);
     auto&& views = m_sfmData->views;
 //    views[IndexT(views.size() - 1)] = pView;
-    views.insert(std::make_pair(IndexT(views.size()), pView));
+//    views.insert(std::make_pair(IndexT(views.size()), pView));
+    views.insert(std::make_pair(viewId, pView));
     
     //TODO:
     auto pIntrinsic = std::make_shared<camera::PinholeRadialK3>(width, height);
@@ -205,7 +206,17 @@ bool ReconPipeline::FeatureExtraction()
     int rangeStart = 0, rangeSize = m_sfmData->views.size();
     extractor.setRange(rangeStart, rangeSize);
     
-    m_describerTypesName = feature::EImageDescriberType_enumToString(feature::EImageDescriberType::DSPSIFT);
+    //TODO: performance optimization
+//    m_describerTypesName = feature::EImageDescriberType_enumToString(feature::EImageDescriberType::DSPSIFT);
+    m_describerTypesName = feature::EImageDescriberType_enumToString(feature::EImageDescriberType::SIFT);
+    
+//    std::string names;
+//    for(int i = 0; i < rangeSize; ++i)
+//    {
+//        names += m_describerTypesName + ",";
+//    }
+//    m_describerTypesName = names;
+    
     {
         std::vector<feature::EImageDescriberType> imageDescriberTypes = feature::EImageDescriberType_stringToEnums(m_describerTypesName);
 
@@ -213,7 +224,11 @@ bool ReconPipeline::FeatureExtraction()
         {
             std::shared_ptr<feature::ImageDescriber> imageDescriber = feature::createImageDescriber(imageDescriberType);
             
-            feature::ConfigurationPreset featDescConfig; //TODO: set this
+            feature::ConfigurationPreset featDescConfig;
+            featDescConfig.setDescPreset(feature::EImageDescriberPreset::NORMAL);
+            featDescConfig.setContrastFiltering(feature::EFeatureConstrastFiltering::GridSort);
+            featDescConfig.setGridFiltering(true);
+            
             imageDescriber->setConfigurationPreset(featDescConfig);
             extractor.addImageDescriber(imageDescriber);
         }
@@ -251,9 +266,9 @@ bool ReconPipeline::FeatureMatching()
     /// the file containing the list of features
     std::size_t nbMaxDescriptors = 500;
     /// the number of matches to retrieve for each image in Vocabulary Tree Mode
-    std::size_t numImageQuery = 50;
+    std::size_t numImageQuery = 40;
     /// the number of neighbors to retrieve for each image in Sequential Mode
-    std::size_t numImageQuerySequential = 50;
+    std::size_t numImageQuerySequential = 5;
 
     //      "Maximum error (in pixels) allowed for features matching guided by geometric information from known camera poses. "
     //            "If set to 0 it lets the ACRansac select an optimal value.")
@@ -300,7 +315,7 @@ bool ReconPipeline::FeatureMatching()
 //    "Make sure that the matching process is symmetric (same matches for I->J than fo J->I)."
     bool crossMatching;
     std::unique_ptr<IImageCollectionMatcher> imageCollectionMatcher = createImageCollectionMatcher(collectionMatcherType, distRatio, crossMatching);
-
+    
     const std::vector<feature::EImageDescriberType> imageDescriberTypes = feature::EImageDescriberType_stringToEnums(m_describerTypesName);
 
     LOG_INFO("There are %lu views and %lu image pairs.", m_sfmData->getViews().size(), pairs.size());
@@ -321,12 +336,15 @@ bool ReconPipeline::FeatureMatching()
      {
        if(filter.empty() || filter.find(iter->second.get()->getViewId()) != filter.end())
        {
-           std::unique_ptr<feature::Regions> regionsPtr = std::move(m_extractor->getRegionsList()[i]);
+//           std::unique_ptr<feature::Regions> regionsPtr = std::move(m_extractor->getRegionsPerView()[(*iter)->v]);
+           auto* regionsPtr = (feature::Regions*)&(m_extractor->getRegionsPerView().getRegions(iter->second.get()->getViewId(), imageDescriberTypes[i]));
+//           m_extractor->getRegionsPerView()
          if(regionsPtr)
          {
 #pragma omp critical
            {
-             regionsPerView.addRegions(iter->second.get()->getViewId(), imageDescriberTypes.at(i), regionsPtr.release());
+               LOG_DEBUG("regionsPerView.addRegions viewid=%u regionsptr==%p", iter->second.get()->getViewId(), regionsPtr);
+             regionsPerView.addRegions(iter->second.get()->getViewId(), imageDescriberTypes.at(i), regionsPtr);
 //             ++progressDisplay;
            }
          }
