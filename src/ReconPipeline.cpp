@@ -311,9 +311,9 @@ bool ReconPipeline::FeatureMatching()
     
     using namespace matchingImageCollection;
     //"Distance ratio to discard non meaningful matches."
-    float distRatio;
+    float distRatio = 0.8f;
 //    "Make sure that the matching process is symmetric (same matches for I->J than fo J->I)."
-    bool crossMatching;
+    bool crossMatching = false;
     std::unique_ptr<IImageCollectionMatcher> imageCollectionMatcher = createImageCollectionMatcher(collectionMatcherType, distRatio, crossMatching);
     
     const std::vector<feature::EImageDescriberType> imageDescriberTypes = feature::EImageDescriberType_stringToEnums(m_describerTypesName);
