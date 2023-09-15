@@ -51,6 +51,7 @@ void robustModelEstimation(
   const double distanceRatio = 0.6
   )
 {
+    LOG_INFO("run robustModelEstimation ...");
   out_geometricMatches.clear();
 
   auto progressDisplay =

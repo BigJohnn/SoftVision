@@ -61,10 +61,10 @@ void getStatsMap(const matching::PairwiseMatches& map)
       }
     }
   }
-  for(const auto& stat: stats)
-  {
-    LOG_DEBUG("%s\t%s", std::to_string(stat.first).c_str(), std::to_string(stat.second).c_str());
-  }
+//  for(const auto& stat: stats)
+//  {
+//    LOG_DEBUG("%s\t%s", std::to_string(stat.first).c_str(), std::to_string(stat.second).c_str());
+//  }
 #endif
 }
 
@@ -153,10 +153,18 @@ void ReconPipeline::AppendSfMData(uint32_t viewId,
 //    views.insert(std::make_pair(IndexT(views.size()), pView));
     views.insert(std::make_pair(viewId, pView));
     
+    float fov =  45.0f; //degree
+    float sensorWidthmm = 36.0f;
+    float focalRatio = 1.0f / (2.0f * tanf(PI / 8));
+    float focalLength = sensorWidthmm * focalRatio;
+    float fx = (focalLength / sensorWidthmm) * std::max(pView->getWidth(), pView->getHeight());
+    float fy = fx / focalRatio;
+//                                 = 43.46mm
     //TODO:
-    auto pIntrinsic = std::make_shared<camera::PinholeRadialK3>(width, height);
+    auto pIntrinsic = std::make_shared<camera::PinholeRadialK3>(width, height, fx, fy);
+    
     auto&& intrinsics = m_sfmData->intrinsics;
-    intrinsics[IndexT(intrinsics.size() - 1)] = pIntrinsic;
+    intrinsics.insert(std::make_pair(intrinsicId, pIntrinsic));
     
 #ifdef SOFTVISION_DEBUG
     printf("views addr ===%p\n", &views);
@@ -487,8 +495,9 @@ bool ReconPipeline::FeatureMatching()
       LOG_INFO("Geometric filtering: using %s", matchingImageCollection::EGeometricFilterType_enumToString(geometricFilterType).c_str());
 
     //    "Maximum error (in pixels) allowed for features matching during geometric verification. "
-    //          "If set to 0 it lets the ACRansac select an optimal value."
-    double geometricErrorMax = 0.0; //< the maximum reprojection error allowed for image matching with geometric validation
+    //          "If set to 0 it lets the ACRansac select an optimal value. ??"
+    //TODO: check to set a reasonable value!
+    double geometricErrorMax = 4.0; //< the maximum reprojection error allowed for image matching with geometric validation
     
     //Maximum number of iterations allowed in ransac step.
     int maxIteration = 2048;
@@ -511,6 +520,7 @@ bool ReconPipeline::FeatureMatching()
 
         case EGeometricFilterType::FUNDAMENTAL_MATRIX:
         {
+          LOG_INFO("case EGeometricFilterType::FUNDAMENTAL_MATRIX");
           matchingImageCollection::robustModelEstimation(geometricMatches,
             (const sfmData::SfMData*)m_sfmData,
             regionsPerView,
@@ -593,10 +603,6 @@ bool ReconPipeline::FeatureMatching()
         for (const auto& matchGridFiltering: finalMatches)
         {
             LOG_INFO("\t- image pair (%u,%u) contains %d geometric matches.", matchGridFiltering.first.first, matchGridFiltering.first.second, matchGridFiltering.second.getNbAllMatches());
-//            ALICEVISION_LOG_INFO("\t- image pair (" << matchGridFiltering.first.first << ", "
-//                                 << matchGridFiltering.first.second << ") contains "
-//                                 << matchGridFiltering.second.getNbAllMatches()
-//                                 << " geometric matches.");
         }
 
       // export geometric filtered matches

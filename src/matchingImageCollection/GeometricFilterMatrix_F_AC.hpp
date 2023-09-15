@@ -28,6 +28,7 @@
 
 #include <camera/Equidistant.hpp>
 
+#include <SoftVisionLog.h>
 
 namespace matchingImageCollection {
 
@@ -70,6 +71,7 @@ struct GeometricFilterMatrix_F_AC : public GeometricFilterMatrix
     const camera::IntrinsicBase* camI = sfmData->getIntrinsicPtr(viewI.getIntrinsicId());
     const camera::IntrinsicBase* camJ = sfmData->getIntrinsicPtr(viewJ.getIntrinsicId());
 
+      LOG_DEBUG("camI,camJ validation: %d %d", camI->isValid(), camJ->isValid());
     const std::pair<std::size_t, std::size_t> imageSizeI(viewI.getWidth(), viewI.getHeight());
     const std::pair<std::size_t, std::size_t> imageSizeJ(viewJ.getWidth(), viewJ.getHeight());
 
@@ -121,14 +123,18 @@ struct GeometricFilterMatrix_F_AC : public GeometricFilterMatrix
       {
         if (cam_I_equidistant && cam_J_equidistant)
         {
+            LOG_DEBUG("cond: cam_I_equidistant && cam_J_equidistant");
           estimationPair = geometricEstimation_Spherical_Mat(xI, xJ, cam_I_equidistant, cam_J_equidistant, imageSizeI, imageSizeJ, randomNumberGenerator, inliers);
         }
         else if(m_estimateDistortion)
         {
+            LOG_DEBUG("cond: m_estimateDistortion");
           estimationPair = geometricEstimation_Mat_ACRANSAC<multiview::relativePose::Fundamental10PSolver, multiview::relativePose::Fundamental10PModel>(xI, xJ, imageSizeI, imageSizeJ, randomNumberGenerator, inliers);
         }
         else
         {
+            LOG_DEBUG("cond: else xI%p xJ%p imageSizeI%p imageSizeJ%p", &xI, &xJ, &imageSizeI, imageSizeJ);
+            
           estimationPair = geometricEstimation_Mat_ACRANSAC<multiview::relativePose::Fundamental7PSolver, robustEstimation::Mat3Model>(xI, xJ, imageSizeI, imageSizeJ, randomNumberGenerator, inliers);
         }
       }
@@ -154,6 +160,7 @@ struct GeometricFilterMatrix_F_AC : public GeometricFilterMatrix
 
     if(!estimationPair.first) // estimation is not valid
     {
+        LOG_ERROR("estimation is not valid, minimum required samples %lu", estimationPair.second);
       assert(inliers.empty());
       return EstimationStatus(false, false);
     }
@@ -164,6 +171,7 @@ struct GeometricFilterMatrix_F_AC : public GeometricFilterMatrix
     // have matches has strong support
     const bool hasStrongSupport = matching::hasStrongSupport(out_geometricInliersPerType, estimationPair.second);
 
+//      LOG_DEBUG("EstimationStatus(true, %d)", hasStrongSupport);
     return EstimationStatus(true, hasStrongSupport);
   }
 
@@ -280,10 +288,17 @@ struct GeometricFilterMatrix_F_AC : public GeometricFilterMatrix
     // robustly estimate the Fundamental matrix with A Contrario ransac
     const double upperBoundPrecision = Square(m_dPrecision);
 
+      LOG_DEBUG("m_dPrecision == %f", m_dPrecision);
+      LOG_DEBUG("kernel s1,s2 == (%lu,%lu),(%lu,%lu)", imageSizeI.first, imageSizeI.second,imageSizeJ.first, imageSizeJ.second);
     ModelT_ model;
     const std::pair<double,double> ACRansacOut = robustEstimation::ACRANSAC(kernel, randomNumberGenerator, out_inliers, m_stIteration, &model, upperBoundPrecision);
     m_F = model.getMatrix();
 
+//      std::string sOutInliers = "out_inliers";
+//      for(auto&& e : out_inliers){
+//          sOutInliers += std::to_string(e) + ',';
+//      }
+//      LOG_DEBUG("%s", sOutInliers.c_str());
     if(out_inliers.empty())
       return std::make_pair(false, kernel.getMinimumNbRequiredSamples());
 

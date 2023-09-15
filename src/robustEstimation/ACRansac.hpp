@@ -205,6 +205,9 @@ std::pair<double, double> ACRANSAC(const Kernel& kernel,
         {
           if (vec_residuals_[i] <= maxThreshold)
             ++nInlier;
+//          else {
+//              LOG_DEBUG("outlier at %lu with residual %f, maxThreshold %f", k, vec_residuals_[i], maxThreshold);
+//          }
         }
         if (nInlier > 2.5 * sizeSample) // does the model is meaningful
           bACRansacMode = true;
@@ -240,7 +243,8 @@ std::pair<double, double> ACRANSAC(const Kernel& kernel,
           errorMax = vec_residuals[best.second-1].first; // Error threshold
           if(model) *model = vec_models[k];
 
-            LOG_INFO(" [ACRansac] nfa= ..... todo");
+            LOG_INFO(" [ACRansac] nfa= %f\t inliers=%lu/%lu\t precisionNormalized=%f\t precision=%f\t (iter=%lu, sample=%p)",
+                     minNFA, best.second,nData,errorMax, kernel.unormalizeError(errorMax), iter, &vec_sample);
 //          ALICEVISION_LOG_TRACE("  nfa=" << minNFA
 //            << " inliers=" << best.second << "/" << nData
 //            << " precisionNormalized=" << errorMax
