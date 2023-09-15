@@ -10,11 +10,11 @@ RoadMap for iOS:
 > Prepare Input Data: Essential SwiftUI for camera meta data aquirement, done.
 > (SIFT)Feature Extracting, done.
 
+> Image Matching, assumed to have done, todo.
+
+> (SIFT)Feature Matching done.
+
 ToDoList:
-
-> Image Matching, ing.
-
-> (SIFT)Feature Matching.
 
 > Structure From Motion.
 

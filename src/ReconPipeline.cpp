@@ -530,62 +530,11 @@ bool ReconPipeline::FeatureMatching()
             guidedMatching);
         }
         break;
-
-//      case EGeometricFilterType::FUNDAMENTAL_WITH_DISTORTION:
-//      {
-//        matchingImageCollection::robustModelEstimation(geometricMatches,
-//          &sfmData,
-//          regionPerView,
-//          GeometricFilterMatrix_F_AC(geometricErrorMax, maxIteration, geometricEstimator, true),
-//          mapPutativesMatches,
-//          randomNumberGenerator,
-//          guidedMatching);
-//      }
-//      break;
-//
-//        case EGeometricFilterType::ESSENTIAL_MATRIX:
-//        {
-//          matchingImageCollection::robustModelEstimation(geometricMatches,
-//            &sfmData,
-//            regionPerView,
-//            GeometricFilterMatrix_E_AC(geometricErrorMax, maxIteration),
-//            mapPutativesMatches,
-//            randomNumberGenerator,
-//            guidedMatching);
-//
-//          removePoorlyOverlappingImagePairs(geometricMatches, mapPutativesMatches, 0.3f, 50);
-//        }
-//        break;
-//
-//        case EGeometricFilterType::HOMOGRAPHY_MATRIX:
-//        {
-//          const bool onlyGuidedMatching = true;
-//          matchingImageCollection::robustModelEstimation(geometricMatches,
-//            &sfmData,
-//            regionPerView,
-//            GeometricFilterMatrix_H_AC(geometricErrorMax, maxIteration),
-//            mapPutativesMatches, randomNumberGenerator, guidedMatching,
-//            onlyGuidedMatching ? -1.0 : 0.6);
-//        }
-//        break;
-//
-//        case EGeometricFilterType::HOMOGRAPHY_GROWING:
-//        {
-//          matchingImageCollection::robustModelEstimation(geometricMatches,
-//            &sfmData,
-//            regionPerView,
-//            GeometricFilterMatrix_HGrowing(geometricErrorMax, maxIteration),
-//            mapPutativesMatches,
-//            randomNumberGenerator,
-//            guidedMatching);
-//        }
-//        break;
       }
 
       LOG_INFO("%lu geometric image pair matches:", geometricMatches.size());
       for(const auto& matchGeo: geometricMatches)
           LOG_INFO("\t- image pair (%u,%u) contains %d geometric matches.", matchGeo.first.first, matchGeo.first.second, matchGeo.second.getNbAllMatches());
-//        ALICEVISION_LOG_INFO("\t- image pair (" + std::to_string(matchGeo.first.first) + ", " + std::to_string(matchGeo.first.second) + ") contains " + std::to_string(matchGeo.second.getNbAllMatches()) + " geometric matches.");
 
       // grid filtering
       LOG_INFO("Grid filtering");
@@ -610,8 +559,5 @@ bool ReconPipeline::FeatureMatching()
 //      Save(finalMatches, matchesFolder, fileExtension, matchFilePerImage, filePrefix);
       LOG_INFO("Task done in (s): %.2f",timer.elapsed());
 
-    
-
-    
     return true;
 }
