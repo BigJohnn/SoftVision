@@ -68,7 +68,7 @@
 ////            {
 ////                if (d[i] == 255)
 ////                {
-////                    ALICEVISION_LOG_TRACE("Found cctag marker: " << i << " (landmarkId: " << landmarkIt.first << ").");
+////                    LOG_INFO("Found cctag marker: " << i << " (landmarkId: " << landmarkIt.first << ").");
 ////                    landmark.rgb.r() = i;
 ////                    break;
 ////                }
@@ -79,7 +79,7 @@
 ////            {
 ////                if (d[i] == 255)
 ////                {
-////                    ALICEVISION_LOG_TRACE("Found apriltag marker: " << i << " (landmarkId: " << landmarkIt.first << ").");
+////                    LOG_INFO("Found apriltag marker: " << i << " (landmarkId: " << landmarkIt.first << ").");
 ////                    landmark.rgb.r() = i;
 ////                    break;
 ////                }

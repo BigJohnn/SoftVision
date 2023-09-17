@@ -153,7 +153,7 @@ bool extractSIFT(const image::Image<float>& image, std::unique_ptr<Regions>& reg
     {
         case EFeatureConstrastFiltering::Static:
         {
-//            ALICEVISION_LOG_TRACE("SIFT constrastTreshold Static: " << params._peakThreshold);
+//            LOG_INFO("SIFT constrastTreshold Static: " << params._peakThreshold);
             LOG_INFO("SIFT constrastTreshold Static: %f", params._peakThreshold);
             if(params._peakThreshold >= 0)
             {
@@ -170,7 +170,7 @@ bool extractSIFT(const image::Image<float>& image, std::unique_ptr<Regions>& reg
                      " - relativePeakThreshold: %f\n"
                      " - medianOfGradiants: %f\n"
                      " - peakTreshold: %f\n",relativePeakThreshold,medianOfGradiants,dynPeakTreshold);
-//            ALICEVISION_LOG_TRACE("SIFT relativePeakThreshold * medianOfGradiants: \n"
+//            LOG_INFO("SIFT relativePeakThreshold * medianOfGradiants: \n"
 //                                  << " - relativePeakThreshold: " << relativePeakThreshold << "\n"
 //                                  << " - medianOfGradiants: " << medianOfGradiants << "\n"
 //                                  << " - peakTreshold: " << dynPeakTreshold);
@@ -185,7 +185,7 @@ bool extractSIFT(const image::Image<float>& image, std::unique_ptr<Regions>& reg
         case EFeatureConstrastFiltering::NonExtremaFiltering:
         {
             LOG_INFO("SIFT constrastTreshold: %f", EFeatureConstrastFiltering_enumToString(params._contrastFiltering).c_str());
-//            ALICEVISION_LOG_TRACE("SIFT constrastTreshold: " << EFeatureConstrastFiltering_enumToString(params._contrastFiltering));
+//            LOG_INFO("SIFT constrastTreshold: " << EFeatureConstrastFiltering_enumToString(params._contrastFiltering));
             break;
         }
     }
@@ -307,7 +307,7 @@ bool extractSIFT(const image::Image<float>& image, std::unique_ptr<Regions>& reg
                     const std::size_t remainingElements =
                         std::min(rejected_indexes.size(), params._maxTotalKeypoints - filteredKeypointsIndex.size());
                     LOG_INFO("Octave Grid filtering -- Copy remaining points: %lu", remainingElements);
-//                    ALICEVISION_LOG_TRACE("Octave Grid filtering -- Copy remaining points: " << remainingElements);
+//                    LOG_INFO("Octave Grid filtering -- Copy remaining points: " << remainingElements);
                     filteredKeypointsIndex.insert(filteredKeypointsIndex.end(), rejected_indexes.begin(),
                                             rejected_indexes.begin() + remainingElements);
                 }
@@ -316,7 +316,7 @@ bool extractSIFT(const image::Image<float>& image, std::unique_ptr<Regions>& reg
                           " * detected: %d"
                           " * max octave keypoints: %lu"
                           " * after grid filtering: %lu", nkeys, maxOctaveKeypoints, filteredKeypointsIndex.size());
-//                ALICEVISION_LOG_TRACE("Octave SIFT keypoints:\n"
+//                LOG_INFO("Octave SIFT keypoints:\n"
 //                                      << " * detected: " << nkeys << "\n"
 //                                      << " * max octave keypoints: " << maxOctaveKeypoints << "\n"
 //                                      << " * after grid filtering: " << filteredKeypointsIndex.size());
@@ -356,7 +356,7 @@ bool extractSIFT(const image::Image<float>& image, std::unique_ptr<Regions>& reg
         if(filteredKeypointsIndex.empty())
         {
             LOG_DEBUG("Octave SIFT nb keypoints:\n%d (no grid filtering)", nkeys);
-//            ALICEVISION_LOG_TRACE("Octave SIFT nb keypoints:\n" << nkeys << " (no grid filtering)");
+//            LOG_INFO("Octave SIFT nb keypoints:\n" << nkeys << " (no grid filtering)");
             filteredKeypointsIndex.resize(nkeys);
             std::iota(filteredKeypointsIndex.begin(), filteredKeypointsIndex.end(), 0);
         }
@@ -521,7 +521,7 @@ bool extractSIFT(const image::Image<float>& image, std::unique_ptr<Regions>& reg
                 filteredDescriptors[i] = descriptors[indexSort[i]];
             }
             LOG_DEBUG("SIFT Features: before: %lu, after grid filtering: %lu", features.size(), filteredFeatures.size());
-//            ALICEVISION_LOG_TRACE("SIFT Features: before: " << features.size()
+//            LOG_INFO("SIFT Features: before: " << features.size()
 //                                                            << ", after grid filtering: " << filteredFeatures.size());
             regionsCasted->Features().swap(filteredFeatures);
             regionsCasted->Descriptors().swap(filteredDescriptors);
@@ -568,7 +568,7 @@ bool extractSIFT(const image::Image<float>& image, std::unique_ptr<Regions>& reg
                 const std::size_t remainingElements =
                     std::min(rejectedIndexes.size(), params._maxTotalKeypoints - filteredIndexes.size());
                 LOG_DEBUG("Grid filtering -- Copy remaining points: %lu", remainingElements);
-//                ALICEVISION_LOG_TRACE("Grid filtering -- Copy remaining points: " << remainingElements);
+//                LOG_INFO("Grid filtering -- Copy remaining points: " << remainingElements);
                 filteredIndexes.insert(filteredIndexes.end(), rejectedIndexes.begin(),
                                         rejectedIndexes.begin() + remainingElements);
             }
@@ -582,7 +582,7 @@ bool extractSIFT(const image::Image<float>& image, std::unique_ptr<Regions>& reg
             }
 
             LOG_DEBUG("SIFT Features: before: %lu, after grid filtering: %lu", features.size(), filteredFeatures.size());
-//            ALICEVISION_LOG_TRACE("SIFT Features: before: " << features.size()
+//            LOG_INFO("SIFT Features: before: " << features.size()
 //                                                           << ", after grid filtering: " << filteredFeatures.size());
 
             regionsCasted->Features().swap(filteredFeatures);
@@ -590,7 +590,7 @@ bool extractSIFT(const image::Image<float>& image, std::unique_ptr<Regions>& reg
         }
     }
     LOG_DEBUG("SIFT Features: %lu (max: %lu).", regionsCasted->Features().size(), params._maxTotalKeypoints);
-//    ALICEVISION_LOG_TRACE("SIFT Features: " << regionsCasted->Features().size()
+//    LOG_INFO("SIFT Features: " << regionsCasted->Features().size()
 //                                            << " (max: " << params._maxTotalKeypoints << ").");
     assert(regionsCasted->Features().size() == regionsCasted->Descriptors().size());
 

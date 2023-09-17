@@ -25,6 +25,7 @@
 #include <matching/IndMatch.hpp>
 #include <matching/matcherType.hpp>
 #include <matching/matchesFiltering.hpp>
+#include <matching/io.hpp>
 
 #include <matchingImageCollection/IImageCollectionMatcher.hpp>
 #include <matchingImageCollection/matchingCommon.hpp>
@@ -35,6 +36,8 @@
 #include <sfm/pipeline/structureFromKnownPoses/StructureEstimationFromKnownPoses.hpp>
 
 #include <robustEstimation/estimators.hpp>
+
+#include <sfmDataIO/sfmDataIO.hpp>
 
 
 std::vector<std::vector<uint8_t>> ReconPipeline::m_cachedBuffers;
@@ -129,8 +132,8 @@ void ReconPipeline::AppendSfMData(uint32_t viewId,
         if(m_outputFolder.empty()) {
             LOG_ERROR("OUTPUT DIR NOT SET!!");
         }
-        auto&& folder_name = m_outputFolder.substr(7, m_outputFolder.size() - 7);
-        std::string testimg_file_name = folder_name + "test.png";
+        auto&& folder_name = m_outputFolder;
+        std::string testimg_file_name = folder_name + std::to_string(viewId) + ".png";
         write2png(testimg_file_name.c_str(), width_new, height_new, buffer);
 
 //        image::Image<image::RGBAColor> imageRGBA_flipY;
@@ -166,6 +169,11 @@ void ReconPipeline::AppendSfMData(uint32_t viewId,
     auto&& intrinsics = m_sfmData->intrinsics;
     intrinsics.insert(std::make_pair(intrinsicId, pIntrinsic));
     
+    {
+        using namespace sfmDataIO;
+        Save(*m_sfmData, "cameraInit.sfm", ESfMData(VIEWS|INTRINSICS|EXTRINSICS));
+    }
+    
 #ifdef SOFTVISION_DEBUG
     printf("views addr ===%p\n", &views);
     
@@ -184,7 +192,8 @@ void ReconPipeline::AppendSfMData(uint32_t viewId,
 void ReconPipeline::SetOutputDataDir(const char* directory)
 {
     printf("%p Do SetOutputDataDir ...\n", this);
-    m_outputFolder = directory;
+    std::string dir = directory;
+    m_outputFolder = dir.substr(7, dir.size() - 7);
 }
 
 bool ReconPipeline::FeatureExtraction()
@@ -555,9 +564,17 @@ bool ReconPipeline::FeatureMatching()
         }
 
       // export geometric filtered matches
-//      LOG_INFO("Save geometric matches.");
-//      Save(finalMatches, matchesFolder, fileExtension, matchFilePerImage, filePrefix);
+      LOG_INFO("Save geometric matches.");
+    bool matchFilePerImage = false;
+    const std::string fileExtension = "txt";
+    std::string matchesFolder = m_outputFolder;
+      Save(finalMatches, matchesFolder, fileExtension, matchFilePerImage, filePrefix);
       LOG_INFO("Task done in (s): %.2f",timer.elapsed());
 
+    return true;
+}
+
+bool ReconPipeline::StructureFromMotion()
+{
     return true;
 }

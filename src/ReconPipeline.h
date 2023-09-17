@@ -45,7 +45,13 @@ public:
     
     bool FeatureExtraction();
     
+    //TODO: image matching
+//    bool ImageMatching();
+    
     bool FeatureMatching();
+    
+    bool StructureFromMotion();
+    
     void SetOutputDataDir(const char* directory);
     
 private:

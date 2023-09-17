@@ -111,6 +111,10 @@ Pod::Spec.new do |spec|
 #      ss.exclude_files = "src/sfmData/*test.{h,hpp,cpp}"
   end
   
+  spec.subspec 'sfmDataIO' do |ss|
+      ss.source_files = "src/sfmDataIO/**/*.{hpp,cpp}"
+  end
+  
   spec.subspec 'sfm' do |ss|
       ss.source_files = "src/sfm/**/*.{hpp,cpp}"
   end
@@ -236,6 +240,7 @@ Pod::Spec.new do |spec|
   spec.dependency "openmp"
   spec.dependency "lemon"
   spec.dependency "Ceres"
+  spec.dependency "cJSON"
   
   spec.libraries             = 'stdc++'
   

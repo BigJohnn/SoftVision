@@ -193,7 +193,7 @@ void FeatureExtractor::computeViewJob(const FeatureExtractorViewJob& job, bool u
 
     auto&& view = job.view();
     
-    auto&& folder_name = _outputFolder.substr(7, _outputFolder.size() - 7);
+    auto&& folder_name = _outputFolder;//.substr(7, _outputFolder.size() - 7);
     int w,h;
     //        auto&& folder_name = _outputFolder;
 //    std::string testimg_file_name = folder_name + "test.png";
@@ -332,7 +332,8 @@ void FeatureExtractor::computeViewJob(const FeatureExtractorViewJob& job, bool u
         keypoints[imageDescriberType] = regions->Features();
 //        keypoints.getRegions<feature::Regions>(imageDescriberType) = regions;
 //        keypoints[imageDescriberType] = regions;
-        matching::saveFeatures2SVG("/Users/hph/Documents/test.png", std::make_pair(w, h), keypoints, folder_name + "test.svg");
+        std::string imageName = std::to_string(view.getViewId());
+        matching::saveFeatures2SVG("/Users/hph/Documents/"+ imageName + ".png", std::make_pair(w, h), keypoints, folder_name + imageName + ".svg");
         
         _mmapRegions.addRegions(view.getViewId(), imageDescriberType, regions.release());
     }

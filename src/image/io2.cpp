@@ -44,7 +44,7 @@
 //    if (!colorSpace.empty())
 //    {
 //        LOG_INFO("!colorSpace.empty()");
-////        ALICEVISION_LOG_TRACE("Read image " << imagePath << " (encoded in " << colorSpace << " colorspace according to AliceVision:ColorSpace metadata).");
+////        LOG_INFO("Read image " << imagePath << " (encoded in " << colorSpace << " colorspace according to AliceVision:ColorSpace metadata).");
 //    }
 //    else
 //    {
@@ -55,18 +55,18 @@
 //            if (!colorSpaceFromFileName.empty())
 //            {
 //                LOG_INFO("!colorSpaceFromFileName.empty()");
-////                ALICEVISION_LOG_TRACE("Read image " << imagePath << " (encoded in " << colorSpaceFromFileName << " colorspace according to file name).");
+////                LOG_INFO("Read image " << imagePath << " (encoded in " << colorSpaceFromFileName << " colorspace according to file name).");
 //                colorSpace = colorSpaceFromFileName;
 //            }
 //            else if (!colorSpace.empty())
 //            {
 //                LOG_INFO("!colorSpace.empty()");
-////                ALICEVISION_LOG_TRACE("Read image " << imagePath << " (encoded in " << colorSpace << " colorspace according to oiio:ColorSpace metadata).");
+////                LOG_INFO("Read image " << imagePath << " (encoded in " << colorSpace << " colorspace according to oiio:ColorSpace metadata).");
 //            }
 //            else
 //            {
 //                LOG_INFO("colorSpace.empty()");
-////                ALICEVISION_LOG_TRACE("Read image " << imagePath << " (no colorspace info, supposed to be encoded in sRGB).");
+////                LOG_INFO("Read image " << imagePath << " (no colorspace info, supposed to be encoded in sRGB).");
 //                colorSpace = "sRGB";
 //            }
 //        }
@@ -581,7 +581,7 @@
 ////            }
 ////        }
 ////
-////        ALICEVISION_LOG_TRACE("Neutral from camera = {" << neutral[0] << ", " << neutral[1] << ", " << neutral[2] << "}");
+////        LOG_INFO("Neutral from camera = {" << neutral[0] << ", " << neutral[1] << ", " << neutral[2] << "}");
 ////
 ////        // libRAW configuration
 ////        // See https://openimageio.readthedocs.io/en/master/builtinplugins.html#raw-digital-camera-files
@@ -751,7 +751,7 @@
 ////            neutral[i] = v_mult[i] / v_mult[1];
 ////        }
 ////
-////        ALICEVISION_LOG_TRACE("Apply DCP Linear processing with neutral = " << neutral);
+////        LOG_INFO("Apply DCP Linear processing with neutral = " << neutral);
 ////
 ////        double cct = imageReadOptions.correlatedColorTemperature;
 ////
@@ -767,7 +767,7 @@
 ////                                       (isRawImage ? "linear" :
 ////                                        inBuf.spec().get_string_attribute("aliceVision:ColorSpace", inBuf.spec().get_string_attribute("oiio:ColorSpace", "sRGB")));
 ////
-////    ALICEVISION_LOG_TRACE("Read image " << path << " (encoded in " << fromColorSpaceName << " colorspace).");
+////    LOG_INFO("Read image " << path << " (encoded in " << fromColorSpaceName << " colorspace).");
 ////
 ////    // Manage oiio GammaX.Y color space assuming that the gamma correction has been applied on an image with sRGB primaries.
 ////    if (fromColorSpaceName.substr(0, 5) == "Gamma")

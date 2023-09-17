@@ -52,7 +52,7 @@ std::string getDefaultColorConfigFilePath()
 //            const std::string linearColorSpace = colorConfig.getColorSpaceNameByRole("scene_linear");
 //            if (linearColorSpace == "scene-linear Rec.709-sRGB")
 //            {
-//                ALICEVISION_LOG_TRACE("ALICEVISION_OCIO configuration file: '" << configOCIOFilePath << "' found.");
+//                LOG_INFO("ALICEVISION_OCIO configuration file: '" << configOCIOFilePath << "' found.");
 //                return configOCIOFilePath;
 //            }
 //            else
@@ -81,16 +81,16 @@ std::string getDefaultColorConfigFilePath()
 //            configOCIOFilePath = std::string(OCIO);
 //            if(fs::exists(configOCIOFilePath))
 //            {
-//                ALICEVISION_LOG_TRACE("OCIO configuration file: '" << configOCIOFilePath << "' found.");
+//                LOG_INFO("OCIO configuration file: '" << configOCIOFilePath << "' found.");
 //                return configOCIOFilePath;
 //            }
 //            else if(configOCIOFilePath == "")
 //            {
-//                ALICEVISION_LOG_TRACE("OCIO is empty. Use embedded config...");
+//                LOG_INFO("OCIO is empty. Use embedded config...");
 //            }
 //            else
 //            {
-//                ALICEVISION_LOG_TRACE("OCIO does not point to an existing file. Use embedded config...");
+//                LOG_INFO("OCIO does not point to an existing file. Use embedded config...");
 //            }
 //        }
 //    }
@@ -120,7 +120,7 @@ std::string getDefaultColorConfigFilePath()
 //        }
         LOG_ERROR("Embedded OCIO configuration file: '%s' cannot be accessed.",configOCIOFilePath.c_str());
     }
-//    ALICEVISION_LOG_TRACE("Embedded OCIO configuration file: '" << configOCIOFilePath << "' found.");
+//    LOG_INFO("Embedded OCIO configuration file: '" << configOCIOFilePath << "' found.");
 
     return configOCIOFilePath;
 }

@@ -47,7 +47,7 @@ public:
     , _pointToLine(pointToLine)
   {
       LOG_INFO("RelativePoseKernel: x1: %dx%d, x2: %dx%d", x1.rows(), x1.cols(), x2.rows(), x2.cols());
-//    ALICEVISION_LOG_TRACE("RelativePoseKernel: x1: " << x1.rows() << "x" << x1.cols() << ", x2: " << x2.rows() << "x" << x2.cols());
+//    LOG_INFO("RelativePoseKernel: x1: " << x1.rows() << "x" << x1.cols() << ", x2: " << x2.rows() << "x" << x2.cols());
     assert(2 == x1.rows());
     assert(x1.rows() == x2.rows());
     assert(x1.cols() == x2.cols());
@@ -126,7 +126,7 @@ public:
     , _K2(K2)
   {
       LOG_INFO("RelativePoseKernel: x1: %dx%d, x2: %dx%d", x1.rows(), x1.cols(), x2.rows(), x2.cols());
-//    ALICEVISION_LOG_TRACE("RelativePoseKernel_K: x1: " << x1.rows() << "x" << x1.cols() << ", x2: " << x2.rows() << "x" << x2.cols());
+//    LOG_INFO("RelativePoseKernel_K: x1: " << x1.rows() << "x" << x1.cols() << ", x2: " << x2.rows() << "x" << x2.cols());
     assert(2 == x1.rows());
     assert(x1.rows() == x2.rows());
     assert(x1.cols() == x2.cols());
@@ -198,7 +198,7 @@ public:
         , _logalpha0(M_PI)
     {
         LOG_INFO("RelativePoseKernel: x1: %dx%d, x2: %dx%d", x1.rows(), x1.cols(), x2.rows(), x2.cols());
-//        ALICEVISION_LOG_TRACE("RelativePoseSphericalKernel: x1: " << x1.rows() << "x" << x1.cols() << ", x2: " << x2.rows() << "x" << x2.cols());
+//        LOG_INFO("RelativePoseSphericalKernel: x1: " << x1.rows() << "x" << x1.cols() << ", x2: " << x2.rows() << "x" << x2.cols());
         assert(x1.rows() == 3);
         assert(x1.cols() > 0);
         assert(x1.rows() == x2.rows());

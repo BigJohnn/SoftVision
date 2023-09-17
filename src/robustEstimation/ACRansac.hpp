@@ -245,7 +245,7 @@ std::pair<double, double> ACRANSAC(const Kernel& kernel,
 
             LOG_INFO(" [ACRansac] nfa= %f\t inliers=%lu/%lu\t precisionNormalized=%f\t precision=%f\t (iter=%lu, sample=%p)",
                      minNFA, best.second,nData,errorMax, kernel.unormalizeError(errorMax), iter, &vec_sample);
-//          ALICEVISION_LOG_TRACE("  nfa=" << minNFA
+//          LOG_INFO("  nfa=" << minNFA
 //            << " inliers=" << best.second << "/" << nData
 //            << " precisionNormalized=" << errorMax
 //            << " precision=" << kernel.unormalizeError(errorMax)

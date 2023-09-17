@@ -86,7 +86,7 @@ bool extractDSPSIFT(const image::Image<float>& image, std::unique_ptr<Regions>& 
     {
         case EFeatureConstrastFiltering::Static:
         {
-            //ALICEVISION_LOG_TRACE("SIFT constrastTreshold Static: " << params._peakThreshold);
+            //LOG_INFO("SIFT constrastTreshold Static: " << params._peakThreshold);
             if(params._peakThreshold >= 0)
             {
                 vl_covdet_set_peak_threshold(covdet.get(), params._peakThreshold / params._numScales);
@@ -98,7 +98,7 @@ bool extractDSPSIFT(const image::Image<float>& image, std::unique_ptr<Regions>& 
             const float medianOfGradiants = computeAutomaticContrastFactor(image, 0.5);
             const float relativePeakThreshold = 0.02f;
             const float dynPeakTreshold = relativePeakThreshold * medianOfGradiants;
-            //ALICEVISION_LOG_TRACE("SIFT relativePeakThreshold * medianOfGradiants: \n"
+            //LOG_INFO("SIFT relativePeakThreshold * medianOfGradiants: \n"
 //                                  << " - relativePeakThreshold: " << relativePeakThreshold << "\n"
 //                                  << " - medianOfGradiants: " << medianOfGradiants << "\n"
 //                                  << " - peakTreshold: " << dynPeakTreshold);
@@ -113,7 +113,7 @@ bool extractDSPSIFT(const image::Image<float>& image, std::unique_ptr<Regions>& 
         case EFeatureConstrastFiltering::NonExtremaFiltering:
         {
             vl_covdet_set_peak_threshold(covdet.get(), 0.0);
-            //ALICEVISION_LOG_TRACE("DSP-SIFT constrastTreshold: " << EFeatureConstrastFiltering_enumToString(params._contrastFiltering));
+            //LOG_INFO("DSP-SIFT constrastTreshold: " << EFeatureConstrastFiltering_enumToString(params._contrastFiltering));
             break;
         }
     }
@@ -228,7 +228,7 @@ bool extractDSPSIFT(const image::Image<float>& image, std::unique_ptr<Regions>& 
                               [&](int a, int b) { return radiusMaxima[a] > radiusMaxima[b]; });
             indexSort.resize(maxNbKeypoints);
 
-            //ALICEVISION_LOG_TRACE(
+            //LOG_INFO(
 //                "DSPSIFT Features: before: " << nbFeatures
 //                << ", after grid filtering: " << indexSort.size());
         }
@@ -272,12 +272,12 @@ bool extractDSPSIFT(const image::Image<float>& image, std::unique_ptr<Regions>& 
             {
                 const std::size_t remainingElements =
                     std::min(rejectedIndexes.size(), params._maxTotalKeypoints - filteredIndexes.size());
-                //ALICEVISION_LOG_TRACE("Grid filtering -- Copy remaining points: " << remainingElements);
+                //LOG_INFO("Grid filtering -- Copy remaining points: " << remainingElements);
                 filteredIndexes.insert(filteredIndexes.end(), rejectedIndexes.begin(),
                                         rejectedIndexes.begin() + remainingElements);
             }
             indexSort.swap(filteredIndexes);
-            //ALICEVISION_LOG_TRACE("SIFT Features: before: " << nbFeatures
+            //LOG_INFO("SIFT Features: before: " << nbFeatures
 //                                                            << ", after grid filtering: " << filteredIndexes.size());
         }
     }

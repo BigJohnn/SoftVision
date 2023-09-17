@@ -190,9 +190,9 @@ std::istream& operator>>(std::istream& in, EFeatureConstrastFiltering& p)
 void ImageDescriber::Save(const Regions* regions, const std::string& sfileNameFeats, const std::string& sfileNameDescs) const
 {
     //to remove 'file://' prefix
-    auto&& n1 = sfileNameFeats.substr(7, sfileNameFeats.size()-7);
-    auto&& n2 = sfileNameDescs.substr(7, sfileNameDescs.size()-7);
-    regions->Save(n1,n2);
+//    auto&& n1 = sfileNameFeats.substr(7, sfileNameFeats.size()-7);
+//    auto&& n2 = sfileNameDescs.substr(7, sfileNameDescs.size()-7);
+    regions->Save(sfileNameFeats,sfileNameDescs);
 }
 
 std::unique_ptr<ImageDescriber> createImageDescriber(EImageDescriberType imageDescriberType)
