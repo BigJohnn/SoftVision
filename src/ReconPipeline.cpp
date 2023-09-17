@@ -171,7 +171,7 @@ void ReconPipeline::AppendSfMData(uint32_t viewId,
     
     {
         using namespace sfmDataIO;
-        Save(*m_sfmData, "cameraInit.sfm", ESfMData(VIEWS|INTRINSICS|EXTRINSICS));
+        Save(*m_sfmData, m_outputFolder + "cameraInit.sfm", ESfMData(VIEWS|INTRINSICS));
     }
     
 #ifdef SOFTVISION_DEBUG
@@ -192,8 +192,7 @@ void ReconPipeline::AppendSfMData(uint32_t viewId,
 void ReconPipeline::SetOutputDataDir(const char* directory)
 {
     printf("%p Do SetOutputDataDir ...\n", this);
-    std::string dir = directory;
-    m_outputFolder = dir.substr(7, dir.size() - 7);
+    m_outputFolder = directory;
 }
 
 bool ReconPipeline::FeatureExtraction()

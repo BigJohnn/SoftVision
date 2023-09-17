@@ -41,7 +41,7 @@ enum ESfMData
 };
 
 /// check that each pose have a valid intrinsic and pose id in the existing View ids
-bool ValidIds(const sfmData::SfMData& sfmData, ESfMData partFlag);
+//bool ValidIds(const sfmData::SfMData& sfmData, ESfMData partFlag);
 
 /// load SfMData SfM scene from a file
 bool Load(sfmData::SfMData& sfmData, const std::string& filename, ESfMData partFlag);

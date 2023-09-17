@@ -130,81 +130,81 @@ namespace sfmDataIO {
 //    cameraPose.unlock();
 //}
 
-/**
- * @brief Save a View in a boost property tree.
- * @param[in] name The node name ( "" = no name )
- * @param[in] view The input View
- * @param[out] parentTree The parent tree
- */
-void saveView(const std::string& name, const sfmData::View& view, bpt::ptree& parentTree);
-
-/**
- * @brief Load a View from a boost property tree.
- * @param[out] view The output View
- * @param[in,out] viewTree The input tree
- */
-void loadView(sfmData::View& view, bpt::ptree& viewTree);
-
-/**
- * @brief Save an Intrinsic in a boost property tree.
- * @param[in] name The node name ( "" = no name )
- * @param[in] intrinsicId The intrinsic Id
- * @param[in] intrinsic The intrinsic
- * @param[out] parentTree The parent tree
- */
-void saveIntrinsic(const std::string& name, IndexT intrinsicId, const std::shared_ptr<camera::IntrinsicBase>& intrinsic, bpt::ptree& parentTree);
-
-/**
- * @brief Load an Intrinsic from a boost property tree.
- * @param[in] version File versioning for dealing with compatibility
- * @param[out] intrinsicId The output Intrinsic Id
- * @param[out] intrinsic The output Intrinsic
- * @param intrinsicTree The input tree
- */
-void loadIntrinsic(const Version& version, IndexT& intrinsicId, std::shared_ptr<camera::IntrinsicBase>& intrinsic,
-                   bpt::ptree& intrinsicTree);
-
-/**
- * @brief Save a Rig in a boost property tree.
- * @param[in] name The node name ( "" = no name )
- * @param[in] rigId The rig Id
- * @param[in] rig The rig
- * @param[out] parentTree The parent tree
- */
-void saveRig(const std::string& name, IndexT rigId, const sfmData::Rig& rig, bpt::ptree& parentTree);
-
-/**
- * @brief Load a Rig from a boost property tree.
- * @param[out] rigId The output Rig Id
- * @param[out] rig The output Rig
- * @param[in,out] rigTree The input tree
- */
-void loadRig(IndexT& rigId, sfmData::Rig& rig, bpt::ptree& rigTree);
-
-/**
- * @brief Save a Landmark in a boost property tree.
- * @param[in] name The node name ( "" = no name )
- * @param[in] landmarkId The landmark Id
- * @param[in] landmark The landmark
- * @param[out] parentTree The parent tree
- *
- * Optional:
- * @param[in] saveObservations Save landmark observations (default: true)
- * @param[in] saveFeatures Save landmark observations features (default: true)
- */
-void saveLandmark(const std::string& name, IndexT landmarkId, const sfmData::Landmark& landmark, bpt::ptree& parentTree, bool saveObservations = true, bool saveFeatures = true);
-
-/**
- * @brief Load a Landmark from a boost property tree.
- * @param[out] landmarkId The output Landmark Id
- * @param[out] landmark The output Landmmark
- * @param[in,out] landmarkTree The input tree
- *
- * Optional:
- * @param[in] loadObservations Load landmark observations (default: true)
- * @param[in] loadFeatures Load landmark observations features (default: true)
- */
-void loadLandmark(IndexT& landmarkId, sfmData::Landmark& landmark, bpt::ptree& landmarkTree, bool loadObservations = true, bool loadFeatures = true);
+///**
+// * @brief Save a View in a boost property tree.
+// * @param[in] name The node name ( "" = no name )
+// * @param[in] view The input View
+// * @param[out] parentTree The parent tree
+// */
+//void saveView(const std::string& name, const sfmData::View& view, bpt::ptree& parentTree);
+//
+///**
+// * @brief Load a View from a boost property tree.
+// * @param[out] view The output View
+// * @param[in,out] viewTree The input tree
+// */
+//void loadView(sfmData::View& view, bpt::ptree& viewTree);
+//
+///**
+// * @brief Save an Intrinsic in a boost property tree.
+// * @param[in] name The node name ( "" = no name )
+// * @param[in] intrinsicId The intrinsic Id
+// * @param[in] intrinsic The intrinsic
+// * @param[out] parentTree The parent tree
+// */
+//void saveIntrinsic(const std::string& name, IndexT intrinsicId, const std::shared_ptr<camera::IntrinsicBase>& intrinsic, bpt::ptree& parentTree);
+//
+///**
+// * @brief Load an Intrinsic from a boost property tree.
+// * @param[in] version File versioning for dealing with compatibility
+// * @param[out] intrinsicId The output Intrinsic Id
+// * @param[out] intrinsic The output Intrinsic
+// * @param intrinsicTree The input tree
+// */
+//void loadIntrinsic(const Version& version, IndexT& intrinsicId, std::shared_ptr<camera::IntrinsicBase>& intrinsic,
+//                   bpt::ptree& intrinsicTree);
+//
+///**
+// * @brief Save a Rig in a boost property tree.
+// * @param[in] name The node name ( "" = no name )
+// * @param[in] rigId The rig Id
+// * @param[in] rig The rig
+// * @param[out] parentTree The parent tree
+// */
+//void saveRig(const std::string& name, IndexT rigId, const sfmData::Rig& rig, bpt::ptree& parentTree);
+//
+///**
+// * @brief Load a Rig from a boost property tree.
+// * @param[out] rigId The output Rig Id
+// * @param[out] rig The output Rig
+// * @param[in,out] rigTree The input tree
+// */
+//void loadRig(IndexT& rigId, sfmData::Rig& rig, bpt::ptree& rigTree);
+//
+///**
+// * @brief Save a Landmark in a boost property tree.
+// * @param[in] name The node name ( "" = no name )
+// * @param[in] landmarkId The landmark Id
+// * @param[in] landmark The landmark
+// * @param[out] parentTree The parent tree
+// *
+// * Optional:
+// * @param[in] saveObservations Save landmark observations (default: true)
+// * @param[in] saveFeatures Save landmark observations features (default: true)
+// */
+//void saveLandmark(const std::string& name, IndexT landmarkId, const sfmData::Landmark& landmark, bpt::ptree& parentTree, bool saveObservations = true, bool saveFeatures = true);
+//
+///**
+// * @brief Load a Landmark from a boost property tree.
+// * @param[out] landmarkId The output Landmark Id
+// * @param[out] landmark The output Landmmark
+// * @param[in,out] landmarkTree The input tree
+// *
+// * Optional:
+// * @param[in] loadObservations Load landmark observations (default: true)
+// * @param[in] loadFeatures Load landmark observations features (default: true)
+// */
+//void loadLandmark(IndexT& landmarkId, sfmData::Landmark& landmark, bpt::ptree& landmarkTree, bool loadObservations = true, bool loadFeatures = true);
 
 /**
  * @brief Save an SfMData in a JSON file with a boost property tree.
@@ -225,8 +225,8 @@ bool saveJSON(const sfmData::SfMData& sfmData, const std::string& filename, ESfM
  * @param[in] viewIdRegex Optional regex used when viewIdMethod is FILENAME
  * @return true if completed
  */
-bool loadJSON(sfmData::SfMData& sfmData, const std::string& filename, ESfMData partFlag, bool incompleteViews = false,
-              EViewIdMethod viewIdMethod = EViewIdMethod::METADATA, const std::string& viewIdRegex = "");
+bool loadJSON(sfmData::SfMData& sfmData, const std::string& filename, ESfMData partFlag, bool incompleteViews = false);//,
+//              EViewIdMethod viewIdMethod = EViewIdMethod::METADATA, const std::string& viewIdRegex = "");
 
 } // namespace sfmDataIO
 
