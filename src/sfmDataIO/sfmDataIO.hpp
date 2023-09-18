@@ -44,9 +44,9 @@ enum ESfMData
 //bool ValidIds(const sfmData::SfMData& sfmData, ESfMData partFlag);
 
 /// load SfMData SfM scene from a file
-bool Load(sfmData::SfMData& sfmData, const std::string& filename, ESfMData partFlag);
+bool Load(sfmData::SfMData& sfmData, const std::string& foldername, const std::string& filename, ESfMData partFlag);
 
 /// save SfMData SfM scene to a file
-bool Save(const sfmData::SfMData& sfmData, const std::string& filename, ESfMData partFlag);
+bool Save(const sfmData::SfMData& sfmData, const std::string& foldername, const std::string& filename, ESfMData partFlag);
 
 } // namespace sfmDataIO

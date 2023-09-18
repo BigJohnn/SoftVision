@@ -91,24 +91,24 @@ namespace sfmDataIO {
 //  return bRet;
 //}
 //
-//bool Load(sfmData::SfMData& sfmData, const std::string& filename, ESfMData partFlag)
-//{
+bool Load(sfmData::SfMData& sfmData, const std::string& foldername, const std::string& filename, ESfMData partFlag)
+{
 //  const std::string extension = fs::extension(filename);
-//  bool status = false;
-//
+  bool status = false;
+
 //  if(extension == ".sfm" || extension == ".json") // JSON File
 //  {
-//    status = loadJSON(sfmData, filename, partFlag);
+    status = loadJSON(sfmData, foldername, filename, partFlag);
 //  }
-////  else if (extension == ".abc") // Alembic
-////  {
-////#if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_ALEMBIC)
-////      AlembicImporter(filename).populateSfM(sfmData, partFlag);
-////      status = true;
-////#else
-////      ALICEVISION_THROW_ERROR("Cannot load the ABC file: \"" << filename << "\", AliceVision is built without Alembic support.");
-////#endif
-////  }
+//  else if (extension == ".abc") // Alembic
+//  {
+//#if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_ALEMBIC)
+//      AlembicImporter(filename).populateSfM(sfmData, partFlag);
+//      status = true;
+//#else
+//      ALICEVISION_THROW_ERROR("Cannot load the ABC file: \"" << filename << "\", AliceVision is built without Alembic support.");
+//#endif
+//  }
 //  else if(fs::is_directory(filename))
 //  {
 //    status = readGt(filename, sfmData);
@@ -118,29 +118,29 @@ namespace sfmDataIO {
 //    LOG_ERROR("Unknown input SfM data format: '%s'", extension.c_str());
 //    return false;
 //  }
-//
+
 //  if(status)
 //    sfmData.setAbsolutePath(filename);
-//
-//  // Assert that loaded intrinsics | extrinsics are linked to valid view
+
+  //TODO:  Assert that loaded intrinsics | extrinsics are linked to valid view
 //  if(status && (partFlag & VIEWS) && ((partFlag & INTRINSICS) || (partFlag & EXTRINSICS)))
 //    return ValidIds(sfmData, partFlag);
-//
-//  return status;
-//}
 
-bool Save(const sfmData::SfMData& sfmData, const std::string& filename, ESfMData partFlag)
+  return status;
+}
+
+bool Save(const sfmData::SfMData& sfmData, const std::string& foldername, const std::string& filename, ESfMData partFlag)
 {
 //  const fs::path bPath = fs::path(filename);
 //  const std::string extension = bPath.extension().string();
 //  const std::string tmpPath = (bPath.parent_path() / bPath.stem()).string() + "." + fs::unique_path().string() + extension;
-  const std::string tmpPath = filename;
+//  const std::string tmpPath = filename;
     
   bool status = false;
 
 //  if(extension == ".sfm" || extension == ".json") // JSON File
   {
-    status = saveJSON(sfmData, tmpPath, partFlag);
+    status = saveJSON(sfmData, foldername, filename, partFlag);
   }
 //  else if(extension == ".ply") // Polygon File
 //  {

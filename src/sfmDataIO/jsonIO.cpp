@@ -16,6 +16,10 @@
 #include <cJSON/cJSON.h>
 #include <SoftVisionLog.h>
 
+#include <camera/IntrinsicsScaleOffsetDisto.hpp>
+#include <camera/PinholeRadial.hpp>
+#include <utils/PngUtils.h>
+
 namespace sfmDataIO {
 
 //void saveView(const std::string& name, const sfmData::View& view, bpt::ptree& parentTree)
@@ -474,64 +478,30 @@ namespace sfmDataIO {
 //}
 
 
-bool saveJSON(const sfmData::SfMData& sfmData, const std::string& filename, ESfMData partFlag)
+bool saveJSON(const sfmData::SfMData& sfmData, const std::string& foldername, const std::string& filename, ESfMData partFlag)
 {
 //  const Vec3i version = {ALICEVISION_SFMDATAIO_VERSION_MAJOR, ALICEVISION_SFMDATAIO_VERSION_MINOR, ALICEVISION_SFMDATAIO_VERSION_REVISION};
 
   // save flags
   const bool saveViews = (partFlag & VIEWS) == VIEWS;
   const bool saveIntrinsics = (partFlag & INTRINSICS) == INTRINSICS;
-  const bool saveExtrinsics = (partFlag & EXTRINSICS) == EXTRINSICS;
+//  const bool saveExtrinsics = (partFlag & EXTRINSICS) == EXTRINSICS;
 //  const bool saveStructure = (partFlag & STRUCTURE) == STRUCTURE;
 //  const bool saveControlPoints = (partFlag & CONTROL_POINTS) == CONTROL_POINTS;
 //  const bool saveFeatures = (partFlag & OBSERVATIONS_WITH_FEATURES) == OBSERVATIONS_WITH_FEATURES;
 //  const bool saveObservations = saveFeatures || ((partFlag & OBSERVATIONS) == OBSERVATIONS);
 
-//  // main tree
-//  bpt::ptree fileTree;
-//
-//  // file version
-//  saveMatrix("version", version, fileTree);
-//
-//  // folders
-//  if(!sfmData.getRelativeFeaturesFolders().empty())
-//  {
-//    bpt::ptree featureFoldersTree;
-//
-//    for(const std::string& featuresFolder : sfmData.getRelativeFeaturesFolders())
-//    {
-//      bpt::ptree featureFolderTree;
-//      featureFolderTree.put("", featuresFolder);
-//      featureFoldersTree.push_back(std::make_pair("", featureFolderTree));
-//    }
-//
-//    fileTree.add_child("featuresFolders", featureFoldersTree);
-//  }
-//
-//  if(!sfmData.getRelativeMatchesFolders().empty())
-//  {
-//    bpt::ptree matchingFoldersTree;
-//
-//    for(const std::string& matchesFolder : sfmData.getRelativeMatchesFolders())
-//    {
-//      bpt::ptree matchingFolderTree;
-//      matchingFolderTree.put("", matchesFolder);
-//      matchingFoldersTree.push_back(std::make_pair("", matchingFolderTree));
-//    }
-//
-//    fileTree.add_child("matchesFolders", matchingFoldersTree);
-//  }
-
     bool ret = true;
+    
+    cJSON *monitor = cJSON_CreateObject();
+    if(!monitor) {
+        LOG_ERROR("Failed in creating json object 'root'.");
+        return false;
+    }
+    
   // views
   if(saveViews && !sfmData.getViews().empty())
   {
-      cJSON *monitor = cJSON_CreateObject();
-      if(!monitor) {
-          LOG_ERROR("Failed in creating json object 'root'.");
-          return false;
-      }
-      
       cJSON *viewObjs = cJSON_CreateArray();
       if (!viewObjs)
       {
@@ -546,6 +516,9 @@ bool saveJSON(const sfmData::SfMData& sfmData, const std::string& filename, ESfM
           if(!viewObj) {
               LOG_ERROR("Failed in creating json object 'view'.");
               return false;
+          }
+          if(!cJSON_AddStringToObject(viewObj, "path", (foldername + std::to_string(view.second->getViewId()) + ".png").c_str())) {
+              ret = false;
           }
           if(!cJSON_AddStringToObject(viewObj, "viewId", std::to_string(view.second->getViewId()).c_str())) {
               ret = false;
@@ -564,33 +537,111 @@ bool saveJSON(const sfmData::SfMData& sfmData, const std::string& filename, ESfM
           }
           
           cJSON_AddItemToArray(viewObjs, viewObj);
-
       }
-      char* sjson = cJSON_Print(monitor);
-      if (sjson == NULL)
-      {
-          LOG_ERROR("Failed to print monitor.\n");
-      }
-      
-      FILE * fp;
-
-      fp = fopen (filename.c_str(), "w");
-      fprintf(fp, "%s", sjson);
-     
-      fclose(fp);
-      cJSON_Delete(monitor);
   }
 
   // intrinsics
   if(saveIntrinsics && !sfmData.getIntrinsics().empty())
   {
-//    bpt::ptree intrinsicsTree;
-//
-//    for(const auto& intrinsicPair : sfmData.getIntrinsics())
-//      saveIntrinsic("", intrinsicPair.first, intrinsicPair.second, intrinsicsTree);
-//
-//    fileTree.add_child("intrinsics", intrinsicsTree);
+      cJSON *intrinsicObjs = cJSON_CreateArray();
+      if (!intrinsicObjs)
+      {
+          LOG_ERROR("Failed in creating json object 'intrinsics'.");
+          return false;
+      }
+      cJSON_AddItemToObject(monitor, "intrinsics", intrinsicObjs);
+      
+      for(auto&& intrinsic_map : sfmData.intrinsics)
+      {
+          auto* intrinsicObj = cJSON_CreateObject();
+          if(!intrinsicObj) {
+              LOG_ERROR("Failed in creating json object 'intrinsic'.");
+              return false;
+          }
+          
+          if(!cJSON_AddStringToObject(intrinsicObj, "intrinsicId", std::to_string(intrinsic_map.first).c_str())) {
+              ret = false;
+          }
+          auto&& intrinsic = intrinsic_map.second;
+          if(!cJSON_AddStringToObject(intrinsicObj, "width", std::to_string(intrinsic->w()).c_str())) {
+              ret = false;
+          }
+          if(!cJSON_AddStringToObject(intrinsicObj, "height", std::to_string(intrinsic->h()).c_str())) {
+              ret = false;
+          }
+          if(!cJSON_AddStringToObject(intrinsicObj, "sensorWidth", std::to_string(int(intrinsic->sensorWidth())).c_str())) {
+              ret = false;
+          }
+          if(!cJSON_AddStringToObject(intrinsicObj, "sensorHeight", std::to_string(int(intrinsic->sensorHeight())).c_str())) {
+              ret = false;
+          }
+          if(!cJSON_AddStringToObject(intrinsicObj, "type", intrinsic->getTypeStr().c_str())) {
+              ret = false;
+          }
+          if(!cJSON_AddStringToObject(intrinsicObj, "initializationMode", EInitMode_enumToString(intrinsic->getInitializationMode()).c_str())) {
+              ret = false;
+          }
+          
+          std::shared_ptr<camera::IntrinsicsScaleOffset> intrinsicScaleOffset =  std::dynamic_pointer_cast<camera::IntrinsicsScaleOffset>(intrinsic);
+          if(intrinsicScaleOffset) {
+              const double initialFocalLengthMM = (intrinsicScaleOffset->getInitialScale().x() > 0) ? intrinsicScaleOffset->sensorWidth() * intrinsicScaleOffset->getInitialScale().x() / double(intrinsic->w()): -1;
+              const double focalLengthMM = intrinsicScaleOffset->sensorWidth() * intrinsicScaleOffset->getScale().x() / double(intrinsic->w());
+              const double focalRatio = intrinsicScaleOffset->getScale().x() / intrinsicScaleOffset->getScale().y();
+              const double pixelAspectRatio = 1.0 / focalRatio;
+              
+              if(!cJSON_AddStringToObject(intrinsicObj, "initialFocalLength", std::to_string(int(initialFocalLengthMM)).c_str())) {
+                  ret = false;
+              }
+              if(!cJSON_AddStringToObject(intrinsicObj, "focalLength", std::to_string(focalLengthMM).c_str())) {
+                  ret = false;
+              }
+              if(!cJSON_AddStringToObject(intrinsicObj, "pixelRatio", std::to_string(pixelAspectRatio).c_str())) {
+                  ret = false;
+              }
+              if(!cJSON_AddStringToObject(intrinsicObj, "pixelRatioLocked", std::to_string(intrinsicScaleOffset->isRatioLocked()).c_str())) {
+                  ret = false;
+              }
+              
+              auto&& principalPoint = intrinsicScaleOffset->getOffset();
+              
+              const char* ppVals[2] = {std::to_string(principalPoint.x()).c_str(),
+                  std::to_string(principalPoint.y()).c_str()};
+              cJSON *principalPointObj = cJSON_CreateStringArray(ppVals, 2);
+              if (!principalPointObj)
+              {
+                  LOG_ERROR("Failed in creating json object 'principalPointObj'.");
+                  return false;
+              }
+              
+              if(!cJSON_AddStringToObject(intrinsicObj, "distortionInitializationMode", EInitMode_enumToString(intrinsicScaleOffset->getDistortionInitializationMode()).c_str())) {
+                  ret = false;
+              }
+              //TODO: distortion params
+              
+              cJSON_AddItemToObject(intrinsicObj, "principalPoint", principalPointObj);
+          }
+          if(!cJSON_AddStringToObject(intrinsicObj, "locked", std::to_string(intrinsic->isLocked()).c_str())) {
+              ret = false;
+          }
+          
+          cJSON_AddItemToArray(intrinsicObjs, intrinsicObj);
+      }
+      
   }
+    
+  FILE * fp;
+  
+  fp = fopen ((foldername + filename).c_str(), "w");
+    
+  char* sjson = cJSON_Print(monitor);
+  if (sjson == NULL)
+  {
+    LOG_ERROR("Failed to print monitor.\n");
+  }
+  fprintf(fp, "%s", sjson);
+  
+  fclose(fp);
+  cJSON_Delete(monitor);
 
 //  //extrinsics
 //  if(saveExtrinsics)
@@ -653,7 +704,7 @@ bool saveJSON(const sfmData::SfMData& sfmData, const std::string& filename, ESfM
   return ret;
 }
 
-bool loadJSON(sfmData::SfMData& sfmData, const std::string& filename, ESfMData partFlag, bool incompleteViews)//,
+bool loadJSON(sfmData::SfMData& sfmData, const std::string& foldername, const std::string& filename, ESfMData partFlag, bool incompleteViews)//,
 //              EViewIdMethod viewIdMethod, const std::string& viewIdRegex)
 {
 //  Version version;
@@ -661,12 +712,185 @@ bool loadJSON(sfmData::SfMData& sfmData, const std::string& filename, ESfMData p
   // load flags
   const bool loadViews = (partFlag & VIEWS) == VIEWS;
   const bool loadIntrinsics = (partFlag & INTRINSICS) == INTRINSICS;
-  const bool loadExtrinsics = (partFlag & EXTRINSICS) == EXTRINSICS;
-  const bool loadStructure = (partFlag & STRUCTURE) == STRUCTURE;
-  const bool loadControlPoints = (partFlag & CONTROL_POINTS) == CONTROL_POINTS;
-  const bool loadFeatures = (partFlag & OBSERVATIONS_WITH_FEATURES) == OBSERVATIONS_WITH_FEATURES;
-  const bool loadObservations = loadFeatures || ((partFlag & OBSERVATIONS) == OBSERVATIONS);
+//  const bool loadExtrinsics = (partFlag & EXTRINSICS) == EXTRINSICS;
+//  const bool loadStructure = (partFlag & STRUCTURE) == STRUCTURE;
+//  const bool loadControlPoints = (partFlag & CONTROL_POINTS) == CONTROL_POINTS;
+//  const bool loadFeatures = (partFlag & OBSERVATIONS_WITH_FEATURES) == OBSERVATIONS_WITH_FEATURES;
+//  const bool loadObservations = loadFeatures || ((partFlag & OBSERVATIONS) == OBSERVATIONS);
 
+    FILE * fp;
+    
+    fp = fopen ((foldername + filename).c_str(), "r");
+    if(!fp) {
+        LOG_ERROR("failed to open sfm data file %s", filename.c_str());
+    }
+    
+    std::string jsonStr;
+    fseek(fp , 0, SEEK_END);
+    size_t size = ftell(fp);
+    jsonStr.resize(size);
+    rewind(fp);
+    fread(&jsonStr[0], 1, size, fp);
+    fclose(fp);
+    
+    cJSON *monitor_json = cJSON_Parse(jsonStr.c_str());
+    if (!monitor_json)
+    {
+        const char *error_ptr = cJSON_GetErrorPtr();
+        if (error_ptr)
+        {
+            LOG_ERROR("Error before: %s\n", error_ptr);
+        }
+        
+        return false;
+    }
+    
+    IndexT viewId;
+    const cJSON* viewsObj = cJSON_GetObjectItemCaseSensitive(monitor_json, "views");
+    if(cJSON_IsArray(viewsObj)) {
+        const cJSON* viewObj = nullptr;
+        cJSON_ArrayForEach(viewObj, viewsObj)
+        {
+            cJSON* jviewId = cJSON_GetObjectItemCaseSensitive(viewObj, "viewId");
+            if(!cJSON_IsString(jviewId)) {
+                LOG_ERROR("Invalid viewId!");
+                return false;
+            }
+            
+            cJSON* jposeId = cJSON_GetObjectItemCaseSensitive(viewObj, "poseId");
+            if(!cJSON_IsString(jposeId)) {
+                LOG_ERROR("Invalid poseId!");
+                return false;
+            }
+            
+            cJSON* jintrinsicId = cJSON_GetObjectItemCaseSensitive(viewObj, "intrinsicId");
+            if(!cJSON_IsString(jintrinsicId)) {
+                LOG_ERROR("Invalid intrinsicId!");
+                return false;
+            }
+            
+            cJSON* jwidth = cJSON_GetObjectItemCaseSensitive(viewObj, "width");
+            if(!cJSON_IsString(jwidth)) {
+                LOG_ERROR("Invalid width!");
+                return false;
+            }
+            
+            cJSON* jheight = cJSON_GetObjectItemCaseSensitive(viewObj, "height");
+            if(!cJSON_IsString(jheight)) {
+                LOG_ERROR("Invalid height!");
+                return false;
+            }
+            
+            cJSON* jpath = cJSON_GetObjectItemCaseSensitive(viewObj, "path");
+            if(!cJSON_IsString(jpath)) {
+                LOG_ERROR("Invalid image path!");
+                return false;
+            }
+         
+            using namespace sfmData;
+            viewId = (IndexT)std::stoul(cJSON_GetStringValue(jviewId));
+            
+            std::vector<uint8_t> image_buffer;
+            int w,h;
+            loadpng(image_buffer, cJSON_GetStringValue(jpath), w, h);
+            
+            assert(w == (IndexT)std::stoul(cJSON_GetStringValue(jwidth)));
+            assert(h == (IndexT)std::stoul(cJSON_GetStringValue(jheight)));
+            
+            auto&& pView = std::make_shared<View>(
+                                                  viewId,
+                                                  (IndexT)std::stoul(cJSON_GetStringValue(jintrinsicId)),
+                                                  (IndexT)std::stoul(cJSON_GetStringValue(jposeId)),
+                                                  (IndexT)std::stoul(cJSON_GetStringValue(jwidth)),
+                                                  (IndexT)std::stoul(cJSON_GetStringValue(jheight)),
+                                                  image_buffer
+                                                  );
+            
+            
+            sfmData.views.insert(std::make_pair(viewId, pView));
+        }
+    }
+    
+    const cJSON* intrinsicsObj = cJSON_GetObjectItemCaseSensitive(monitor_json, "intrinsics");
+    if(cJSON_IsArray(intrinsicsObj)) {
+        const cJSON* intrinsicObj = nullptr;
+        cJSON_ArrayForEach(intrinsicObj, intrinsicsObj)
+        {
+            cJSON* jintrinsicId = cJSON_GetObjectItemCaseSensitive(intrinsicObj, "intrinsicId");
+            if(!cJSON_IsString(jintrinsicId)) {
+                LOG_ERROR("Invalid intrinsicId!");
+                return false;
+            }
+            
+            cJSON* jwidth = cJSON_GetObjectItemCaseSensitive(intrinsicObj, "width");
+            if(!cJSON_IsString(jwidth)) {
+                LOG_ERROR("Invalid width!");
+                return false;
+            }
+            
+            cJSON* jheight = cJSON_GetObjectItemCaseSensitive(intrinsicObj, "height");
+            if(!cJSON_IsString(jheight)) {
+                LOG_ERROR("Invalid height!");
+                return false;
+            }
+            
+            cJSON* jsensorWidth = cJSON_GetObjectItemCaseSensitive(intrinsicObj, "sensorWidth");
+            if(!cJSON_IsString(jsensorWidth)) {
+                LOG_ERROR("Invalid sensorWidth!");
+                return false;
+            }
+            
+//            cJSON* jsensorHeight = cJSON_GetObjectItemCaseSensitive(intrinsicObj, "sensorHeight");
+//            if(!cJSON_IsString(jsensorHeight)) {
+//                LOG_ERROR("Invalid sensorHeight!");
+//                return false;
+//            }
+            
+            cJSON* jfocalLength = cJSON_GetObjectItemCaseSensitive(intrinsicObj, "focalLength");
+            if(!cJSON_IsString(jfocalLength)) {
+                LOG_ERROR("Invalid focalLength!");
+            }
+            
+            cJSON* jpixelRatio = cJSON_GetObjectItemCaseSensitive(intrinsicObj, "pixelRatio");
+            if(!cJSON_IsString(jpixelRatio)) {
+                LOG_ERROR("Invalid pixelRatio!");
+            }
+            
+            cJSON* jtype = cJSON_GetObjectItemCaseSensitive(intrinsicObj, "type");
+            if(!cJSON_IsString(jtype)) {
+                LOG_ERROR("Invalid type!");
+            }
+
+            //TODO: check
+            if(std::string(cJSON_GetStringValue(jtype)) == "radial3") {
+                const double fmm = std::stod(cJSON_GetStringValue(jfocalLength));
+                // pixelRatio field was actually storing the focalRatio before version 1.2.5
+                const double focalRatio = std::stod(cJSON_GetStringValue(jpixelRatio));
+                const double sensorWidth = std::stod(cJSON_GetStringValue(jsensorWidth));
+                const double width = std::stod(cJSON_GetStringValue(jwidth));
+                const double height = std::stod(cJSON_GetStringValue(jheight));
+                const double fx = (fmm / sensorWidth) * width;
+                const double fy = fx / focalRatio;
+                auto pIntrinsic = std::make_shared<camera::PinholeRadialK3>(width, height, fx, fy);
+                
+                sfmData.intrinsics.insert(std::make_pair(viewId, pIntrinsic));
+            }
+        }
+    }
+    
+    cJSON_Delete(monitor_json);
+
+    
+    
+//    char* sjson = cJSON_Print(monitor);
+//    if (sjson == NULL)
+//    {
+//      LOG_ERROR("Failed to print monitor.\n");
+//    }
+//    fprintf(fp, "%s", sjson);
+    
+    fclose(fp);
+    
 //  // main tree
 //  bpt::ptree fileTree;
 //

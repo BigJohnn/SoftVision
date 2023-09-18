@@ -156,22 +156,22 @@ void ReconPipeline::AppendSfMData(uint32_t viewId,
 //    views.insert(std::make_pair(IndexT(views.size()), pView));
     views.insert(std::make_pair(viewId, pView));
     
-    float fov =  45.0f; //degree
+    float fov = PI / 4; //radian
     float sensorWidthmm = 36.0f;
-    float focalRatio = 1.0f / (2.0f * tanf(PI / 8));
+    float focalRatio = 1.0f / (2.0f * tanf(fov / 2));
     float focalLength = sensorWidthmm * focalRatio;
-    float fx = (focalLength / sensorWidthmm) * std::max(pView->getWidth(), pView->getHeight());
+    float fx = (focalLength / sensorWidthmm) * std::max(width_new, height_new);
     float fy = fx / focalRatio;
-//                                 = 43.46mm
+
     //TODO:
-    auto pIntrinsic = std::make_shared<camera::PinholeRadialK3>(width, height, fx, fy);
+    auto pIntrinsic = std::make_shared<camera::PinholeRadialK3>(width_new, height_new, fx, fy);
     
     auto&& intrinsics = m_sfmData->intrinsics;
     intrinsics.insert(std::make_pair(intrinsicId, pIntrinsic));
     
     {
         using namespace sfmDataIO;
-        Save(*m_sfmData, m_outputFolder + "cameraInit.sfm", ESfMData(VIEWS|INTRINSICS));
+        Save(*m_sfmData, m_outputFolder, "cameraInit.sfm", ESfMData(VIEWS|INTRINSICS));
     }
     
 #ifdef SOFTVISION_DEBUG
@@ -215,6 +215,14 @@ bool ReconPipeline::FeatureExtraction()
 #endif
     
     printf("%p Do FeatureExtraction ...\n", this);
+ 
+    using namespace sfmDataIO;
+    sfmData::SfMData tmpData;
+    //if cached then use
+    if(Load(tmpData, m_outputFolder, "cameraInit.sfm", ESfMData(VIEWS|INTRINSICS)))
+    {
+        *m_sfmData = tmpData;
+    }
     
     m_extractor = new featureEngine::FeatureExtractor(*m_sfmData);
 //    featureEngine::FeatureExtractor extractor(*m_sfmData);

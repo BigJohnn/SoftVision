@@ -213,7 +213,7 @@ namespace sfmDataIO {
  * @param[in] partFlag The ESfMData save flag
  * @return true if completed
  */
-bool saveJSON(const sfmData::SfMData& sfmData, const std::string& filename, ESfMData partFlag);
+bool saveJSON(const sfmData::SfMData& sfmData, const std::string& foldername, const std::string& filename, ESfMData partFlag);
 
 /**
  * @brief Load a JSON SfMData file.
@@ -225,7 +225,7 @@ bool saveJSON(const sfmData::SfMData& sfmData, const std::string& filename, ESfM
  * @param[in] viewIdRegex Optional regex used when viewIdMethod is FILENAME
  * @return true if completed
  */
-bool loadJSON(sfmData::SfMData& sfmData, const std::string& filename, ESfMData partFlag, bool incompleteViews = false);//,
+bool loadJSON(sfmData::SfMData& sfmData, const std::string& foldername, const std::string& filename, ESfMData partFlag, bool incompleteViews = false);//,
 //              EViewIdMethod viewIdMethod = EViewIdMethod::METADATA, const std::string& viewIdRegex = "");
 
 } // namespace sfmDataIO
