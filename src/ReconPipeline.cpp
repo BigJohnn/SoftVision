@@ -42,6 +42,8 @@
 #include <sfmDataIO/sfmDataIO.hpp>
 #include <sys/stat.h>
 
+#include <softvision_omp.hpp>
+
 std::vector<std::vector<uint8_t>> ReconPipeline::m_cachedBuffers;
 
 #ifdef SOFTVISION_DEBUG
@@ -89,6 +91,7 @@ ReconPipeline::~ReconPipeline()
     m_cachedBuffers.clear();
     
     delete m_extractor;
+    delete mp_hwc;
 }
 
 void ReconPipeline::CameraInit(void) {
@@ -100,6 +103,7 @@ void ReconPipeline::CameraInit(void) {
     printf("fov == %.2f, sensorWidthmm == %.2f ...\n",fov,sensorWidthmm);
     
     m_sfmData = new sfmData::SfMData();
+    mp_hwc = new HardwareContext();
 }
 
 void ReconPipeline::AppendSfMData(uint32_t viewId,
@@ -298,8 +302,12 @@ bool ReconPipeline::FeatureExtraction()
     }
     
     // set maxThreads
-    HardwareContext hwc;
-    hwc.setUserCoresLimit(8);
+//    HardwareContext hwc;
+    if(!mp_hwc) {
+        LOG_ERROR("HardwareContext is NULL!!");
+        return false;
+    }
+    mp_hwc->setUserCoresLimit(8);
     
     // feature extraction routines
     // for each View of the SfMData container:
@@ -308,7 +316,7 @@ bool ReconPipeline::FeatureExtraction()
     {
         system2::Timer timer;
         extractor.setOutputFolder(m_outputFolder);
-        extractor.process(hwc, image::EImageColorSpace::SRGB);
+        extractor.process(*mp_hwc, image::EImageColorSpace::SRGB);
 
         LOG_INFO("Task done in (s):%s " , std::to_string(timer.elapsed()).c_str());
     }
@@ -602,7 +610,7 @@ bool ReconPipeline::FeatureMatching()
 
     //Use matching grid sort
       bool useGridSort = true;
-    //Maximum number pf matches to keep
+    //Maximum number of matches to keep
     size_t numMatchesToKeep = 0;
     
       PairwiseMatches finalMatches;
@@ -626,7 +634,19 @@ bool ReconPipeline::FeatureMatching()
     return true;
 }
 
-bool ReconPipeline::StructureFromMotion()
+bool ReconPipeline::IncrementalSFM()
 {
+    LOG_INFO("StructureFromMotion\n"
+             "- This program performs incremental SfM (Initial Pair Essential + Resection)\n");
+    
+    omp_set_num_threads(mp_hwc->getMaxThreads());
+
+    sfm::ReconstructionEngine_sequentialSfM::Params sfmParams; //TODO: set it properly
+    
+    const double defaultLoRansacLocalizationError = 4.0;
+    if(!robustEstimation::adjustRobustEstimatorThreshold(sfmParams.localizerEstimator, sfmParams.localizerEstimatorError, defaultLoRansacLocalizationError))
+    {
+        return EXIT_FAILURE;
+    }
     return true;
 }

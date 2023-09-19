@@ -148,7 +148,7 @@ Pod::Spec.new do |spec|
   end
   
   spec.subspec 'utils' do |ss|
-      ss.source_files = "src/utils/*.{h,cpp}"
+      ss.source_files = "src/utils/*.*"
   end
 
   spec.subspec 'vectorGraphics' do |ss|

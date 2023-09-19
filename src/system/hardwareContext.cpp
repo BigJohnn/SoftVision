@@ -3,7 +3,7 @@
 #include "cpu.hpp"
 #include "MemoryInfo.hpp"
 #include <iostream>
-//#include <alicevision_omp.hpp>
+//#include <softvision_omp.hpp>
 
 
 void HardwareContext::displayHardware()

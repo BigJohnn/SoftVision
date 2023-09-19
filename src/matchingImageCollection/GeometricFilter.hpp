@@ -79,7 +79,7 @@ void robustModelEstimation(
         {
           MatchesPerDescType guidedGeometricInliers;
           geometricFilter.Geometry_guided_matching(sfmData, regionsPerView, imagePair, distanceRatio, guidedGeometricInliers);
-          //ALICEVISION_LOG_DEBUG("#before/#after: " << putative_inliers.size() << "/" << guided_geometric_inliers.size());
+          //LOG_DEBUG("#before/#after: " << putative_inliers.size() << "/" << guided_geometric_inliers.size());
           std::swap(inliers, guidedGeometricInliers);
         }
 

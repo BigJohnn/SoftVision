@@ -10,6 +10,7 @@
 
 #include <cstdint>
 #include <string>
+//#include <system/hardwareContext.hpp>
 
 namespace sfmData{
 class SfMData;
@@ -18,6 +19,7 @@ namespace featureEngine{
 class FeatureExtractor;
 }
 
+class HardwareContext;
 class ReconPipeline {
     
 public:
@@ -50,7 +52,7 @@ public:
     
     bool FeatureMatching();
     
-    bool StructureFromMotion();
+    bool IncrementalSFM();
     
     void SetOutputDataDir(const char* directory);
     
@@ -65,6 +67,7 @@ private:
     static std::vector<std::vector<uint8_t>> m_cachedBuffers;
     std::string m_describerTypesName;
     featureEngine::FeatureExtractor* m_extractor = nullptr;
+    HardwareContext* mp_hwc = nullptr;
 };
 
 #endif /* ReconPipeline_h */

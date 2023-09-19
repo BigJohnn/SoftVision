@@ -226,7 +226,7 @@ template<class Feature, template<typename, typename> class Distance, class Featu
 template<class DescriptorT>
 std::vector<Word> VocabularyTree<Feature, Distance, FeatureAllocator>::quantize(const std::vector<DescriptorT>& features) const
 {
-  // ALICEVISION_LOG_DEBUG("VocabularyTree quantize: " << features.size());
+  // LOG_DEBUG("VocabularyTree quantize: " << features.size());
   std::vector<Word> imgVisualWords(features.size(), 0);
 
   // quantize the features

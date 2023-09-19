@@ -33,9 +33,9 @@ void Fundamental7PSolver::solve(const Mat& x1, const Mat& x2, std::vector<robust
     encodeEpipolarEquation(x1, x2, &A);
 
     // Eigen::FullPivLU<Mat9> luA(A);
-    // ALICEVISION_LOG_DEBUG("rank(A) = " << luA.rank());
+    // LOG_DEBUG("rank(A) = " << luA.rank());
     // Eigen::JacobiSVD<Mat9> svdA(A);
-    // ALICEVISION_LOG_DEBUG("Its singular values are:\n" << svdA.singularValues());
+    // LOG_DEBUG("Its singular values are:\n" << svdA.singularValues());
 
     // find the two F matrices in the nullspace of A.
     Nullspace2(&A, &f1, &f2);
@@ -111,7 +111,7 @@ void Fundamental7PSphericalSolver::solve(const Mat& x1, const Mat& x2, std::vect
         Mat9 A = Mat::Zero(9, 9);
         encodeEpipolarSphericalEquation(x1, x2, &A);
         //    Eigen::FullPivLU<Mat9> luA(A);
-        //    ALICEVISION_LOG_DEBUG("\n rank(A) = " << luA.rank());
+        //    LOG_DEBUG("\n rank(A) = " << luA.rank());
         //    Eigen::JacobiSVD<Mat9> svdA(A);
         //    cout << "Its singular values are:" << endl << svdA.singularValues() << endl;
         // Find the two F matrices in the nullspace of A.

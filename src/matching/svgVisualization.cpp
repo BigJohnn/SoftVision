@@ -555,16 +555,16 @@ void saveEpipolarGeometry2SVG(const std::string &imagePath,
       epiLine = Fmat * Vec3(other.x(), other.y(), 1.0);
     }
 
-    //    ALICEVISION_LOG_DEBUG("test 1 o*F*p " << (Fmat*Vec3(p.x(), p.y(), 1.0)).transpose()*Vec3(other.x(), other.y(), 1.0));
-    //    ALICEVISION_LOG_DEBUG("test 2 p*F*o " << (Fmat.transpose()*Vec3(p.x(), p.y(), 1.0)).transpose()*Vec3(other.x(), other.y(), 1.0));
-    //    ALICEVISION_LOG_DEBUG("epiline\n" << epiLine << " dotprod " << (epiLine.dot(Vec3(p.x(), p.y(), 1.0))));
+    //    LOG_DEBUG("test 1 o*F*p " << (Fmat*Vec3(p.x(), p.y(), 1.0)).transpose()*Vec3(other.x(), other.y(), 1.0));
+    //    LOG_DEBUG("test 2 p*F*o " << (Fmat.transpose()*Vec3(p.x(), p.y(), 1.0)).transpose()*Vec3(other.x(), other.y(), 1.0));
+    //    LOG_DEBUG("epiline\n" << epiLine << " dotprod " << (epiLine.dot(Vec3(p.x(), p.y(), 1.0))));
     std::vector<Vec2> pts;
     if(lineToBorderPoints(epiLine, imageSize.first, imageSize.second, pts))
     {
-      //      ALICEVISION_LOG_DEBUG("pt1*epiline " << (epiLine.transpose()*Vec3(pts[0](0), pts[0](1), 1)));
-      //      ALICEVISION_LOG_DEBUG("pt1 " << pts[0]);
-      //      ALICEVISION_LOG_DEBUG("pt2*epiline " << (epiLine.transpose()*Vec3(pts[1](0), pts[1](1), 1)));
-      //      ALICEVISION_LOG_DEBUG("pt2 " << pts[1]);
+      //      LOG_DEBUG("pt1*epiline " << (epiLine.transpose()*Vec3(pts[0](0), pts[0](1), 1)));
+      //      LOG_DEBUG("pt1 " << pts[0]);
+      //      LOG_DEBUG("pt2*epiline " << (epiLine.transpose()*Vec3(pts[1](0), pts[1](1), 1)));
+      //      LOG_DEBUG("pt2 " << pts[1]);
       if(count > 7)
         svgStream.drawLine(pts[0](0), pts[0](1), pts[1](0), pts[1](1), svg::svgStyle().stroke("green", strokeWidth));
       else
@@ -579,7 +579,7 @@ void saveEpipolarGeometry2SVG(const std::string &imagePath,
         }
         
         
-//      ALICEVISION_LOG_DEBUG("********** pts size: " << pts.size() << " epiline " << epiLine << " out of image");
+//      LOG_DEBUG("********** pts size: " << pts.size() << " epiline " << epiLine << " out of image");
       if(pts.size() > 0)
       {
         svgStream.drawLine(pts[0](0), pts[0](1), p.x(), p.y(), svg::svgStyle().stroke("red", 10 * strokeWidth));
@@ -588,7 +588,7 @@ void saveEpipolarGeometry2SVG(const std::string &imagePath,
               ss<<"********** pts: " << pts[0].transpose()<<std::endl;
               LOG_INFO("%s", ss.str().c_str());
           }
-//        ALICEVISION_LOG_DEBUG("********** pts: " << pts[0].transpose());
+//        LOG_DEBUG("********** pts: " << pts[0].transpose());
       }
     }
     ++count;
@@ -618,7 +618,7 @@ void saveEpipolarGeometry2SVG(const std::string &imagePath,
   {
     // normalize coordinates
     Vec3 point = epipole.col(0);
-//    ALICEVISION_LOG_DEBUG("epipole:\n" << point);
+//    LOG_DEBUG("epipole:\n" << point);
       {
           std::stringstream ss;
           ss<<"F has kernel of size " << epipole.cols() << ":\n" << epipole<<std::endl;
@@ -626,18 +626,18 @@ void saveEpipolarGeometry2SVG(const std::string &imagePath,
       }
     //@todo check 0
     point /= point(2);
-//    ALICEVISION_LOG_DEBUG("epipole normalized:\n" << point);
+//    LOG_DEBUG("epipole normalized:\n" << point);
     // check if the point is inside the image
     if(!((point(0) > 0 && point(0) < imageSize.first) &&
             (point(1) > 0 && point(1) < imageSize.second)))
     {
-//      ALICEVISION_LOG_DEBUG("epipole outside the image:\n" << point);
+//      LOG_DEBUG("epipole outside the image:\n" << point);
       // point outside the image, clamp it to the borders
       if(point(0) < 0) point(0) = 0;
       if(point(0) > imageSize.first) point(0) = imageSize.first;
       if(point(1) < 0) point(1) = 0;
       if(point(1) > imageSize.second) point(0) = imageSize.second;
-//      ALICEVISION_LOG_DEBUG("clamped epipole:\n" << point);
+//      LOG_DEBUG("clamped epipole:\n" << point);
     }
     svgStream.drawCircle(point(0), point(1), 3 * radius, svg::svgStyle().stroke("red", strokeWidth).fill("red"));
   }

@@ -149,7 +149,7 @@ std::size_t LoadMatchFilePerImage(PairwiseMatches& matches,
     {
       #pragma omp critical
       {
-        ALICEVISION_LOG_DEBUG("Unable to load match file: " << matchFilename << " in: " << folder);
+        LOG_DEBUG("Unable to load match file: " << matchFilename << " in: " << folder);
       }
       continue;
     }
@@ -190,7 +190,7 @@ std::size_t loadMatchesFromFolder(PairwiseMatches& matches, const std::string& f
   {
     const std::string& matchFile = matchFiles[i];
     PairwiseMatches fileMatches;
-    ALICEVISION_LOG_DEBUG("Loading match file: " << matchFile);
+    LOG_DEBUG("Loading match file: " << matchFile);
     if(!LoadMatchFile(fileMatches, matchFile))
     {
       LOG_INFO("Unable to load match file: " << matchFile);

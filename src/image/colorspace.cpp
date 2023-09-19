@@ -101,7 +101,7 @@ std::string getDefaultColorConfigFilePath()
         const std::string configFromSource = getColorConfigFilePathFromSourceCode();
 //        if(fs::exists(configFromSource))
 //        {
-//            ALICEVISION_LOG_DEBUG("ALICEVISION_ROOT is not defined, use embedded OCIO config file from source code: " << configFromSource);
+//            LOG_DEBUG("ALICEVISION_ROOT is not defined, use embedded OCIO config file from source code: " << configFromSource);
 //            return configFromSource;
 //        }
         // Output message with logging before throw as this function could be called before main.
@@ -115,7 +115,7 @@ std::string getDefaultColorConfigFilePath()
 //        const std::string configFromSource = getColorConfigFilePathFromSourceCode();
 //        if(fs::exists(configFromSource))
 //        {
-//            ALICEVISION_LOG_DEBUG("Embedded OCIO config file in ALICEVISION_ROOT does not exist, use config from source code: " << configFromSource);
+//            LOG_DEBUG("Embedded OCIO config file in ALICEVISION_ROOT does not exist, use config from source code: " << configFromSource);
 //            return configFromSource;
 //        }
         LOG_ERROR("Embedded OCIO configuration file: '%s' cannot be accessed.",configOCIOFilePath.c_str());

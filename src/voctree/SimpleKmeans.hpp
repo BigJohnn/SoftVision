@@ -9,7 +9,7 @@
 #include "distance.hpp"
 #include "DefaultAllocator.hpp"
 
-#include <alicevision_omp.hpp>
+#include <softvision_omp.hpp>
 #include <SoftVisionLog.h>
 
 #include <boost/function.hpp>
@@ -36,7 +36,7 @@ struct InitRandom
   template<class Feature, class Distance, class FeatureAllocator>
   void operator()(const std::vector<Feature*>& features, size_t k, std::vector<Feature, FeatureAllocator>& centers, Distance distance, const int verbose = 0)
   {
-    ALICEVISION_LOG_DEBUG("#\t\tRandom initialization");
+    LOG_DEBUG("#\t\tRandom initialization");
     // Construct a random permutation of the features using a Fisher-Yates shuffle
     std::vector<Feature*> features_perm = features;
     for(size_t i = features.size(); i > 1; --i)
@@ -76,7 +76,7 @@ struct InitKmeanspp
     // 3. Add one new data point as a center. Each point x is chosen with probability 
     //    proportional to D(x)^2.
     // 4. Repeat Steps 2 and 3 until k centers have been chosen.
-    if(verbose > 0) ALICEVISION_LOG_DEBUG("Kmeanspp initialization");
+    if(verbose > 0) LOG_DEBUG("Kmeanspp initialization");
 
     centers.clear();
     centers.resize(k);
@@ -101,7 +101,7 @@ struct InitKmeanspp
     // add it to the centers
     centers[0] = *features[ randCenter ];
 
-    if(verbose > 2) ALICEVISION_LOG_DEBUG("First center picked randomly " << randCenter << ": " << centers[0]);
+    if(verbose > 2) LOG_DEBUG("First center picked randomly " << randCenter << ": " << centers[0]);
 
     // compute the distances
     for(dstiter = dists.begin(), featiter = features.begin(); dstiter != dists.end(); ++dstiter, ++featiter)
@@ -117,7 +117,7 @@ struct InitKmeanspp
     // iterate k-1 times
     for(int i = 1; i < k; ++i)
     {
-      if(verbose > 1) ALICEVISION_LOG_DEBUG("Finding initial center " << i + 1);
+      if(verbose > 1) LOG_DEBUG("Finding initial center " << i + 1);
 
       squared_distance_type bestSum = std::numeric_limits<squared_distance_type>::max();
       std::size_t bestCenter = -1;
@@ -177,7 +177,7 @@ struct InitKmeanspp
           distsTemp[it] = std::min(distance(*(features[it]), newCenter), dists[it]);
           distSum += distsTemp[it];
         }
-        if(verbose > 2) ALICEVISION_LOG_DEBUG("trial " << j << " found feat " << featidx << ": " << *features[ featidx ] << " with sum: " << distSum);
+        if(verbose > 2) LOG_DEBUG("trial " << j << " found feat " << featidx << ": " << *features[ featidx ] << " with sum: " << distSum);
 
         {
             std::lock_guard<std::mutex> lock(bestSumMutex);
@@ -191,7 +191,7 @@ struct InitKmeanspp
         }
 
       }
-      if(verbose > 2) ALICEVISION_LOG_DEBUG("feature found feat " << bestCenter << ": " << *features[ bestCenter ]);
+      if(verbose > 2) LOG_DEBUG("feature found feat " << bestCenter << ": " << *features[ bestCenter ]);
 
       // 3. add new data
       centers[i] = *features[ bestCenter ];
@@ -199,7 +199,7 @@ struct InitKmeanspp
       std::swap(dists, distsTempBest);
 
     }
-    if(verbose > 1) ALICEVISION_LOG_DEBUG("Done!");
+    if(verbose > 1) LOG_DEBUG("Done!");
 
   }
 };
@@ -220,7 +220,7 @@ struct InitGiven
 template<class Feature>
 inline void printFeat(const Feature &f)
 {
-  ALICEVISION_LOG_DEBUG(f);
+  LOG_DEBUG(f);
 }
 
 template<class Feature, class FeatureAllocator = typename DefaultAllocator<Feature>::type>
@@ -419,10 +419,10 @@ SimpleKmeans<Feature, Distance, FeatureAllocator>::clusterPointers(const std::ve
   assert(restarts_ > 0);
   for(std::size_t starts = 0; starts < restarts_; ++starts)
   {
-    if(verbose_ > 0) ALICEVISION_LOG_DEBUG("Trial " << starts + 1 << "/" << restarts_);
+    if(verbose_ > 0) LOG_DEBUG("Trial " << starts + 1 << "/" << restarts_);
     choose_centers_(features, k, new_centers, distance_, verbose_);
     squared_distance_type sse = clusterOnce(features, k, new_centers, new_membership);
-    if(verbose_ > 0) ALICEVISION_LOG_DEBUG("End of Trial " << starts + 1 << "/" << restarts_);
+    if(verbose_ > 0) LOG_DEBUG("End of Trial " << starts + 1 << "/" << restarts_);
     if(sse < least_sse)
     {
       least_sse = sse;
@@ -450,10 +450,10 @@ SimpleKmeans<Feature, Distance, FeatureAllocator>::clusterOnce(const std::vector
   std::vector<std::mutex> centersLocks(k);
   squared_distance_type max_center_shift = std::numeric_limits<squared_distance_type>::max();
 
-  if(verbose_ > 0) ALICEVISION_LOG_DEBUG("Iterations");
+  if(verbose_ > 0) LOG_DEBUG("Iterations");
   for(std::size_t iter = 0; iter < max_iterations_; ++iter)
   {
-    if(verbose_ > 0) ALICEVISION_LOG_DEBUG("*");
+    if(verbose_ > 0) LOG_DEBUG("*");
     // Zero out new centers and counts
     std::fill(new_center_counts.begin(), new_center_counts.end(), 0);
     //		for(std::size_t i = 0; i < k; checkElements(new_centers[i++], "bef"));
@@ -542,13 +542,13 @@ SimpleKmeans<Feature, Distance, FeatureAllocator>::clusterOnce(const std::vector
         // @todo use a better strategy like taking splitting the largest cluster
         unsigned int index = rand() % features.size();
         centers[i] = *features[index];
-        ALICEVISION_LOG_DEBUG("Choosing a new center: " << index);
+        LOG_DEBUG("Choosing a new center: " << index);
       }
     }
-    //			ALICEVISION_LOG_DEBUG("max_center_shift: " << max_center_shift);  
+    //			LOG_DEBUG("max_center_shift: " << max_center_shift);  
     if(max_center_shift <= 10e-10) break;
   }
-  if(verbose_ > 0) ALICEVISION_LOG_DEBUG("");
+  if(verbose_ > 0) LOG_DEBUG("");
 
   // Return the sum squared error
   /// @todo Kahan summation?

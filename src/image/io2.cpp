@@ -536,7 +536,7 @@
 ////               Image<T>& image,
 ////               const ImageReadOptions& imageReadOptions)
 ////{
-//////    ALICEVISION_LOG_DEBUG("[IO] Read Image: " << path);
+//////    LOG_DEBUG("[IO] Read Image: " << path);
 ////
 ////    // check requested channels number
 ////    if (nchannels == 0)
@@ -978,7 +978,7 @@
 ////            toColorSpace = EImageColorSpace::LINEAR;
 ////    }
 ////
-////    ALICEVISION_LOG_DEBUG("[IO] Write Image: " << path << "\n"
+////    LOG_DEBUG("[IO] Write Image: " << path << "\n"
 ////                        << "\t- width: " << image.Width() << "\n"
 ////                        << "\t- height: " << image.Height() << "\n"
 ////                        << "\t- channels: " << nchannels);
@@ -1094,7 +1094,7 @@
 ////            {
 ////                storageDataType = EStorageDataType::Half;
 ////            }
-////            ALICEVISION_LOG_DEBUG("writeImage storageDataTypeStr: " << storageDataType);
+////            LOG_DEBUG("writeImage storageDataTypeStr: " << storageDataType);
 ////        }
 ////
 ////        if (storageDataType == EStorageDataType::HalfFinite)
