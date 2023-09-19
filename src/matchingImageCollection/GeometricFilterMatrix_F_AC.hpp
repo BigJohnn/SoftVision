@@ -61,6 +61,7 @@ struct GeometricFilterMatrix_F_AC : public GeometricFilterMatrix
   {
     out_geometricInliersPerType.clear();
 
+      LOG_DEBUG("geometricEstimation ..");
     // get back corresponding view index
     const IndexT I = pairIndex.first;
     const IndexT J = pairIndex.second;
@@ -71,7 +72,7 @@ struct GeometricFilterMatrix_F_AC : public GeometricFilterMatrix
     const camera::IntrinsicBase* camI = sfmData->getIntrinsicPtr(viewI.getIntrinsicId());
     const camera::IntrinsicBase* camJ = sfmData->getIntrinsicPtr(viewJ.getIntrinsicId());
 
-      LOG_DEBUG("camI,camJ validation: %d %d", camI->isValid(), camJ->isValid());
+    LOG_DEBUG("camI,camJ validation: %d %d", camI->isValid(), camJ->isValid());
     const std::pair<std::size_t, std::size_t> imageSizeI(viewI.getWidth(), viewI.getHeight());
     const std::pair<std::size_t, std::size_t> imageSizeJ(viewJ.getWidth(), viewJ.getHeight());
 
@@ -103,8 +104,12 @@ struct GeometricFilterMatrix_F_AC : public GeometricFilterMatrix
 
     const std::vector<feature::EImageDescriberType> descTypes = getCommonDescTypes(regionI, regionJ);
 
-    if(descTypes.empty())
-      return EstimationStatus(false, false);
+      
+      if(descTypes.empty()) {
+          LOG_ERROR("descTypes empty!");
+          return EstimationStatus(false, false);
+      }
+      
 
     // retrieve all 2D features as undistorted positions into flat arrays
     Mat xI, xJ;

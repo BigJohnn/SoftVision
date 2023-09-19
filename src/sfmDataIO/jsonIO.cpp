@@ -517,9 +517,7 @@ bool saveJSON(const sfmData::SfMData& sfmData, const std::string& foldername, co
               LOG_ERROR("Failed in creating json object 'view'.");
               return false;
           }
-          if(!cJSON_AddStringToObject(viewObj, "path", (foldername + std::to_string(view.second->getViewId()) + ".png").c_str())) {
-              ret = false;
-          }
+
           if(!cJSON_AddStringToObject(viewObj, "viewId", std::to_string(view.second->getViewId()).c_str())) {
               ret = false;
           }
@@ -723,6 +721,7 @@ bool loadJSON(sfmData::SfMData& sfmData, const std::string& foldername, const st
     fp = fopen ((foldername + filename).c_str(), "r");
     if(!fp) {
         LOG_ERROR("failed to open sfm data file %s", filename.c_str());
+        return false;
     }
     
     std::string jsonStr;
@@ -780,19 +779,13 @@ bool loadJSON(sfmData::SfMData& sfmData, const std::string& foldername, const st
                 LOG_ERROR("Invalid height!");
                 return false;
             }
-            
-            cJSON* jpath = cJSON_GetObjectItemCaseSensitive(viewObj, "path");
-            if(!cJSON_IsString(jpath)) {
-                LOG_ERROR("Invalid image path!");
-                return false;
-            }
          
             using namespace sfmData;
             viewId = (IndexT)std::stoul(cJSON_GetStringValue(jviewId));
             
             std::vector<uint8_t> image_buffer;
             int w,h;
-            loadpng(image_buffer, cJSON_GetStringValue(jpath), w, h);
+            loadpng(image_buffer, (foldername + std::to_string(viewId) + ".png").c_str(), w, h);
             
             assert(w == (IndexT)std::stoul(cJSON_GetStringValue(jwidth)));
             assert(h == (IndexT)std::stoul(cJSON_GetStringValue(jheight)));
@@ -873,7 +866,8 @@ bool loadJSON(sfmData::SfMData& sfmData, const std::string& foldername, const st
                 const double fy = fx / focalRatio;
                 auto pIntrinsic = std::make_shared<camera::PinholeRadialK3>(width, height, fx, fy);
                 
-                sfmData.intrinsics.insert(std::make_pair(viewId, pIntrinsic));
+                IndexT intrinsicId = (IndexT)std::stoul(cJSON_GetStringValue(jintrinsicId));
+                sfmData.intrinsics.insert(std::make_pair(intrinsicId, pIntrinsic));
             }
         }
     }

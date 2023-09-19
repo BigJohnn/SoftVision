@@ -16,6 +16,8 @@
 #include <sfmData/View.hpp>
 #include <camera/PinholeRadial.hpp>
 #include <featureEngine/FeatureExtractor.hpp>
+#include <feature/ImageDescriber.hpp>
+
 #include <system/Timer.hpp>
 #include <SoftVisionLog.h>
 
@@ -38,7 +40,7 @@
 #include <robustEstimation/estimators.hpp>
 
 #include <sfmDataIO/sfmDataIO.hpp>
-
+#include <sys/stat.h>
 
 std::vector<std::vector<uint8_t>> ReconPipeline::m_cachedBuffers;
 
@@ -218,21 +220,58 @@ bool ReconPipeline::FeatureExtraction()
  
     using namespace sfmDataIO;
     sfmData::SfMData tmpData;
-    //if cached then use
-    if(Load(tmpData, m_outputFolder, "cameraInit.sfm", ESfMData(VIEWS|INTRINSICS)))
+    // If cached data exists then use it.
+    if(m_sfmData->views.empty() && Load(tmpData, m_outputFolder, "cameraInit.sfm", ESfMData(VIEWS|INTRINSICS)))
     {
         *m_sfmData = tmpData;
     }
     
     m_extractor = new featureEngine::FeatureExtractor(*m_sfmData);
-//    featureEngine::FeatureExtractor extractor(*m_sfmData);
+
     auto&& extractor = *m_extractor;
+    
     int rangeStart = 0, rangeSize = m_sfmData->views.size();
     extractor.setRange(rangeStart, rangeSize);
     
     //TODO: performance optimization
 //    m_describerTypesName = feature::EImageDescriberType_enumToString(feature::EImageDescriberType::DSPSIFT);
-    m_describerTypesName = feature::EImageDescriberType_enumToString(feature::EImageDescriberType::SIFT);
+    
+    auto descType = feature::EImageDescriberType::SIFT;
+    m_describerTypesName = feature::EImageDescriberType_enumToString(descType);
+    
+    bool needExtract = false;
+    for(auto&& item : m_sfmData->views)
+    {
+        auto&& prefix = m_outputFolder + std::to_string(item.first) + "." + m_describerTypesName;
+
+        struct stat buffer1;
+        struct stat buffer2;
+        if((stat((prefix + ".desc").c_str(), &buffer1)) != 0 ||
+           (stat((prefix + ".feat").c_str(), &buffer2)) != 0) {
+            LOG_INFO("feat/desc files are not complete, need do extract.");
+            needExtract = true;
+            break;
+        }
+    }
+    if(!needExtract) {
+        //loading
+        
+        auto&& mpRegions = m_extractor->getRegionsPerView();
+        for(auto&& item : m_sfmData->views)
+        {
+            auto&& prefix = m_outputFolder + std::to_string(item.first) + "." + m_describerTypesName;
+            
+            std::unique_ptr<feature::Regions> regions;
+            
+            std::unique_ptr<feature::ImageDescriber> decriber = feature::createImageDescriber(descType);
+            (*decriber).allocate(regions);
+            
+            regions->Load(prefix + ".feat", prefix + ".desc");
+            mpRegions.addRegions(item.first, descType, regions.release());
+        }
+        
+        return true;
+    }
     
 //    std::string names;
 //    for(int i = 0; i < rangeSize; ++i)
@@ -350,36 +389,42 @@ bool ReconPipeline::FeatureMatching()
     // load the corresponding view regions
     RegionsPerView regionsPerView;
     
-    std::atomic_bool invalid(false);
-#pragma omp parallel num_threads(3)
- for(auto iter = m_sfmData->getViews().begin(); iter != m_sfmData->getViews().end() && !invalid; ++iter)
- {
-#pragma omp single nowait
-   {
-     for(std::size_t i = 0; i < imageDescriberTypes.size(); ++i)
+    if(m_extractor->getRegionsPerView().isEmpty()) {
+        std::atomic_bool invalid(false);
+    #pragma omp parallel num_threads(3)
+     for(auto iter = m_sfmData->getViews().begin(); iter != m_sfmData->getViews().end() && !invalid; ++iter)
      {
-       if(filter.empty() || filter.find(iter->second.get()->getViewId()) != filter.end())
+    #pragma omp single nowait
        {
-//           std::unique_ptr<feature::Regions> regionsPtr = std::move(m_extractor->getRegionsPerView()[(*iter)->v]);
-           auto* regionsPtr = (feature::Regions*)&(m_extractor->getRegionsPerView().getRegions(iter->second.get()->getViewId(), imageDescriberTypes[i]));
-//           m_extractor->getRegionsPerView()
-         if(regionsPtr)
+         for(std::size_t i = 0; i < imageDescriberTypes.size(); ++i)
          {
-#pragma omp critical
+           if(filter.empty() || filter.find(iter->second.get()->getViewId()) != filter.end())
            {
-               LOG_DEBUG("regionsPerView.addRegions viewid=%u regionsptr==%p", iter->second.get()->getViewId(), regionsPtr);
-             regionsPerView.addRegions(iter->second.get()->getViewId(), imageDescriberTypes.at(i), regionsPtr);
-//             ++progressDisplay;
+    //           std::unique_ptr<feature::Regions> regionsPtr = std::move(m_extractor->getRegionsPerView()[(*iter)->v]);
+               auto* regionsPtr = (feature::Regions*)&(m_extractor->getRegionsPerView().getRegions(iter->second.get()->getViewId(), imageDescriberTypes[i]));
+    //           m_extractor->getRegionsPerView()
+             if(regionsPtr)
+             {
+    #pragma omp critical
+               {
+                   LOG_DEBUG("regionsPerView.addRegions viewid=%u regionsptr==%p", iter->second.get()->getViewId(), regionsPtr);
+                 regionsPerView.addRegions(iter->second.get()->getViewId(), imageDescriberTypes.at(i), regionsPtr);
+    //             ++progressDisplay;
+               }
+             }
+             else
+             {
+               invalid = true;
+             }
            }
-         }
-         else
-         {
-           invalid = true;
          }
        }
      }
-   }
- }
+    }
+    else {
+        regionsPerView = std::move(m_extractor->getRegionsPerView());
+    }
+    
     
     // perform the matching
       system2::Timer timer;
