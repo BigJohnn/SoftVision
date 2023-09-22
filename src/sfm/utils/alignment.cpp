@@ -26,6 +26,8 @@
 
 #include <SoftVisionLog.h>
 
+#include <utils/statisticUtil.hpp>
+
 
 //namespace bacc = boost::accumulators;
 
@@ -832,14 +834,17 @@ void computeNewCoordinateSystemFromLandmarks(const sfmData::SfMData& sfmData,
     const std::size_t cacheSize = 10000;
     const double percentile = 0.99;
 //    using namespace boost::accumulators;
-    using AccumulatorMax = accumulator_set<double, stats<tag::tail_quantile<right>>>;
-    AccumulatorMax accDist(tag::tail<right>::cache_size = cacheSize);
+//    using AccumulatorMax = accumulator_set<double, stats<tag::tail_quantile<right>>>;
+//    AccumulatorMax accDist(tag::tail<right>::cache_size = cacheSize);
 
+    std::vector<double> accDistribute;
+    
     // Center the point cloud in [0;0;0]
     for(int i = 0; i < landmarksCount; ++i)
     {
         vX.col(i) -= meanPoints;
-        accDist(vX.col(i).norm());
+//        accDist(vX.col(i).norm());
+        accDistribute.emplace_back(vX.col(i).norm());
     }
 
     // Perform an svd over vX*vXT (var-covar)
@@ -854,7 +859,10 @@ void computeNewCoordinateSystemFromLandmarks(const sfmData::SfMData& sfmData,
         U.col(2) = -U.col(2);
     }
 
-    const double distMax = quantile(accDist, quantile_probability = percentile);
+    
+//    99% of distribution is below distMax:
+//    const double distMax = quantile(accDist, quantile_probability = percentile);
+    const double distMax = utils::quantile(accDistribute, percentile);
 
     out_S = (distMax > 0.00001 ? 1.0 / distMax : 1.0);
     out_R = U.transpose();
