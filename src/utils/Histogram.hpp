@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-namespace aliceVision {
+
 namespace utils {
 // A histogram class.
 // The Histogram object can keep a tally of values
@@ -140,4 +140,4 @@ private:
 };
 
 } // namespace utils
-} // namespace aliceVision
+

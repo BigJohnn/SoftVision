@@ -30,6 +30,8 @@
 #include <string.h>
 #endif
 
+#include <iostream>
+#define LOG_X(x) std::cout << x << std::endl
 // === auxiliar functions
 static inline char *timenow();
 

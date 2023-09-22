@@ -69,14 +69,14 @@
 ////          }
 ////          catch(std::invalid_argument& e)
 ////          {
-////            ALICEVISION_LOG_ERROR("ViewId captured in the filename '" << filename << "' can't be converted to a number. "
+////            LOG_ERROR("ViewId captured in the filename '" << filename << "' can't be converted to a number. "
 ////                                  "The regex '" << viewIdRegex << "' is probably incorrect.");
 ////            throw;
 ////          }
 ////      }
 ////      else
 ////      {
-////        ALICEVISION_LOG_ERROR("The Regex '" << viewIdRegex << "' must match a unique number in the filename " << filename << "' to be used as viewId.");
+////        LOG_ERROR("The Regex '" << viewIdRegex << "' must match a unique number in the filename " << filename << "' to be used as viewId.");
 ////        throw std::invalid_argument("The Regex '" + viewIdRegex + "' must match a unique number in the filename " + filename + "' to be used as viewId.");
 ////      }
 ////    }
@@ -92,7 +92,7 @@
 ////    // check if the rig poseId id is defined
 ////    if(view.isPartOfRig())
 ////    {
-////      ALICEVISION_LOG_ERROR("Error: Can't find poseId for'" << fs::path(view.getImagePath()).filename().string() << "' marked as part of a rig." << std::endl);
+////      LOG_ERROR("Error: Can't find poseId for'" << fs::path(view.getImagePath()).filename().string() << "' marked as part of a rig." << std::endl);
 ////      throw std::invalid_argument("Error: Can't find poseId for'" + fs::path(view.getImagePath()).filename().string() + "' marked as part of a rig.");
 ////    }
 ////    else

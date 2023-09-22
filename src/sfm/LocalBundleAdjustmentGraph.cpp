@@ -19,6 +19,10 @@
 
 #include <SoftVisionLog.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include <unistd.h>
 
 namespace sfm {
 
@@ -112,7 +116,7 @@ void LocalBundleAdjustmentGraph::exportIntrinsicsHistory(const std::string& fold
 {
   LOG_DEBUG("Exporting intrinsics history...");
   std::ofstream os;
-  os.open((fs::path(folder) / filename).string(), std::ios::app);
+  os.open(folder + filename, std::ios::app);
   os.seekp(0, std::ios::end); // put the cursor at the end
 
   for(const auto& intrinsicHistoryPair : _intrinsicsHistory)
@@ -147,7 +151,7 @@ bool LocalBundleAdjustmentGraph::removeViews(const sfmData::SfMData& sfmData, co
     const auto it = _nodePerViewId.find(viewId);
     if(it == _nodePerViewId.end())
     {
-      LOG_INFO("The view id: " << viewId << " does not exist in the graph, cannot remove it.");
+      LOG_INFO("The view id: %lu does not exist in the graph, cannot remove it.", viewId);
       continue;
     }
 
@@ -171,7 +175,7 @@ bool LocalBundleAdjustmentGraph::removeViews(const sfmData::SfMData& sfmData, co
     _nodePerViewId.erase(it->first); // warning: invalidates the iterator "it", so it can not be used after this line
 
     ++numRemovedNode;
-    LOG_DEBUG("The view #" << viewId << " has been successfully removed to the distance graph.");
+    LOG_DEBUG("The view #%lu has been successfully removed to the distance graph.", viewId);
   }
 
   // remove erased edges from _intrinsicsEdgesId
@@ -205,7 +209,7 @@ int LocalBundleAdjustmentGraph::getPoseDistance(const IndexT poseId) const
 {
   if(_distancePerPoseId.find(poseId) == _distancePerPoseId.end())
   {
-    LOG_DEBUG("The pose #" << poseId << " does not exist in the '_mapDistancePerPoseId' (map size: " << _distancePerPoseId.size() << ") \n");
+    LOG_DEBUG("The pose #%lu does not exist in the '_mapDistancePerPoseId' (map size: %lu) \n",poseId,_distancePerPoseId.size());
     return -1;
   }
   return _distancePerPoseId.at(poseId);
@@ -215,7 +219,7 @@ int LocalBundleAdjustmentGraph::getViewDistance(const IndexT viewId) const
 {
   if(_distancePerViewId.find(viewId) == _distancePerViewId.end())
   {
-    LOG_DEBUG("Cannot get the graph-distance of the view #" << viewId << ": does not exist in the '_mapDistancePerViewId':\n");
+    LOG_DEBUG("Cannot get the graph-distance of the view #%lu: does not exist in the '_mapDistancePerViewId':\n", viewId);
     return -1;
   }
   return _distancePerViewId.at(viewId);
@@ -270,14 +274,14 @@ void LocalBundleAdjustmentGraph::updateGraphWithNewViews(
     // it happens when multiple local BA are run successively, with no new reconstructed views.
     if(_nodePerViewId.find(viewId) != _nodePerViewId.end())
     {
-      LOG_DEBUG("Cannot add the view id: " << viewId << " to the graph, already exists in the graph.");
+      LOG_DEBUG("Cannot add the view id: %lu to the graph, already exists in the graph.", viewId);
       continue;
     }
 
     // check if the node corresponds to a posed views
     if(!sfmData.isPoseAndIntrinsicDefined(viewId))
     {
-      LOG_INFO("Cannot add the view id: " << viewId << " to the graph, its pose & intrinsic are not defined.");
+      LOG_INFO("Cannot add the view id: %lu to the graph, its pose & intrinsic are not defined.", viewId);
       continue;
     }
      
@@ -303,8 +307,8 @@ void LocalBundleAdjustmentGraph::updateGraphWithNewViews(
     numAddedEdges += addIntrinsicEdgesToTheGraph(sfmData, addedViewsId);
   }
   
-  LOG_DEBUG("The distances graph has been completed with " << nbAddedNodes<< " nodes & " << numAddedEdges << " edges.");
-  LOG_DEBUG("It contains " << _graph.maxNodeId() + 1 << " nodes & " << _graph.maxEdgeId() + 1 << " edges");
+  LOG_DEBUG("The distances graph has been completed with %lu nodes & %lu edges.", nbAddedNodes, numAddedEdges);
+  LOG_DEBUG("It contains %lu nodes & %lu edges", _graph.maxNodeId() + 1, _graph.maxEdgeId() + 1);
 }
 
 void LocalBundleAdjustmentGraph::computeGraphDistances(const sfmData::SfMData& sfmData, const std::set<IndexT>& newReconstructedViews)
@@ -324,7 +328,7 @@ void LocalBundleAdjustmentGraph::computeGraphDistances(const sfmData::SfMData& s
   {
     auto it = _nodePerViewId.find(viewId);
     if(it == _nodePerViewId.end())
-      LOG_INFO("The reconstructed view #" << viewId << " cannot be added as source for the BFS: does not exist in the graph.");
+      LOG_INFO("The reconstructed view #%lu cannot be added as source for the BFS: does not exist in the graph.", viewId);
     else
       bfs.addSource(it->second);
   }
@@ -457,7 +461,7 @@ std::vector<Pair> LocalBundleAdjustmentGraph::getNewEdges(
     std::map<IndexT, std::size_t> sharedLandmarksPerView;
 
     // get all the tracks of the new added view
-    const aliceVision::track::TrackIdSet& newViewTrackIds = tracksPerView.at(viewId);
+    const track::TrackIdSet& newViewTrackIds = tracksPerView.at(viewId);
     
     // keep the reconstructed tracks (with an associated landmark)
     std::vector<IndexT> newViewLandmarks; // all landmarks (already reconstructed) visible from the new view
@@ -585,10 +589,10 @@ void LocalBundleAdjustmentGraph::checkFocalLengthsConsistency(const std::size_t 
       _mapFocalIsConstant.at(idIntrinsic) = true;
       removeIntrinsicEdgesFromTheGraph(idIntrinsic);
       numOfConstFocal++;
-      LOG_DEBUG("The intrinsic #" << idIntrinsic << " is now considered to be stable.\n");
+      LOG_DEBUG("The intrinsic #%lu is now considered to be stable.\n", idIntrinsic);
     }
   }
-  LOG_DEBUG(numOfConstFocal << "/" << _mapFocalIsConstant.size() << " intrinsics with a stable focal.");
+  LOG_DEBUG("%lu/%lu intrinsics with a stable focal.", numOfConstFocal, _mapFocalIsConstant.size());
 }
 
 template<typename T> 
@@ -605,8 +609,15 @@ double LocalBundleAdjustmentGraph::standardDeviation(const std::vector<T>& data)
 
 void LocalBundleAdjustmentGraph::drawGraph(const sfmData::SfMData& sfmData, const std::string& folder, const std::string& nameComplement)
 {
-  if(!fs::exists(folder))
-    fs::create_directory(folder);
+    const char* foldername = folder.c_str();
+    if(0 != access(foldername, F_OK)) {
+        if(0 != mkdir(foldername, S_IFDIR)) {
+            LOG_ERROR("Cannot create folder %s", foldername);
+        }
+    }
+//    mkdir(<#const char *#>, S_IRWXU)
+//  if(!fs::exists(folder))
+//    fs::create_directory(folder);
   
   std::stringstream dotStream;
   dotStream << "digraph lemon_dot_example {" << "\n";
@@ -639,13 +650,13 @@ void LocalBundleAdjustmentGraph::drawGraph(const sfmData::SfMData& sfmData, cons
   }
   dotStream << "}" << "\n";
   
-  const std::string dotFilepath = (fs::path(folder) / ("graph_" + std::to_string(_viewIdPerNode.size())  + "_" + nameComplement + ".dot")).string();
+  const std::string dotFilepath = folder + "graph_" + std::to_string(_viewIdPerNode.size())  + "_" + nameComplement + ".dot";
   std::ofstream dotFile;
   dotFile.open(dotFilepath);
   dotFile.write(dotStream.str().c_str(), dotStream.str().length());
   dotFile.close();
   
-  LOG_DEBUG("The graph '"<< dotFilepath << "' has been saved.");
+  LOG_DEBUG("The graph '%s' has been saved.", dotFilepath.c_str());
 }
 
 std::size_t LocalBundleAdjustmentGraph::addIntrinsicEdgesToTheGraph(const sfmData::SfMData& sfmData, const std::set<IndexT>& newReconstructedViews)
@@ -702,52 +713,54 @@ void LocalBundleAdjustmentGraph::removeIntrinsicEdgesFromTheGraph(IndexT intrins
 
 std::size_t LocalBundleAdjustmentGraph::updateRigEdgesToTheGraph(const sfmData::SfMData& sfmData)
 {
-  std::size_t numAddedEdges = 0;
-
-  // remove all rig edges
-  for(auto& edgesPerRid: _rigEdgesId)
-  {
-    for(const int edgeId : edgesPerRid.second)
-    {
-      const auto& edge = _graph.edgeFromId(edgeId);
-      assert(_graph.valid(edge));
-      _graph.erase(edge);
-    }
-  }
-  _rigEdgesId.clear();
-
-  // recreate rig edges
-  std::map<IndexT, std::vector<IndexT>> viewIdsPerRig;
-
-  for(const auto& viewNode : _nodePerViewId) // for each reconstructed view in the graph
-  {
-    const sfmData::View& view = sfmData.getView(viewNode.first);
-    if(view.isPoseIndependant())
-      continue;
-    viewIdsPerRig[view.getRigId()].push_back(viewNode.first);
-  }
-
-  for(auto& it : viewIdsPerRig)
-    std::sort(it.second.begin(), it.second.end());
-
-  for(const auto& it : viewIdsPerRig)
-  {
-    // if(sfmData.getRig(rigId).isLocked()) // TODO
-    //   continue;
-    const IndexT rigId = it.first;
-    const std::vector<IndexT>& views = it.second;
-    for(int i = 0; i < views.size(); ++i)
-    {
-      for(int j = i; j < views.size(); ++j)
-      {
-        lemon::ListGraph::Edge edge = _graph.addEdge(_nodePerViewId[views[i]], _nodePerViewId[views[j]]);
-        _rigEdgesId[rigId].push_back(_graph.id(edge));
-        numAddedEdges++;
-      }
-    }
-  }
-
-  return numAddedEdges;
+    LOG_ERROR("should be No RIG!");
+    return 2;
+//  std::size_t numAddedEdges = 0;
+//
+//  // remove all rig edges
+//  for(auto& edgesPerRid: _rigEdgesId)
+//  {
+//    for(const int edgeId : edgesPerRid.second)
+//    {
+//      const auto& edge = _graph.edgeFromId(edgeId);
+//      assert(_graph.valid(edge));
+//      _graph.erase(edge);
+//    }
+//  }
+//  _rigEdgesId.clear();
+//
+//  // recreate rig edges
+//  std::map<IndexT, std::vector<IndexT>> viewIdsPerRig;
+//
+//  for(const auto& viewNode : _nodePerViewId) // for each reconstructed view in the graph
+//  {
+//    const sfmData::View& view = sfmData.getView(viewNode.first);
+//    if(view.isPoseIndependant())
+//      continue;
+//    viewIdsPerRig[view.getRigId()].push_back(viewNode.first);
+//  }
+//
+//  for(auto& it : viewIdsPerRig)
+//    std::sort(it.second.begin(), it.second.end());
+//
+//  for(const auto& it : viewIdsPerRig)
+//  {
+//    // if(sfmData.getRig(rigId).isLocked()) // TODO
+//    //   continue;
+//    const IndexT rigId = it.first;
+//    const std::vector<IndexT>& views = it.second;
+//    for(int i = 0; i < views.size(); ++i)
+//    {
+//      for(int j = i; j < views.size(); ++j)
+//      {
+//        lemon::ListGraph::Edge edge = _graph.addEdge(_nodePerViewId[views[i]], _nodePerViewId[views[j]]);
+//        _rigEdgesId[rigId].push_back(_graph.id(edge));
+//        numAddedEdges++;
+//      }
+//    }
+//  }
+//
+//  return numAddedEdges;
 }
 
 unsigned int LocalBundleAdjustmentGraph::countNodes() const

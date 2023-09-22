@@ -14,7 +14,6 @@
 
 namespace matching {
 
-#if 0
 /**
  * @brief Load a match file.
  *
@@ -71,7 +70,7 @@ void filterMatchesByViews(PairwiseMatches& matches, const std::set<IndexT>& view
  * @param[in] minNum The minimum number of matches that the file must contain (otherwise it is discarded).
  */
 void filterTopMatches(PairwiseMatches& allMatches, int maxNum, int minNum);
-#endif
+
 /**
  * @brief Save match files.
  *

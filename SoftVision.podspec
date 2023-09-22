@@ -188,6 +188,14 @@ Pod::Spec.new do |spec|
       ss.source_files = "src/graph/**/*.{hpp,cpp}"
   end
   
+  spec.subspec 'htmlDoc' do |ss|
+      ss.source_files = "src/htmlDoc/*.{hpp}"
+  end
+  
+  spec.subspec 'linearProgramming' do |ss|
+      ss.source_files = "src/linearProgramming/*.{hpp, cpp}"
+  end
+  
   
   
   # ――― Resources ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
@@ -234,6 +242,8 @@ Pod::Spec.new do |spec|
 #  spec.compiler_flags = '-DEIGEN_MAX_STATIC_ALIGN_BYTES=0 -DEIGEN_MAX_ALIGN_BYTES=0'
   spec.compiler_flags = '-DEIGEN_MAX_STATIC_ALIGN_BYTES=0 -DEIGEN_MAX_ALIGN_BYTES=0 -DVL_DISABLE_SSE2'
 #   spec.dependency "JSONKit", "~> 1.4"
+  spec.dependency "glog"
+#  spec.dependency "coin"
   spec.dependency "Eigen"
   spec.dependency "libpng"
   spec.dependency "libyuv"

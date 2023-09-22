@@ -8,7 +8,7 @@
 #pragma once
 
 #include <common/types.h>
-#include <system/Logger.hpp>
+#include <SoftVisionLog.h>
 #include <sfmData/SfMData.hpp>
 #include <matching/IndMatch.hpp>
 #include <matching/io.hpp>
@@ -42,7 +42,7 @@ inline bool loadPairwiseMatches(
 
   LOG_DEBUG("List of provided match folders:");
   for (auto it = folders.begin(); it != folders.end(); ++it)
-    LOG_DEBUG("\t - " << *it);
+    LOG_DEBUG("\t - %s" , (*it).c_str());
 
   if(!useOnlyMatchesFromFolder)
     matchesFolders = sfmData.getMatchesFolders();
@@ -53,7 +53,7 @@ inline bool loadPairwiseMatches(
 
   LOG_DEBUG("List of match folders to load:");
   for (auto it = matchesFolders.begin(); it != matchesFolders.end(); ++it)
-    LOG_DEBUG("\t - " << *it);
+      LOG_DEBUG("\t - %s" , (*it).c_str());
 
   LOG_DEBUG("Loading matches");
   if (!matching::Load(out_pairwiseMatches, sfmData.getViewsKeys(), matchesFolders, descTypes, maxNbMatches, minNbMatches))
@@ -61,7 +61,7 @@ inline bool loadPairwiseMatches(
     std::stringstream ss("Unable to read the matches file(s) from:\n");
     for(const std::string& folder : matchesFolders)
       ss << "\t- " << folder << "\n";
-    LOG_INFO(ss.str());
+    LOG_INFO("%s",ss.str().c_str());
     return false;
   }
   return true;

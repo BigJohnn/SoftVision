@@ -15,6 +15,24 @@
 //#include <cstdio>
 
 namespace sfmData {
+
+/**
+ * @brief EXIF Orientation to names
+ * https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
+ */
+enum class EEXIFOrientation
+{
+  NONE = 1
+  , REVERSED = 2
+  , UPSIDEDOWN = 3
+  , UPSIDEDOWN_REVERSED = 4
+  , LEFT_REVERSED = 5
+  , LEFT = 6
+  , RIGHT_REVERSED = 7
+  , RIGHT = 8
+  , UNKNOWN = -1
+};
+
 /**
  * @brief A view define an image by a string and unique indexes for
  * the view, the camera intrinsic, the pose and the subpose if the camera is part of a rig
@@ -166,9 +184,86 @@ public:
       }
     
       /**
+       * @brief Get view image path
+       * @return image path
+       */
+      const std::string& getImagePath() const
+      {
+        return _imagePath;
+      }
+    
+      /**
+       * @brief Get the view metadata structure
+       * @return the view metadata
+       */
+      const std::map<std::string, std::string>& getMetadata() const
+      {
+        return _metadata;
+      }
+    
+    /**
+       * @brief Get the list of viewID referencing the source views called "Ancestors"
+       * If an image is generated from multiple input images, "Ancestors" allows to keep track of the viewIDs of the original inputs views.
+       * For instance, the generated view can come from the fusion of multiple LDR images into one HDR image, the fusion from multi-focus
+       * stacking to get a fully focused image, fusion of images with multiple lighting to get a more diffuse lighting, etc.
+       * @return list of viewID of the ancestors
+       * @param[in] viewId the view ancestor id
+       */
+      void addAncestor(IndexT viewId)
+      {
+        _ancestors.push_back(viewId);
+      }
+
+      /**
+      * @Brief get all ancestors for this view
+      * @return ancestors
+      */
+      const std::vector<IndexT> & getAncestors() const
+      {
+        return _ancestors;
+      }
+
+      /**
+       * @brief Set the given resection id
+       * @param[in] resectionId The given resection id
+       */
+      void setResectionId(IndexT resectionId)
+      {
+        _resectionId = resectionId;
+      }
+    
+      /**
+       * @brief Get the resection id
+       * @return resection id
+       */
+      IndexT getResectionId() const
+      {
+        return _resectionId;
+      }
+    
+      /**
+       * @brief Get the metadata value as an integer
+       * @param[in] names List of possible names for the metadata
+       * @return the metadata value as an integer or -1 if it does not exist
+       */
+      int getIntMetadata(const std::vector<std::string>& names) const;
+    
+      /**
+       * @brief Get the corresponding "Orientation" metadata value
+       * @return the enum EEXIFOrientation
+       */
+      EEXIFOrientation getMetadataOrientation() const
+      {
+        const int orientation = getIntMetadata({"Exif:Orientation", "Orientation"});
+        if(orientation < 0)
+          return EEXIFOrientation::UNKNOWN;
+        return static_cast<EEXIFOrientation>(orientation);
+      }
+      /**
        * @brief Get an iterator on the map of metadata from a given name.
        */
       std::map<std::string, std::string>::const_iterator findMetadataIterator(const std::string& name) const;
+    
     
     /// image width
       std::size_t _width;
@@ -187,10 +282,16 @@ public:
       /// list of ancestors
       std::vector<IndexT> _ancestors;
     
+      IndexT _resectionId = UndefinedIndexT;
+    
       std::vector<uint8_t> _buffer;
     
     /// pose independent of other view(s)
       bool _isPoseIndependent = true;
+    
+private:
+    /// image path on disk
+      std::string _imagePath;
 };
 
 }

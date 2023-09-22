@@ -395,7 +395,28 @@ protected:
     double _sensorHeight = 24.0;
     std::string _serialNumber = nullptr;
 };
+
+/**
+ * @brief Apply intrinsic and extrinsic parameters to unit vector
+ * from the cameras focus to a point on the camera plane
+ * @param[in] pose Extrinsic pose
+ * @param[in] intrinsic Intrinsic camera paremeters
+ * @param[in] x Point in image
+ * @return The unit vector in 3D space pointing out from the camera to the point
+ */
+inline Vec3 applyIntrinsicExtrinsic(const geometry::Pose3& pose,
+                                    const IntrinsicBase* intrinsic,
+                                    const Vec2& x)
+{
+    // x = (u, v, 1.0)  // image coordinates
+    // X = R.t() * K.inv() * x + C // Camera world point
+    // getting the ray:
+    // ray = X - C = R.t() * K.inv() * x
+    return (pose.rotation().transpose() * intrinsic->toUnitSphere(intrinsic->removeDistortion(intrinsic->ima2cam(x)))).normalized();
 }
+
+}
+
 
 template <size_t M, size_t N, size_t K>
 Eigen::Matrix<double, M*K, M*N> getJacobian_AB_wrt_A(const Eigen::Matrix<double, M , N> & A, const Eigen::Matrix<double, N, K> & B)

@@ -24,8 +24,8 @@ namespace fs = boost::filesystem;
 
 namespace sfm {
 
-using namespace aliceVision::camera;
-using namespace aliceVision::geometry;
+using namespace camera;
+using namespace geometry;
 
 class IntrinsicsManifoldSymbolic : public utils::CeresManifold {
  public:
@@ -456,7 +456,7 @@ void BundleAdjustmentSymbolicCeres::Statistics::show() const
       ss << "\t- local strategy enabled: no\n";
   }
 
-  ALICEVISION_LOG_INFO("Bundle Adjustment Statistics:\n"
+  LOG_INFO("Bundle Adjustment Statistics:\n"
                         << ss.str()
                         << "\t- adjustment duration: " << time << " s\n"
                         << "\t- poses:\n"
@@ -909,7 +909,7 @@ bool BundleAdjustmentSymbolicCeres::adjust(sfmData::SfMData& sfmData, ERefineOpt
   // print summary
   std::cout << "symbolic" << std::endl;
   if(_ceresOptions.summary) {
-    ALICEVISION_LOG_INFO(summary.FullReport());
+    LOG_INFO(summary.FullReport());
   }
 
   // solution is not usable

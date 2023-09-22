@@ -36,6 +36,7 @@
 #include <matchingImageCollection/GeometricFilterMatrix_F_AC.hpp>
 
 #include <sfm/pipeline/structureFromKnownPoses/StructureEstimationFromKnownPoses.hpp>
+#include <sfm/pipeline/sequential/ReconstructionEngine_sequentialSfM.hpp>
 
 #include <robustEstimation/estimators.hpp>
 

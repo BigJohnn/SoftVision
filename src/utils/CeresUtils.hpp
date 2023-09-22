@@ -9,7 +9,7 @@
 #include <ceres/ceres.h>
 #include <memory>
 
-namespace aliceVision {
+
 namespace utils {
 
 // We can remove this wrapper once we can use ceres-solver 2.1 and newer. We can't do so right now
@@ -73,4 +73,4 @@ private:
 #endif
 
 } // namespace utils
-} // namespace aliceVision
+

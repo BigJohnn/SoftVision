@@ -38,4 +38,45 @@ bool SfMData::isPoseAndIntrinsicDefined(const View* view) const
     );
 }
 
+std::vector<std::string> SfMData::getFeaturesFolders() const
+{
+    return std::vector<std::string>{};
+}
+
+std::vector<std::string> SfMData::getMatchesFolders() const
+{
+    return std::vector<std::string>{};
+}
+
+void SfMData::setPose(const View& view, const CameraPose& absolutePose)
+{
+    // const bool knownPose = existsPose(view);
+    CameraPose& viewPose = _poses[view.getPoseId()];
+
+    // Pose dedicated for this view (independant from rig, even if it is potentially part of a rig)
+    if (view.isPoseIndependant())
+    {
+        viewPose = absolutePose;
+        return;
+    }
+
+    // Initialized rig
+//    if (view.getRigId() != UndefinedIndexT)
+//    {
+//        const Rig& rig = _rigs.at(view.getRigId());
+//        RigSubPose& subPose = getRigSubPose(view);
+//
+//        viewPose.setTransform(subPose.pose.inverse() * absolutePose.getTransform());
+//
+//        if (absolutePose.isLocked())
+//        {
+//            viewPose.lock();
+//        }
+//
+//        return;
+//    }
+
+    throw std::runtime_error("SfMData::setPose: dependant view pose not part of an initialized rig.");
+}
+
 }

@@ -92,5 +92,20 @@ double View::readRealNumber(const std::string& str) const
     }
 }
 
+int View::getIntMetadata(const std::vector<std::string>& names) const
+{
+    const std::string value = getMetadata(names);
+    if(value.empty())
+        return -1;
+    try
+    {
+        return std::stoi(value);
+    }
+    catch(std::exception&)
+    {
+        return -1;
+    }
+}
+
 
 }

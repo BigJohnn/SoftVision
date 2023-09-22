@@ -19,16 +19,19 @@
 #include <string>
 #include <vector>
 
+#include <unistd.h>
+#include <utils/strUtils.hpp>
+#include <dirent.h>
 //namespace fs = boost::filesystem;
 
 
 namespace matching {
-#if 0
+
 bool LoadMatchFile(PairwiseMatches& matches, const std::string& filepath)
 {
-  const std::string ext = fs::extension(filepath);
-
-  if(!fs::exists(filepath))
+  const std::string ext = utils::GetFileExtension(filepath);
+//  if(!fs::exists(filepath))
+  if(0 != access(filepath.c_str(), F_OK))
     return false;
 
   if(ext == ".txt")
@@ -73,7 +76,7 @@ bool LoadMatchFile(PairwiseMatches& matches, const std::string& filepath)
   }
   else
   {
-    LOG_INFO("Unknown matching file format: " << ext);
+    LOG_INFO("Unknown matching file format: %s", ext.c_str());
   }
   return false;
 }
@@ -145,11 +148,11 @@ std::size_t LoadMatchFilePerImage(PairwiseMatches& matches,
     const IndexT idView = *it;
     const std::string matchFilename = std::to_string(idView) + "." + extension;
     PairwiseMatches fileMatches;
-    if(!LoadMatchFile(fileMatches, (fs::path(folder) / matchFilename).string() ))
+    if(!LoadMatchFile(fileMatches, folder + matchFilename ))
     {
       #pragma omp critical
       {
-        LOG_DEBUG("Unable to load match file: " << matchFilename << " in: " << folder);
+        LOG_DEBUG("Unable to load match file: %s in: %s",matchFilename.c_str(),folder.c_str());
       }
       continue;
     }
@@ -176,24 +179,42 @@ std::size_t loadMatchesFromFolder(PairwiseMatches& matches, const std::string& f
 {
   std::size_t nbLoadedMatchFiles = 0;
   std::vector<std::string> matchFiles;
-  // list all matches files in 'folder' matching (i.e containing) 'pattern'
-  for(const auto& entry : boost::make_iterator_range(fs::directory_iterator(folder), {}))
+  // list all matches files in 'folder' matching (i.e containing) 'pattern',
+    //TODO: check!
+    struct dirent *entry;
+    DIR *dp;
+
+    dp = opendir(folder.c_str());
+    if (dp == NULL) {
+        perror("opendir: Path does not exist or could not be read.");
+        return 0;
+    }
+
+    std::vector<std::string> files;
+    while ((entry = readdir(dp)))
+        files.emplace_back(entry->d_name);
+
+    closedir(dp);
+    
+  for(const auto& entry : files)
   {
-    if(entry.path().string().find(pattern) != std::string::npos)
+    if(entry.find(pattern) != std::string::npos)
     {
-      matchFiles.push_back(entry.path().string());
+      matchFiles.push_back(entry);
     }
   }
+    
 
   #pragma omp parallel for num_threads(3)
   for(int i = 0; i < matchFiles.size(); ++i)
   {
     const std::string& matchFile = matchFiles[i];
     PairwiseMatches fileMatches;
-    LOG_DEBUG("Loading match file: " << matchFile);
+    LOG_DEBUG("Loading match file: %s" , matchFile.c_str());
     if(!LoadMatchFile(fileMatches, matchFile))
     {
-      LOG_INFO("Unable to load match file: " << matchFile);
+
+      LOG_X("Unable to load match file: " << matchFile);
       continue;
     }
     #pragma omp critical
@@ -218,7 +239,7 @@ std::size_t loadMatchesFromFolder(PairwiseMatches& matches, const std::string& f
     }   
   }
   if(!nbLoadedMatchFiles)
-    LOG_INFO("No matches file loaded in: " << folder);
+      LOG_X("No matches file loaded in: " << folder);
   return nbLoadedMatchFiles;
 }
 
@@ -236,9 +257,10 @@ bool Load(PairwiseMatches& matches,
   std::set<std::string> foldersSet;
   for(const auto& folder : folders)
   {
-    if(fs::exists(folder))
+    if(0 == access(folder.c_str(), F_OK))
     {
-      foldersSet.insert(fs::canonical(folder).string());
+//      foldersSet.insert(fs::canonical(folder).string());
+        foldersSet.insert(folder);
     }
   }
 
@@ -258,7 +280,7 @@ bool Load(PairwiseMatches& matches,
       ss << " * " << imagePairIt.first.first << "-" << imagePairIt.first.second << ": " << imagePairIt.second.getNbAllMatches() << "    ";
       for(const auto& matchesPerDeskIt: imagePairIt.second)
          ss << " [" << feature::EImageDescriberType_enumToString(matchesPerDeskIt.first) << ": " << matchesPerDeskIt.second.size() << "]";
-      LOG_INFO(ss.str());
+        LOG_X(ss.str());
     }
   };
 
@@ -278,7 +300,6 @@ bool Load(PairwiseMatches& matches,
 
   return true;
 }
-#endif
 
 class MatchExporter
 {

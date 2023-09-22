@@ -108,6 +108,14 @@ public:
 //    ~SfMData();
     
     /**
+     * @brief Set the given pose for the given view
+     * if the view is part of a rig, this method update rig pose/sub-pose
+     * @param[in] view The given view
+     * @param[in] pose The given pose
+     */
+    void setPose(const View& view, const CameraPose& pose);
+    
+    /**
      * @brief Check if the given view have defined intrinsic and pose
      * @param[in] view The given view
      * @return true if intrinsic and pose defined
@@ -155,6 +163,29 @@ public:
 //        return pose;
     }
     
+    /**
+     * @brief  Gives the pose with the given pose id.
+     * @param[in] poseId The given pose id
+     */
+    const CameraPose& getAbsolutePose(IndexT poseId) const
+    {
+        return _poses.at(poseId);
+    }
+    
+    /**
+     * @brief Erase yhe pose for the given poseId
+     * @param[in] poseId The given poseId
+     * @param[in] noThrow If false, throw exception if no pose found
+     */
+    void erasePose(IndexT poseId, bool noThrow = false)
+    {
+        auto it =_poses.find(poseId);
+        if (it != _poses.end())
+            _poses.erase(it);
+        else if (!noThrow)
+            throw std::out_of_range(std::string("Can't erase unfind pose ") + std::to_string(poseId));
+    }
+    
     std::set<feature::EImageDescriberType> getLandmarkDescTypes() const
     {
         std::set<feature::EImageDescriberType> output;
@@ -175,7 +206,42 @@ public:
             return intrinsics.at(intrinsicId).get();
         return nullptr;
     }
+    
+    /**
+     * @brief Get absolute features folder paths
+     * @return features folders paths
+     */
+    std::vector<std::string> getFeaturesFolders() const;
+
+    /**
+     * @brief Get absolute matches folder paths
+     * @return matches folder paths
+     */
+    std::vector<std::string> getMatchesFolders() const;
+    
+    inline const std::string getRootPath() const
+    {
+        return _rootPath;
+    }
+    
+    /**
+     * @brief Get a set of views keys
+     * @return set of views keys
+     */
+    std::set<IndexT> getViewsKeys() const
+    {
+        std::set<IndexT> viewKeys;
+        for (auto v: views)
+            viewKeys.insert(v.first);
+        return viewKeys;
+    }
+    
 private:
+    /// Absolute path to the SfMData file (should not be saved)
+    std::string _absolutePath;
+    /// root path, **/tmp/
+    std::string _rootPath;
+    
     /// Considered poses (indexed by view.getPoseId())
     Poses _poses;
 };

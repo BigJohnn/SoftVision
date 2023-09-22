@@ -19,6 +19,8 @@
 #include <multiview/resection/ProjectionDistanceError.hpp>
 #include <multiview/Unnormalizer.hpp>
 #include <multiview/ResectionKernel.hpp>
+#include <camera/IntrinsicsScaleOffsetDisto.hpp>
+#include <camera/PinholeRadial.hpp>
 
 
 namespace sfm {
@@ -108,7 +110,7 @@ bool SfMLocalizer::Localize(const Pair& imageSize,
         {
           // switch to a default value
           resectionData.error_max = 4.0;
-          LOG_DEBUG("LORansac: error was set to infinity, a default value of " 
+          LOG_X("LORansac: error was set to infinity, a default value of "
                   << resectionData.error_max << " is going to be used");
         }
 
@@ -146,7 +148,7 @@ bool SfMLocalizer::Localize(const Pair& imageSize,
 
   if(!resection)
   {
-    LOG_DEBUG("Resection status is false:\n"
+    LOG_X("Resection status is false:\n"
                           "\t- resection_data.vec_inliers.size() = " << resectionData.vec_inliers.size() << "\n"
                           "\t- minimumSamples = " << minimumSamples);
   }
@@ -160,7 +162,7 @@ bool SfMLocalizer::Localize(const Pair& imageSize,
     pose = geometry::Pose3(R, -R.transpose() * t);
   }
 
-  ALICEVISION_LOG_INFO("Robust Resection information:\n"
+  LOG_X("Robust Resection information:\n"
     "\t- resection status: " << resection << "\n"
     "\t- threshold (error max): " << resectionData.error_max << "\n"
     "\t- # points used for resection: " << resectionData.pt2D.cols() << "\n"
