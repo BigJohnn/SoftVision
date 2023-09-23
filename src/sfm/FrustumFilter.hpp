@@ -9,7 +9,7 @@
 
 #include <common/types.h>
 #include <geometry/Frustum.hpp>
-
+#include <numeric/numeric.hpp>
 
 
 namespace sfmData {

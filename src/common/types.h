@@ -10,6 +10,11 @@
 
 #include <limits>
 #include <set>
+
+#include <cmath>
+#define PI acos(-1)
+
+#include <numeric/numeric.hpp>
 typedef uint32_t IndexT;
 typedef std::pair<IndexT,IndexT> Pair;
 typedef std::set<Pair> PairSet;
@@ -24,8 +29,7 @@ template<typename K, typename V>
 using HashMap = std::map<K, V, std::less<K>, Eigen::aligned_allocator<std::pair<const K,V> > >;
 //==========================================================
 
-#include <cmath>
-#define PI acos(-1)
+
 
 typedef std::pair<IndexT,IndexT> Pair;
 

@@ -33,6 +33,17 @@ enum class EEXIFOrientation
   , UNKNOWN = -1
 };
 
+struct GPSExifTags
+{
+    static std::string latitude();
+    static std::string latitudeRef();
+    static std::string longitude();
+    static std::string longitudeRef();
+    static std::string altitude();
+    static std::string altitudeRef();
+    static std::vector<std::string> all();
+};
+
 /**
  * @brief A view define an image by a string and unique indexes for
  * the view, the camera intrinsic, the pose and the subpose if the camera is part of a rig
@@ -264,6 +275,40 @@ public:
        */
       std::map<std::string, std::string>::const_iterator findMetadataIterator(const std::string& name) const;
     
+      /**
+       * @brief Return true if the metadata for longitude and latitude exist.
+       * It checks that all the tags from GPSExifTags exists
+       * @return true if GPS data is available
+       */
+      bool hasGpsMetadata() const;
+    
+      /**
+       * @brief Return true if the given metadata name exists
+       * @param[in] names List of possible names for the metadata
+       * @return true if the corresponding metadata value exists
+       */
+      bool hasMetadata(const std::vector<std::string>& names) const;
+    
+    
+      /**
+       * @brief Get the gps position in the absolute cartesian reference system.
+       * @return The position x, y, z as a three dimensional vector.
+       */
+      Vec3 getGpsPositionFromMetadata() const;
+    
+      /**
+       * @brief Get the gps position in the WGS84 reference system.
+       * @param[out] lat the latitude
+       * @param[out] lon the longitude
+       * @param[out] alt the altitude
+       */
+      void getGpsPositionWGS84FromMetadata(double& lat, double& lon, double& alt) const;
+
+      /**
+       * @brief Get the gps position in the WGS84 reference system as a vector.
+       * @return A three dimensional vector with latitude, logitude and altitude.
+       */
+      Vec3 getGpsPositionWGS84FromMetadata() const;
     
     /// image width
       std::size_t _width;

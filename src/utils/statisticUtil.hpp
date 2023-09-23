@@ -1,6 +1,7 @@
+#pragma once
 #include <algorithm>
 #include <vector>
-#incldue <cmath>
+#include <cmath>
 
 namespace utils {
 

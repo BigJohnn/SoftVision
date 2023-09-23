@@ -415,7 +415,58 @@ inline Vec3 applyIntrinsicExtrinsic(const geometry::Pose3& pose,
     return (pose.rotation().transpose() * intrinsic->toUnitSphere(intrinsic->removeDistortion(intrinsic->ima2cam(x)))).normalized();
 }
 
+/**
+ * @brief Return the angle (degree) between two bearing vector rays
+ * @param[in] ray1 First bearing vector ray
+ * @param[in] ray2 Second bearing vector ray
+ * @return The angle (degree) between two bearing vector rays
+ */
+inline double angleBetweenRays(const Vec3& ray1, const Vec3& ray2)
+{
+    const double mag = ray1.norm() * ray2.norm();
+    const double dotAngle = ray1.dot(ray2);
+    return radianToDegree(acos(clamp(dotAngle/mag, -1.0 + 1.e-8, 1.0 - 1.e-8)));
 }
+
+/**
+ * @brief Return the angle (degree) between two bearing vector rays
+ * @param[in] pose1 First pose
+ * @param[in] intrinsic1 First intrinsic
+ * @param[in] pose2 Second pose
+ * @param[in] intrinsic2 Second intrinsic
+ * @param[in] x1 First image point
+ * @param[in] x2 Second image point
+ * @return The angle (degree) between two bearing vector rays
+ */
+inline double angleBetweenRays(const geometry::Pose3& pose1,
+                               const IntrinsicBase* intrinsic1,
+                               const geometry::Pose3& pose2,
+                               const IntrinsicBase* intrinsic2,
+                               const Vec2& x1,
+                               const Vec2& x2)
+{
+    const Vec3 ray1 = applyIntrinsicExtrinsic(pose1, intrinsic1, x1);
+    const Vec3 ray2 = applyIntrinsicExtrinsic(pose2, intrinsic2, x2);
+    return angleBetweenRays(ray1, ray2);
+}
+
+/**
+ * @brief Return the angle (degree) between two poses and a 3D point.
+ * @param[in] pose1 First pose
+ * @param[in] pose2 Second Pose
+ * @param[in] pt3D The 3d point
+ * @return The angle (degree) between two poses and a 3D point.
+ */
+inline double angleBetweenRays(const geometry::Pose3& pose1,
+                               const geometry::Pose3& pose2,
+                               const Vec3& pt3D)
+{
+    const Vec3 ray1 = pt3D - pose1.center();
+    const Vec3 ray2 = pt3D - pose2.center();
+    return angleBetweenRays(ray1, ray2);
+}
+
+} //camera
 
 
 template <size_t M, size_t N, size_t K>

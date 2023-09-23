@@ -41,6 +41,10 @@
 #include <iostream>
 #include <algorithm>
 
+#include <utils/fileUtil.hpp>
+
+#include <camera/Pinhole.hpp>
+
 #ifdef _MSC_VER
 #pragma warning( once : 4267 ) //warning C4267: 'argument' : conversion from 'size_t' to 'const int', possible loss of data
 #endif
@@ -134,7 +138,7 @@ ReconstructionEngine_sequentialSfM::ReconstructionEngine_sequentialSfM(
   : ReconstructionEngine(sfmData, outputFolder),
     _params(params),
     _htmlLogFile(loggingFile),
-    _sfmStepFolder((fs::path(outputFolder) / "intermediate_steps").string())
+    _sfmStepFolder(outputFolder + "intermediate_steps")
 {
   if (_params.useLocalBundleAdjustment)
   {
@@ -154,8 +158,8 @@ ReconstructionEngine_sequentialSfM::ReconstructionEngine_sequentialSfM(
   }
 
   // create sfm intermediate step folder
-  if(!fs::exists(_sfmStepFolder))
-    fs::create_directory(_sfmStepFolder);
+  if(!utils::exists(_sfmStepFolder))
+      utils::create_directory(_sfmStepFolder);
 }
 
 bool ReconstructionEngine_sequentialSfM::process()
@@ -542,7 +546,9 @@ double ReconstructionEngine_sequentialSfM::incrementalReconstruction()
         auto chrono_start = std::chrono::steady_clock::now();
         std::ostringstream os;
         os << "sfm_" << std::setw(8) << std::setfill('0') << resectionId;
-        sfmDataIO::Save(_sfmData, (fs::path(_sfmStepFolder) / (os.str() + _params.sfmStepFileExtension)).string(), _params.sfmStepFilter);
+
+          //TODO: check
+        sfmDataIO::Save(_sfmData, _sfmStepFolder, os.str() + _params.sfmStepFileExtension, _params.sfmStepFilter);
         LOG_X("Save of file " << os.str() << " took " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - chrono_start).count() << " msec.");
       }
 
@@ -790,7 +796,7 @@ bool ReconstructionEngine_sequentialSfM::bundleAdjustment(std::set<IndexT>& newR
     {
       // remove views from localBA graph
       _localStrategyGraph->removeViews(_sfmData, removedViewsIdIteration);
-      LOG_X("Views removed from the local BA graph: " << removedViewsIdIteration);
+      LOG_INFO("Views removed from the local BA graph: %d", removedViewsIdIteration.size());
     }
 
     LOG_X("Bundle adjustment iteration: " << iteration << " took " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - chronoItStart).count() << " msec.");
@@ -910,7 +916,7 @@ void ReconstructionEngine_sequentialSfM::exportStatistics(double reconstructionT
         obsHistogram[obs.size()] = 1;
     }
 
-    for(std::size_t i = 2; i < obsHistogram.size(); ++i)
+//    for(std::size_t i = 2; i < obsHistogram.size(); ++i)
       //_jsonLogTree.add("sfm.observationsHistogram." + std::to_string(i), obsHistogram[i]);
 
     //_jsonLogTree.put("sfm.time", reconstructionTime);                        // process time
@@ -970,28 +976,28 @@ bool ReconstructionEngine_sequentialSfM::findConnectedViews(
 
     // Check if the view is part of a rig
     {
-      const View& view = *_sfmData.views.at(viewId);
+//      const View& view = *_sfmData.views.at(viewId);
 
-      if(view.isPartOfRig())
-      {
-        // Some views can become indirectly localized when the sub-pose becomes defined
-        if(_sfmData.isPoseAndIntrinsicDefined(view.getViewId()))
-        {
-          continue;
-        }
-
-        // We cannot localize a view if it is part of an initialized RIG with unknown Rig Pose
-        const bool knownPose = _sfmData.existsPose(view);
-        const Rig& rig = _sfmData.getRig(view);
-        const RigSubPose& subpose = rig.getSubPose(view.getSubPoseId());
-
-        if(rig.isInitialized() &&
-           !knownPose &&
-           (subpose.status == ERigSubPoseStatus::UNINITIALIZED))
-        {
-          continue;
-        }
-      }
+//      if(view.isPartOfRig())
+//      {
+//        // Some views can become indirectly localized when the sub-pose becomes defined
+//        if(_sfmData.isPoseAndIntrinsicDefined(view.getViewId()))
+//        {
+//          continue;
+//        }
+//
+//        // We cannot localize a view if it is part of an initialized RIG with unknown Rig Pose
+//        const bool knownPose = _sfmData.existsPose(view);
+//        const Rig& rig = _sfmData.getRig(view);
+//        const RigSubPose& subpose = rig.getSubPose(view.getSubPoseId());
+//
+//        if(rig.isInitialized() &&
+//           !knownPose &&
+//           (subpose.status == ERigSubPoseStatus::UNINITIALIZED))
+//        {
+//          continue;
+//        }
+//      }
     }
 
     // Count the common possible putative point
@@ -1039,9 +1045,9 @@ bool ReconstructionEngine_sequentialSfM::findNextBestViews(
   // print the 30 best scores
   for(std::size_t i = 0; i < vec_viewsScore.size() && i < 30; ++i)
   {
-    LOG_X_OBJ << std::get<2>(vec_viewsScore[i]) << "(" << std::get<1>(vec_viewsScore[i]) << "), ";
+    LOG_X( std::get<2>(vec_viewsScore[i]) << "(" << std::get<1>(vec_viewsScore[i]) << "), ");
   }
-  LOG_X_OBJ << std::endl;
+//  LOG_X << std::endl;
 
   // If the list is empty or if the list contains images with no correspondences
   // -> (no resection will be possible)
@@ -1054,11 +1060,11 @@ bool ReconstructionEngine_sequentialSfM::findNextBestViews(
     }
     else
     {
-      LOG_X_OBJ << "Not enough point in the putative images: ";
+      LOG_X( "Not enough point in the putative images: ");
       for(auto v: vec_viewsScore)
-        LOG_X_OBJ << std::get<1>(v) << ", ";
+        LOG_X(std::get<1>(v) << ", ");
     }
-    LOG_X_OBJ << std::endl;
+//    LOG_X << std::endl;
     // All remaining images cannot be used for pose estimation
     return false;
   }
@@ -1218,7 +1224,7 @@ bool ReconstructionEngine_sequentialSfM::makeInitialPair3D(const Pair& currentPa
         // we need to clear poses & rigs & landmarks
         _sfmData.getPoses().clear();
         _sfmData.getLandmarks().clear();
-        _sfmData.resetRigs();
+//        _sfmData.resetRigs();
 
         // this initial pair is not usable
         return false;
@@ -1269,7 +1275,7 @@ bool ReconstructionEngine_sequentialSfM::makeInitialPair3D(const Pair& currentPa
       _htmlDocStream->pushInfo(jsxGraph.toStr());
       _htmlDocStream->pushInfo("<hr>");
 
-      std::ofstream htmlFileStream((fs::path(_outputFolder) / _htmlLogFile).string());
+      std::ofstream htmlFileStream(_outputFolder + _htmlLogFile);
       htmlFileStream << _htmlDocStream->getDoc();
     }
   }
@@ -1390,13 +1396,13 @@ bool ReconstructionEngine_sequentialSfM::getBestInitialImagePairs(std::vector<Pa
       std::vector<std::size_t> validCommonTracksIds(relativePose_info.vec_inliers.size());
       const Pose3 pose_I = Pose3(Mat3::Identity(), Vec3::Zero());
       const Pose3 pose_J = relativePose_info.relativePose;
-      const Mat34 PI = camI->getProjectiveEquivalent(pose_I);
+      const Mat34 PI_ = camI->getProjectiveEquivalent(pose_I);
       const Mat34 PJ = camJ->getProjectiveEquivalent(pose_J);
       std::size_t i = 0;
       for (const size_t inlier_idx: relativePose_info.vec_inliers)
       {
         Vec3 X;
-        multiview::TriangulateDLT(PI, xI.col(inlier_idx), PJ, xJ.col(inlier_idx), &X);
+        multiview::TriangulateDLT(PI_, xI.col(inlier_idx), PJ, xJ.col(inlier_idx), &X);
         IndexT trackId = commonTracksIds[inlier_idx];
         auto iter = map_tracksCommon[trackId].featPerView.begin();
         const Vec2 featI = _featuresPerView->getFeatures(I, map_tracksCommon[trackId].descType)[iter->second].coords().cast<double>();
@@ -1430,14 +1436,14 @@ bool ReconstructionEngine_sequentialSfM::getBestInitialImagePairs(std::vector<Pa
   const std::size_t nBestScores = std::min(std::size_t(50), bestImagePairs.size());
   std::sort(bestImagePairs.begin(), bestImagePairs.end(), std::greater<ImagePairScore>());
   LOG_X(bestImagePairs.size() << " possible image pairs. " << nBestScores << " best possibles image pairs are:");
-  LOG_X(boost::format("%=25s | %=15s | %=15s | %=15s | %=15s") % "Pair" % "Score" % "ImagePairScore" % "Angle" % "NbMatches");
+//  LOG_X(boost::format("%=25s | %=15s | %=15s | %=15s | %=15s") % "Pair" % "Score" % "ImagePairScore" % "Angle" % "NbMatches");
   LOG_X(std::string(25+15*4+3*4, '-'));
   for(std::size_t i = 0; i < nBestScores; ++i)
   {
     const ImagePairScore& s = bestImagePairs[i];
     const Pair& currPair = std::get<4>(s);
     const std::string pairIdx = std::to_string(currPair.first) + ", " + std::to_string(currPair.second);
-    LOG_X(boost::format("%=25s | %+15.1f | %+15.1f | %+15.1f | %+15f") % pairIdx % std::get<0>(s) % std::get<1>(s) % std::get<2>(s) % std::get<3>(s));
+//    LOG_X(boost::format("%=25s | %+15.1f | %+15.1f | %+15.1f | %+15f") % pairIdx % std::get<0>(s) % std::get<1>(s) % std::get<2>(s) % std::get<3>(s));
   }
   if (bestImagePairs.empty())
   {

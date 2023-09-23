@@ -48,6 +48,20 @@ std::vector<std::string> SfMData::getMatchesFolders() const
     return std::vector<std::string>{};
 }
 
+std::set<IndexT> SfMData::getReconstructedIntrinsics() const
+{
+    std::set<IndexT> valid_idx;
+    for (Views::const_iterator it = views.begin(); it != views.end(); ++it)
+    {
+        const View * v = it->second.get();
+        if (isPoseAndIntrinsicDefined(v))
+        {
+            valid_idx.insert(v->getIntrinsicId());
+        }
+    }
+    return valid_idx;
+}
+
 void SfMData::setPose(const View& view, const CameraPose& absolutePose)
 {
     // const bool knownPose = existsPose(view);

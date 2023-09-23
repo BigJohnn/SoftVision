@@ -7,7 +7,7 @@
 #pragma once
 
 #include <regex>
-
+#include <SoftVisionLog.h>
 
 inline std::regex simpleFilterToRegex(const std::string& simpleFilter)
 {

@@ -15,6 +15,8 @@
 #include <sfmData/CameraPose.hpp>
 #include <sfmData/Landmark.hpp>
 #include <sfmData/View.hpp>
+#include <sfmData/Constraint2D.hpp>
+#include <sfmData/RotationPrior.hpp>
 
 namespace camera {
 class IntrinsicBase;
@@ -36,6 +38,12 @@ using Intrinsics = std::map<IndexT, std::shared_ptr<camera::IntrinsicBase> >;
 /// Define a collection of landmarks are indexed by their TrackId
 using Landmarks = HashMap<IndexT, Landmark>;
 
+///Define a collection of constraints
+using Constraints2D = std::vector<Constraint2D>;
+
+///Define a collection of rotation priors
+using RotationPriors = std::vector<RotationPrior>;
+
 //class IntrinsicBase;
 class SfMData{
 public:
@@ -51,10 +59,10 @@ public:
 //    PosesUncertainty _posesUncertainty;
 //    /// Uncertainty per landmark
 //    LandmarksUncertainty _landmarksUncertainty;
-//    /// 2D Constraints
-//    Constraints2D constraints2d;
-//    /// Rotation priors
-//    RotationPriors rotationpriors;
+    /// 2D Constraints
+    Constraints2D constraints2d;
+    /// Rotation priors
+    RotationPriors rotationpriors;
     
     
     SfMData() = default;
@@ -87,17 +95,23 @@ public:
     }
     
     /**
-         * @brief Get intrinsics
-         * @return intrinsics
-         */
-        const Intrinsics& getIntrinsics() const {return intrinsics;}
-        Intrinsics& getIntrinsics() {return intrinsics;}
+     * @brief Get intrinsics
+     * @return intrinsics
+     */
+    const Intrinsics& getIntrinsics() const {return intrinsics;}
+    Intrinsics& getIntrinsics() {return intrinsics;}
     
     /**
-         * @brief List the view indexes that have valid camera intrinsic and pose.
-         * @return view indexes list
-         */
-        std::set<IndexT> getValidViews() const;
+     * @brief List the view indexes that have valid camera intrinsic and pose.
+     * @return view indexes list
+     */
+    std::set<IndexT> getValidViews() const;
+    
+    /**
+     * @brief List the intrinsic indexes that have valid camera intrinsic and pose.
+     * @return intrinsic indexes list
+     */
+    std::set<IndexT> getReconstructedIntrinsics() const;
     
     /**
      * @brief Get poses
@@ -138,6 +152,27 @@ public:
      */
     const Landmarks& getLandmarks() const {return structure;}
     Landmarks& getLandmarks() {return structure;}
+    
+    /**
+     * @brief Get Constraints2D
+     * @return Constraints2D
+     */
+    const Constraints2D& getConstraints2D() const {return constraints2d;}
+    Constraints2D& getConstraints2D() {return constraints2d;}
+    
+    /**
+     * @brief Get RotationPriors
+     * @return RotationPriors
+     */
+    const RotationPriors& getRotationPriors() const {return rotationpriors;}
+    RotationPriors& getRotationPriors() {return rotationpriors;}
+
+    /**
+     * @brief Get control points
+     * @return control points
+     */
+    const Landmarks& getControlPoints() const {return control_points;}
+    Landmarks& getControlPoints() {return control_points;}
     
     /**
      * @brief Gives the pose of the input view. If this view is part of a rig, it returns rigPose + rigSubPose.
@@ -196,6 +231,23 @@ public:
         return output;
     }
     
+    std::map<feature::EImageDescriberType, int> getLandmarkDescTypesUsages() const
+    {
+        std::map<feature::EImageDescriberType, int> output;
+        for (auto s : getLandmarks())
+        {
+            if (output.find(s.second.descType) == output.end())
+            {
+                output[s.second.descType] = 1;
+            }
+            else
+            {
+                ++output[s.second.descType];
+            }
+        }
+        return output;
+    }
+
     /**
      * @brief Return a pointer to an intrinsic if available or nullptr otherwise.
      * @param[in] intrinsicId
@@ -204,6 +256,28 @@ public:
     {
         if (intrinsics.count(intrinsicId))
             return intrinsics.at(intrinsicId).get();
+        return nullptr;
+    }
+    
+    /**
+     * @brief Return a shared pointer to an intrinsic if available or nullptr otherwise.
+     * @param[in] intrinsicId
+     */
+    std::shared_ptr<camera::IntrinsicBase> getIntrinsicsharedPtr(IndexT intrinsicId)
+    {
+        if(intrinsics.count(intrinsicId))
+            return intrinsics.at(intrinsicId);
+        return nullptr;
+    }
+
+    /**
+     * @brief Return a shared pointer to an intrinsic if available or nullptr otherwise.
+     * @param[in] intrinsicId
+     */
+    const std::shared_ptr<camera::IntrinsicBase> getIntrinsicsharedPtr(IndexT intrinsicId) const
+    {
+        if(intrinsics.count(intrinsicId))
+            return intrinsics.at(intrinsicId);
         return nullptr;
     }
     

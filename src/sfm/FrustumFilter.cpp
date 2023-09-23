@@ -12,7 +12,8 @@
 #include <stl/mapUtils.hpp>
 #include <common/types.h>
 #include <geometry/HalfPlane.hpp>
-#include <config.hpp>
+//#include <config.hpp>
+
 
 #include <fstream>
 
@@ -22,6 +23,7 @@ namespace sfm {
 using namespace camera;
 using namespace geometry;
 using namespace geometry::halfPlane;
+
 
 // Constructor
 FrustumFilter::FrustumFilter(const sfmData::SfMData& sfmData, const double zNear, const double zFar)
@@ -124,6 +126,7 @@ bool FrustumFilter::export_Ply(const std::string & filename) const
     << "property list uchar int vertex_index" << '\n'
     << "end_header" << '\n';
 
+//    using Vec3 = Eigen::Vector3d;
   // Export frustums points
   for (FrustumsT::const_iterator it = frustum_perView.begin();
     it != frustum_perView.end(); ++it)

@@ -30,4 +30,5 @@
 #include <sfm/pipeline/structureFromKnownPoses/StructureEstimationFromKnownPoses.hpp>
 #include <sfm/pipeline/localization/SfMLocalizer.hpp>
 #include <sfm/pipeline/localization/SfMLocalizationSingle3DTrackObservationDatabase.hpp>
+#include <camera/Pinhole.hpp>
 

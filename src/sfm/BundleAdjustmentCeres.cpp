@@ -12,18 +12,20 @@
 #include <sfmData/SfMData.hpp>
 #include <utils/CeresUtils.hpp>
 #include <softvision_omp.hpp>
-#include <config.hpp>
+//#include <config.hpp>
 #include <camera/camera.hpp>
 
-#include <boost/filesystem.hpp>
+//#include <boost/filesystem.hpp>
 
 #include <ceres/rotation.h>
 
 #include <fstream>
 #include <memory>
 
+#include <SoftVisionLog.h>
 
-namespace fs = boost::filesystem;
+
+//namespace fs = boost::filesystem;
 
 
 namespace sfm {
@@ -386,11 +388,11 @@ void BundleAdjustmentCeres::CeresOptions::setSparseBA()
 bool BundleAdjustmentCeres::Statistics::exportToFile(const std::string& folder, const std::string& filename) const
 {
   std::ofstream os;
-  os.open((fs::path(folder) / filename).string(), std::ios::app);
+  os.open((folder + filename).c_str(), std::ios::app);
 
   if(!os.is_open())
   {
-    LOG_DEBUG("Unable to open the Bundle adjustment statistics file: '" << filename << "'.");
+    LOG_X("Unable to open the Bundle adjustment statistics file: '" << filename << "'.");
     return false;
   }
 
@@ -482,7 +484,7 @@ void BundleAdjustmentCeres::Statistics::show() const
       ss << "\t- local strategy enabled: no\n";
   }
 
-  LOG_INFO("Bundle Adjustment Statistics:\n"
+  LOG_X("Bundle Adjustment Statistics:\n"
                         << ss.str()
                         << "\t- adjustment duration: " << time << " s\n"
                         << "\t- poses:\n"
@@ -611,24 +613,24 @@ void BundleAdjustmentCeres::addExtrinsicsToProblem(const sfmData::SfMData& sfmDa
   }
 
   // setup sub-poses data
-  for(const auto& rigPair : sfmData.getRigs())
-  {
-    const IndexT rigId = rigPair.first;
-    const sfmData::Rig& rig = rigPair.second;
-    const std::size_t nbSubPoses = rig.getNbSubPoses();
-
-    for(std::size_t subPoseId = 0 ; subPoseId < nbSubPoses; ++subPoseId)
-    {
-      const sfmData::RigSubPose& rigSubPose = rig.getSubPose(subPoseId);
-
-      if(rigSubPose.status == sfmData::ERigSubPoseStatus::UNINITIALIZED)
-        continue;
-
-      const bool isConstant = (rigSubPose.status == sfmData::ERigSubPoseStatus::CONSTANT);
-
-      addPose(sfmData::CameraPose(rigSubPose.pose), isConstant, _rigBlocks[rigId][subPoseId]);
-    }
-  }
+//  for(const auto& rigPair : sfmData.getRigs())
+//  {
+//    const IndexT rigId = rigPair.first;
+//    const sfmData::Rig& rig = rigPair.second;
+//    const std::size_t nbSubPoses = rig.getNbSubPoses();
+//
+//    for(std::size_t subPoseId = 0 ; subPoseId < nbSubPoses; ++subPoseId)
+//    {
+//      const sfmData::RigSubPose& rigSubPose = rig.getSubPose(subPoseId);
+//
+//      if(rigSubPose.status == sfmData::ERigSubPoseStatus::UNINITIALIZED)
+//        continue;
+//
+//      const bool isConstant = (rigSubPose.status == sfmData::ERigSubPoseStatus::CONSTANT);
+//
+//      addPose(sfmData::CameraPose(rigSubPose.pose), isConstant, _rigBlocks[rigId][subPoseId]);
+//    }
+//  }
 }
 
 void BundleAdjustmentCeres::addIntrinsicsToProblem(const sfmData::SfMData& sfmData, BundleAdjustment::ERefineOptions refineOptions, ceres::Problem& problem)
@@ -831,21 +833,22 @@ void BundleAdjustmentCeres::addLandmarksToProblem(const sfmData::SfMData& sfmDat
         _linearSolverOrdering.AddElementToGroup(intrinsicBlockPtr, 2);
       }
 
-      if(view.isPartOfRig() && !view.isPoseIndependant())
-      {
-        ceres::CostFunction* costFunction = createRigCostFunctionFromIntrinsics(sfmData.getIntrinsicPtr(view.getIntrinsicId()), observation);
-
-        double* rigBlockPtr = _rigBlocks.at(view.getRigId()).at(view.getSubPoseId()).data();
-        _linearSolverOrdering.AddElementToGroup(rigBlockPtr, 1);
-
-        problem.AddResidualBlock(costFunction,
-            lossFunction,
-            intrinsicBlockPtr,
-            poseBlockPtr,
-            rigBlockPtr, // subpose of the cameras rig
-            landmarkBlockPtr); // do we need to copy 3D point to avoid false motion, if failure ?
-      }
-      else
+//      if(view.isPartOfRig() && !view.isPoseIndependant())
+//      if(false)
+//      {
+//        ceres::CostFunction* costFunction = createRigCostFunctionFromIntrinsics(sfmData.getIntrinsicPtr(view.getIntrinsicId()), observation);
+//
+//        double* rigBlockPtr = _rigBlocks.at(view.getRigId()).at(view.getSubPoseId()).data();
+//        _linearSolverOrdering.AddElementToGroup(rigBlockPtr, 1);
+//
+//        problem.AddResidualBlock(costFunction,
+//            lossFunction,
+//            intrinsicBlockPtr,
+//            poseBlockPtr,
+//            rigBlockPtr, // subpose of the cameras rig
+//            landmarkBlockPtr); // do we need to copy 3D point to avoid false motion, if failure ?
+//      }
+//      else
       {
         ceres::CostFunction* costFunction = createCostFunctionFromIntrinsics(sfmData.getIntrinsicPtr(view.getIntrinsicId()), observation);
 
@@ -992,23 +995,23 @@ void BundleAdjustmentCeres::updateFromSolution(sfmData::SfMData& sfmData, ERefin
     }
 
     // rig sub-poses
-    for(const auto& rigIt : _rigBlocks)
-    {
-      sfmData::Rig& rig = sfmData.getRigs().at(rigIt.first);
-
-      for(const auto& subPoseit : rigIt.second)
-      {
-        sfmData::RigSubPose& subPose = rig.getSubPose(subPoseit.first);
-        const std::array<double,6>& subPoseBlock = subPoseit.second;
-
-        Mat3 R_refined;
-        ceres::AngleAxisToRotationMatrix(subPoseBlock.data(), R_refined.data());
-        const Vec3 t_refined(subPoseBlock.at(3), subPoseBlock.at(4), subPoseBlock.at(5));
-
-        // update the sub-pose
-        subPose.pose = poseFromRT(R_refined, t_refined);
-      }
-    }
+//    for(const auto& rigIt : _rigBlocks)
+//    {
+//      sfmData::Rig& rig = sfmData.getRigs().at(rigIt.first);
+//
+//      for(const auto& subPoseit : rigIt.second)
+//      {
+//        sfmData::RigSubPose& subPose = rig.getSubPose(subPoseit.first);
+//        const std::array<double,6>& subPoseBlock = subPoseit.second;
+//
+//        Mat3 R_refined;
+//        ceres::AngleAxisToRotationMatrix(subPoseBlock.data(), R_refined.data());
+//        const Vec3 t_refined(subPoseBlock.at(3), subPoseBlock.at(4), subPoseBlock.at(5));
+//
+//        // update the sub-pose
+//        subPose.pose = poseFromRT(R_refined, t_refined);
+//      }
+//    }
   }
 
   // update camera intrinsics with refined data
@@ -1084,7 +1087,7 @@ bool BundleAdjustmentCeres::adjust(sfmData::SfMData& sfmData, ERefineOptions ref
 
   // print summary
   if(_ceresOptions.summary)
-    LOG_INFO(summary.FullReport());
+    LOG_X(summary.FullReport());
 
   // solution is not usable
   if(!summary.IsSolutionUsable())

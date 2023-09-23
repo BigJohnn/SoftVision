@@ -7,6 +7,9 @@
 
 #include "View.hpp"
 #include <regex>
+#include <numeric/numeric.hpp>
+#include <numeric/gps.hpp>
+
 namespace sfmData {
 
 std::map<std::string, std::string>::const_iterator View::findMetadataIterator(const std::string& name) const
@@ -107,5 +110,79 @@ int View::getIntMetadata(const std::vector<std::string>& names) const
     }
 }
 
+bool View::hasMetadata(const std::vector<std::string>& names) const
+{
+    return std::any_of(names.cbegin(), names.cend(),
+                       [this](const std::string& name){
+                           return (findMetadataIterator(name) != _metadata.end());
+                       });
+}
+
+bool View::hasGpsMetadata() const
+{
+    const auto tags = GPSExifTags::all();
+    return std::all_of(tags.cbegin(), tags.cend(), [this](const std::string& t){ return hasMetadata({t}); });
+}
+
+Vec3 View::getGpsPositionFromMetadata() const
+{
+    const auto gps = getGpsPositionWGS84FromMetadata();
+    return WGS84ToCartesian(gps);
+}
+
+void View::getGpsPositionWGS84FromMetadata(double& lat, double& lon, double& alt) const
+{
+    const auto& meta = getMetadata();
+    const auto gpsLat = meta.at(GPSExifTags::latitude());
+    const auto gpsLatRef = meta.at(GPSExifTags::latitudeRef());
+    lat = parseGPSFromString(gpsLat, gpsLatRef);
+
+    const auto gpsLon = meta.at(GPSExifTags::longitude());
+    const auto gpsLonRef = meta.at(GPSExifTags::longitudeRef());
+    lon = parseGPSFromString(gpsLon, gpsLonRef);
+
+    const auto gpsAlt = meta.at(GPSExifTags::altitude());
+    const auto gpsAltRef = meta.at(GPSExifTags::altitudeRef());
+    alt = parseAltitudeFromString(gpsAlt, gpsAltRef);
+}
+
+Vec3 View::getGpsPositionWGS84FromMetadata() const
+{
+    double lat{0};
+    double lon{0};
+    double alt{0};
+    getGpsPositionWGS84FromMetadata(lat, lon, alt);
+
+    return {lat, lon, alt};
+}
+
+std::string GPSExifTags::latitude()
+{
+    return "GPS:Latitude";
+}
+std::string GPSExifTags::latitudeRef()
+{
+    return "GPS:LatitudeRef";
+}
+std::string GPSExifTags::longitude()
+{
+    return "GPS:Longitude";
+}
+std::string GPSExifTags::longitudeRef()
+{
+    return "GPS:LongitudeRef";
+}
+std::vector<std::string> GPSExifTags::all()
+{
+    return {GPSExifTags::latitude(), GPSExifTags::latitudeRef(), GPSExifTags::longitude(), GPSExifTags::longitudeRef(), GPSExifTags::altitude(), GPSExifTags::altitudeRef()};
+}
+std::string GPSExifTags::altitude()
+{
+    return "GPS:Altitude";
+}
+std::string GPSExifTags::altitudeRef()
+{
+    return "GPS:AltitudeRef";
+}
 
 }

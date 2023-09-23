@@ -181,7 +181,7 @@ bool SfMLocalizer::RefinePose(camera::IntrinsicBase* intrinsics,
   sfmData::SfMData tinyScene;
 
   // view
-  std::shared_ptr<sfmData::View> view = std::make_shared<sfmData::View>("", 0, 0, 0);
+  std::shared_ptr<sfmData::View> view = std::make_shared<sfmData::View>(0, 0, 0);
   tinyScene.views.insert(std::make_pair(0, view));
 
   // pose

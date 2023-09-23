@@ -11,15 +11,16 @@
 #include <config.hpp>
 #include <camera/Equidistant.hpp>
 #include <utils/CeresUtils.hpp>
+#include <SoftVisionLog.h>
 
-#include <boost/filesystem.hpp>
+//#include <boost/filesystem.hpp>
 
 #include <ceres/rotation.h>
 
 #include <fstream>
 
 
-namespace fs = boost::filesystem;
+//namespace fs = boost::filesystem;
 
 
 namespace sfm {
@@ -306,7 +307,7 @@ void BundleAdjustmentSymbolicCeres::addPose(const sfmData::CameraPose& cameraPos
   }
   else
   {
-    ALICEVISION_THROW_ERROR("BundleAdjustmentSymbolicCeres: Constant extrinsics not supported at this time");
+    LOG_ERROR("BundleAdjustmentSymbolicCeres: Constant extrinsics not supported at this time");
   }
 
   _statistics.addState(EParameter::POSE, EParameterState::REFINED);
@@ -356,11 +357,11 @@ void BundleAdjustmentSymbolicCeres::CeresOptions::setSparseBA()
 bool BundleAdjustmentSymbolicCeres::Statistics::exportToFile(const std::string& folder, const std::string& filename) const
 {
   std::ofstream os;
-  os.open((fs::path(folder) / filename).string(), std::ios::app);
+  os.open((folder + filename).c_str(), std::ios::app);
 
   if(!os.is_open())
   {
-    LOG_DEBUG("Unable to open the Bundle adjustment statistics file: '" << filename << "'.");
+    LOG_X("Unable to open the Bundle adjustment statistics file: '" << filename << "'.");
     return false;
   }
 
@@ -456,7 +457,7 @@ void BundleAdjustmentSymbolicCeres::Statistics::show() const
       ss << "\t- local strategy enabled: no\n";
   }
 
-  LOG_INFO("Bundle Adjustment Statistics:\n"
+  LOG_X("Bundle Adjustment Statistics:\n"
                         << ss.str()
                         << "\t- adjustment duration: " << time << " s\n"
                         << "\t- poses:\n"
@@ -522,24 +523,24 @@ void BundleAdjustmentSymbolicCeres::addExtrinsicsToProblem(const sfmData::SfMDat
   }
 
   // setup sub-poses data
-  for(const auto& rigPair : sfmData.getRigs())
-  {
-    const IndexT rigId = rigPair.first;
-    const sfmData::Rig& rig = rigPair.second;
-    const std::size_t nbSubPoses = rig.getNbSubPoses();
-
-    for(std::size_t subPoseId = 0 ; subPoseId < nbSubPoses; ++subPoseId)
-    {
-      const sfmData::RigSubPose& rigSubPose = rig.getSubPose(subPoseId);
-
-      if(rigSubPose.status == sfmData::ERigSubPoseStatus::UNINITIALIZED)
-        continue;
-
-      const bool isConstant = (rigSubPose.status == sfmData::ERigSubPoseStatus::CONSTANT);
-
-      addPose(sfmData::CameraPose(rigSubPose.pose), isConstant, _rigBlocks[rigId][subPoseId], problem, refineTranslation, refineRotation);
-    }
-  }
+//  for(const auto& rigPair : sfmData.getRigs())
+//  {
+//    const IndexT rigId = rigPair.first;
+//    const sfmData::Rig& rig = rigPair.second;
+//    const std::size_t nbSubPoses = rig.getNbSubPoses();
+//
+//    for(std::size_t subPoseId = 0 ; subPoseId < nbSubPoses; ++subPoseId)
+//    {
+//      const sfmData::RigSubPose& rigSubPose = rig.getSubPose(subPoseId);
+//
+//      if(rigSubPose.status == sfmData::ERigSubPoseStatus::UNINITIALIZED)
+//        continue;
+//
+//      const bool isConstant = (rigSubPose.status == sfmData::ERigSubPoseStatus::CONSTANT);
+//
+//      addPose(sfmData::CameraPose(rigSubPose.pose), isConstant, _rigBlocks[rigId][subPoseId], problem, refineTranslation, refineRotation);
+//    }
+//  }
 
 
   //Add default rig pose
@@ -736,14 +737,15 @@ void BundleAdjustmentSymbolicCeres::addLandmarksToProblem(const sfmData::SfMData
       double* poseBlockPtr = _posesBlocks.at(view.getPoseId()).data();
       double* intrinsicBlockPtr = _intrinsicsBlocks.at(view.getIntrinsicId()).data();
 
-      bool withRig = (view.isPartOfRig() && !view.isPoseIndependant());
+//      bool withRig = (view.isPartOfRig() && !view.isPoseIndependant());
+      bool withRig = false;
       double * rigBlockPtr = nullptr;
-      if (withRig) {
-        rigBlockPtr = _rigBlocks.at(view.getRigId()).at(view.getSubPoseId()).data();
-      }
-      else {
+//      if (withRig) {
+//        rigBlockPtr = _rigBlocks.at(view.getRigId()).at(view.getSubPoseId()).data();
+//      }
+//      else {
         rigBlockPtr = _rigNull.data();
-      }
+//      }
 
       // apply a specific parameter ordering:
       if(_ceresOptions.useParametersOrdering)
@@ -818,19 +820,19 @@ void BundleAdjustmentSymbolicCeres::updateFromSolution(sfmData::SfMData& sfmData
     }
 
     // rig sub-poses
-    for(const auto& rigIt : _rigBlocks)
-    {
-      sfmData::Rig& rig = sfmData.getRigs().at(rigIt.first);
-
-      for(const auto& subPoseit : rigIt.second)
-      {
-        sfmData::RigSubPose& subPose = rig.getSubPose(subPoseit.first);
-        const SE3::Matrix & subPoseBlock = subPoseit.second;
-
-        // update the sub-pose
-        subPose.pose = poseFromRT(subPoseBlock.block<3, 3>(0, 0), subPoseBlock.block<3, 1>(0, 3));
-      }
-    }
+//    for(const auto& rigIt : _rigBlocks)
+//    {
+//      sfmData::Rig& rig = sfmData.getRigs().at(rigIt.first);
+//
+//      for(const auto& subPoseit : rigIt.second)
+//      {
+//        sfmData::RigSubPose& subPose = rig.getSubPose(subPoseit.first);
+//        const SE3::Matrix & subPoseBlock = subPoseit.second;
+//
+//        // update the sub-pose
+//        subPose.pose = poseFromRT(subPoseBlock.block<3, 3>(0, 0), subPoseBlock.block<3, 1>(0, 3));
+//      }
+//    }
   }
 
   // update camera intrinsics with refined data
@@ -909,7 +911,7 @@ bool BundleAdjustmentSymbolicCeres::adjust(sfmData::SfMData& sfmData, ERefineOpt
   // print summary
   std::cout << "symbolic" << std::endl;
   if(_ceresOptions.summary) {
-    LOG_INFO(summary.FullReport());
+    LOG_X(summary.FullReport());
   }
 
   // solution is not usable

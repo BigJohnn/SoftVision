@@ -160,13 +160,13 @@ inline void applyTransform(sfmData::SfMData& sfmData,
         poseIt.second.setTransform(pose);
     }
 
-    for (auto& rigIt : sfmData.getRigs())
-    {
-        for (auto& subPose : rigIt.second.getSubPoses())
-        {
-            subPose.pose.center() *= S;
-        }
-    }
+//    for (auto& rigIt : sfmData.getRigs())
+//    {
+//        for (auto& subPose : rigIt.second.getSubPoses())
+//        {
+//            subPose.pose.center() *= S;
+//        }
+//    }
 
     for(auto& landmark: sfmData.structure)
     {
