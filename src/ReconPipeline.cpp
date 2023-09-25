@@ -182,6 +182,7 @@ void ReconPipeline::AppendSfMData(uint32_t viewId,
     
     {
         using namespace sfmDataIO;
+        m_sfmData->setAbsolutePath(m_outputFolder + "cameraInit.sfm");
         Save(*m_sfmData, m_outputFolder, "cameraInit.sfm", ESfMData(VIEWS|INTRINSICS));
     }
     
@@ -320,7 +321,12 @@ bool ReconPipeline::FeatureExtraction()
     // - if no file, compute features
     {
         system2::Timer timer;
-        extractor.setOutputFolder(m_outputFolder);
+        
+        m_featureFolder = m_outputFolder + "features/";
+        if(!utils::create_directory(m_featureFolder)) {
+            LOG_ERROR("Create directory %s Failed!", m_featureFolder.c_str());
+        }
+        extractor.setOutputFolder(m_featureFolder);
         extractor.process(*mp_hwc, image::EImageColorSpace::SRGB);
 
         LOG_INFO("Task done in (s):%s " , std::to_string(timer.elapsed()).c_str());
@@ -632,8 +638,10 @@ bool ReconPipeline::FeatureMatching()
       LOG_INFO("Save geometric matches.");
     bool matchFilePerImage = false;
     const std::string fileExtension = "txt";
-    std::string matchesFolder = m_outputFolder;
-      Save(finalMatches, matchesFolder, fileExtension, matchFilePerImage, filePrefix);
+    m_matchesFolder = m_outputFolder + "matches/";
+    if(!utils::create_directory(m_matchesFolder))
+        LOG_ERROR("Create matches dir FAILED!");
+      Save(finalMatches, m_matchesFolder, fileExtension, matchFilePerImage, filePrefix);
       LOG_INFO("Task done in (s): %.2f",timer.elapsed());
 
     return true;
@@ -717,7 +725,7 @@ int ReconPipeline::IncrementalSFM()
       // features reading
       feature::FeaturesPerView featuresPerView;
     
-      std::vector<std::string> featuresFolders{m_outputFolder};
+      std::vector<std::string> featuresFolders{m_featureFolder};
     
       if(!sfm::loadFeaturesPerView(featuresPerView, sfmData, featuresFolders, describerTypes))
       {
@@ -728,7 +736,7 @@ int ReconPipeline::IncrementalSFM()
     
     // matches reading
     matching::PairwiseMatches pairwiseMatches;
-    std::vector<std::string> matchesFolders{m_outputFolder};
+    std::vector<std::string> matchesFolders{m_matchesFolder};
     int maxNbMatches = 0;
     int minNbMatches = 0;
     bool useOnlyMatchesFromInputFolder = false;
@@ -792,13 +800,21 @@ int ReconPipeline::IncrementalSFM()
       if(!sfmEngine.process())
         return EXIT_FAILURE;
 
-//    LOG_X("create dir " << utils::create_directory(m_outputFolder+"features"));
       // set featuresFolders and matchesFolders relative paths
-//      {
-//          sfmEngine.getSfMData().addFeaturesFolders(featuresFolders);
-//          sfmEngine.getSfMData().addMatchesFolders(matchesFolders);
-//          sfmEngine.getSfMData().setAbsolutePath(outputSfM);
-//      }
+      {
+          sfmEngine.getSfMData().addFeaturesFolders(featuresFolders);
+          sfmEngine.getSfMData().addMatchesFolders(matchesFolders);
+          sfmEngine.getSfMData().setAbsolutePath(m_outputFolder + "sfm.abc");
+      }
+
+    bool computeStructureColor = true;
+    // get the color for the 3D points
+    if(computeStructureColor)
+      sfmEngine.colorize();
+    
+    sfmEngine.retrieveMarkersId();
+
+    LOG_X("Structure from motion took (s): " + std::to_string(timer.elapsed()));
     
     return EXIT_SUCCESS;
 }

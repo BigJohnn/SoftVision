@@ -64,6 +64,8 @@ private:
 //    static ReconPipeline* pPipeline;
     sfmData::SfMData* m_sfmData = nullptr;
     std::string m_outputFolder;
+    std::string m_featureFolder;
+    std::string m_matchesFolder;
     static std::vector<std::vector<uint8_t>> m_cachedBuffers;
     std::string m_describerTypesName;
     featureEngine::FeatureExtractor* m_extractor = nullptr;

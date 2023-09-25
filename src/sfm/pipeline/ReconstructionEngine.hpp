@@ -72,10 +72,10 @@ public:
     sfmData::colorizeTracks(_sfmData);
   }
 
-//  void retrieveMarkersId()
-//  {
-//      sfm::retrieveMarkersId(_sfmData);
-//  }
+  void retrieveMarkersId()
+  {
+      sfm::retrieveMarkersId(_sfmData);
+  }
 
   void initRandomSeed(int seed)
   {
