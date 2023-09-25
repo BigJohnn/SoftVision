@@ -7,14 +7,14 @@
 
 #pragma once
 
-#include <aliceVision/robustEstimation/ISolver.hpp>
-#include <aliceVision/robustEstimation/PointFittingKernel.hpp>
-#include <aliceVision/multiview/resection/ProjectionDistanceError.hpp>
-#include <aliceVision/numeric/numeric.hpp>
+#include <robustEstimation/ISolver.hpp>
+#include <robustEstimation/PointFittingKernel.hpp>
+#include <multiview/resection/ProjectionDistanceError.hpp>
+#include <numeric/numeric.hpp>
 
 #include <vector>
 
-namespace aliceVision {
+
 namespace lInfinityCV {
 namespace kernel {
 
@@ -71,4 +71,4 @@ using l1PoseResectionKernel = robustEstimation::PointFittingKernel<l1SixPointRes
 
 }  // namespace kernel
 }  // namespace lInfinityCV
-}  // namespace aliceVision
+

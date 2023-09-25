@@ -52,7 +52,7 @@ public:
     
     bool FeatureMatching();
     
-    bool IncrementalSFM();
+    int IncrementalSFM();
     
     void SetOutputDataDir(const char* directory);
     

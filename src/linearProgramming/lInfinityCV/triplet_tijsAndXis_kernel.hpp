@@ -24,7 +24,7 @@
 #include "aliceVision/linearProgramming/bisectionLP.hpp"
 #include "aliceVision/linearProgramming/lInfinityCV/tijsAndXis_From_xi_Ri.hpp"
 
-namespace aliceVision {
+
 namespace trifocal {
 namespace kernel {
 
@@ -52,7 +52,7 @@ struct TrifocalTensorModel {
 
 }  // namespace kernel
 }  // namespace trifocal
-}  // namespace aliceVision
+
 
 namespace aliceVision{
 

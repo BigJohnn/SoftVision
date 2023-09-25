@@ -41,9 +41,13 @@
 #include <robustEstimation/estimators.hpp>
 
 #include <sfmDataIO/sfmDataIO.hpp>
+#include <sfm/pipeline/regionsIO.hpp>
 #include <sys/stat.h>
 
 #include <softvision_omp.hpp>
+
+#include <utils/strUtils.hpp>
+#include <utils/fileUtil.hpp>
 
 std::vector<std::vector<uint8_t>> ReconPipeline::m_cachedBuffers;
 
@@ -635,7 +639,40 @@ bool ReconPipeline::FeatureMatching()
     return true;
 }
 
-bool ReconPipeline::IncrementalSFM()
+/**
+ * @brief Retrieve the view id in the sfmData from the image filename.
+ * @param[in] sfmData the SfM scene
+ * @param[in] name the image name to find (uid or filename or path)
+ * @param[out] out_viewId the id found
+ * @return if a view is found
+ */
+bool retrieveViewIdFromImageName(const sfmData::SfMData& sfmData,
+                                 const std::string& name,
+                                 IndexT& out_viewId)
+{
+  out_viewId = UndefinedIndexT;
+
+  // list views uid / filenames and find the one that correspond to the user ones
+  for(const auto& viewPair : sfmData.getViews())
+  {
+    const sfmData::View& v = *(viewPair.second.get());
+    
+    if(name == std::to_string(v.getViewId()) ||
+       name == utils::GetFileName(v.getImagePath()) ||
+       name == v.getImagePath())
+    {
+      out_viewId = v.getViewId();
+      break;
+    }
+  }
+
+  if(out_viewId == UndefinedIndexT)
+    LOG_X("Can't find the given initial pair view: " << name);
+
+  return out_viewId != UndefinedIndexT;
+}
+
+int ReconPipeline::IncrementalSFM()
 {
     LOG_INFO("StructureFromMotion\n"
              "- This program performs incremental SfM (Initial Pair Essential + Resection)\n");
@@ -649,5 +686,119 @@ bool ReconPipeline::IncrementalSFM()
     {
         return EXIT_FAILURE;
     }
-    return true;
+    
+    // load input SfMData scene
+    sfmData::SfMData sfmData;
+    if(sfmDataIO::Load(sfmData, m_outputFolder, "cameraInit.sfm", sfmDataIO::ESfMData::ALL))
+    {
+        *m_sfmData = sfmData;
+    }
+    
+    bool lockScenePreviouslyReconstructed = true;
+    // lock scene previously reconstructed
+      if(lockScenePreviouslyReconstructed)
+      {
+        // lock all reconstructed camera poses
+        for(auto& cameraPosePair : sfmData.getPoses())
+          cameraPosePair.second.lock();
+
+        for(const auto& viewPair : sfmData.getViews())
+        {
+          // lock all reconstructed views intrinsics
+          const sfmData::View& view = *(viewPair.second);
+          if(sfmData.isPoseAndIntrinsicDefined(&view))
+            sfmData.getIntrinsics().at(view.getIntrinsicId())->lock();
+        }
+      }
+    
+    // get imageDescriber type
+      const std::vector<feature::EImageDescriberType> describerTypes = feature::EImageDescriberType_stringToEnums(m_describerTypesName);
+
+      // features reading
+      feature::FeaturesPerView featuresPerView;
+    
+      std::vector<std::string> featuresFolders{m_outputFolder};
+    
+      if(!sfm::loadFeaturesPerView(featuresPerView, sfmData, featuresFolders, describerTypes))
+      {
+        LOG_ERROR("Invalid features.");
+        return EXIT_FAILURE;
+      }
+    
+    
+    // matches reading
+    matching::PairwiseMatches pairwiseMatches;
+    std::vector<std::string> matchesFolders{m_outputFolder};
+    int maxNbMatches = 0;
+    int minNbMatches = 0;
+    bool useOnlyMatchesFromInputFolder = false;
+    if(!sfm::loadPairwiseMatches(pairwiseMatches, sfmData, matchesFolders, describerTypes, maxNbMatches, minNbMatches, useOnlyMatchesFromInputFolder))
+    {
+      LOG_ERROR("Unable to load matches.");
+      return EXIT_FAILURE;
+    }
+    
+    // sequential reconstruction process
+      system2::Timer timer;
+
+      if(sfmParams.minNbObservationsForTriangulation < 2)
+      {
+        // allows to use to the old triangulatation algorithm (using 2 views only) during resection.
+        sfmParams.minNbObservationsForTriangulation = 0;
+        // LOG_ERROR("The value associated to the argument '--minNbObservationsForTriangulation' must be >= 2 ");
+        // return EXIT_FAILURE;
+      }
+
+    std::pair<std::string,std::string> initialPairString("","");
+      // handle initial pair parameter
+      if(!initialPairString.first.empty() || !initialPairString.second.empty())
+      {
+        if(initialPairString.first == initialPairString.second)
+        {
+          LOG_ERROR("Invalid image names. You cannot use the same image to initialize a pair.");
+          return EXIT_FAILURE;
+        }
+
+        if(!initialPairString.first.empty() && !retrieveViewIdFromImageName(sfmData, initialPairString.first, sfmParams.userInitialImagePair.first))
+        {
+          LOG_X("Could not find corresponding view in the initial pair: " + initialPairString.first);
+          return EXIT_FAILURE;
+        }
+
+        if(!initialPairString.second.empty() && !retrieveViewIdFromImageName(sfmData, initialPairString.second, sfmParams.userInitialImagePair.second))
+        {
+            LOG_X("Could not find corresponding view in the initial pair: " + initialPairString.second);
+          return EXIT_FAILURE;
+        }
+      }
+    
+    std::string extraInfoFolder = m_outputFolder + "StructureFromMotion/";
+    if(!utils::exists(extraInfoFolder)) {
+        utils::create_directory(extraInfoFolder);
+    }
+    sfm::ReconstructionEngine_sequentialSfM sfmEngine(
+        sfmData,
+        sfmParams,
+        extraInfoFolder,
+        (extraInfoFolder +  "sfm_log.html"));
+
+    int randomSeed = std::mt19937::default_seed;
+    sfmEngine.initRandomSeed(randomSeed);
+
+      // configure the featuresPerView & the matches_provider
+      sfmEngine.setFeatures(&featuresPerView);
+      sfmEngine.setMatches(&pairwiseMatches);
+
+      if(!sfmEngine.process())
+        return EXIT_FAILURE;
+
+//    LOG_X("create dir " << utils::create_directory(m_outputFolder+"features"));
+      // set featuresFolders and matchesFolders relative paths
+//      {
+//          sfmEngine.getSfMData().addFeaturesFolders(featuresFolders);
+//          sfmEngine.getSfMData().addMatchesFolders(matchesFolders);
+//          sfmEngine.getSfMData().setAbsolutePath(outputSfM);
+//      }
+    
+    return EXIT_SUCCESS;
 }

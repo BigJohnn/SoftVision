@@ -9,7 +9,7 @@
 #include "aliceVision/system/Logger.hpp"
 #include <iostream>
 
-namespace aliceVision {
+
 namespace linearProgramming {
 
 // This function prints log output from MOSEK to the terminal.

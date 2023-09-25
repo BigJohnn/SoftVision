@@ -5,16 +5,16 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#include <aliceVision/linearProgramming/ISolver.hpp>
-#include <aliceVision/linearProgramming/OSIXSolver.hpp>
-#include <aliceVision/linearProgramming/bisectionLP.hpp>
+#include <linearProgramming/ISolver.hpp>
+#include <linearProgramming/OSIXSolver.hpp>
+#include <linearProgramming/bisectionLP.hpp>
 
-#include <aliceVision/linearProgramming/lInfinityCV/resection.hpp>
-#include <aliceVision/linearProgramming/lInfinityCV/resection_kernel.hpp>
+#include <linearProgramming/lInfinityCV/resection.hpp>
+#include <linearProgramming/lInfinityCV/resection_kernel.hpp>
 
 #include <cassert>
 
-namespace aliceVision {
+
 namespace lInfinityCV {
 namespace kernel {
 
@@ -65,4 +65,4 @@ void l1SixPointResectionSolver::solve(const Mat &pt2D, const Mat &pt3d, std::vec
 
 }  // namespace kernel
 }  // namespace lInfinityCV
-}  // namespace aliceVision
+

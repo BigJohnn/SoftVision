@@ -1275,7 +1275,7 @@ bool ReconstructionEngine_sequentialSfM::makeInitialPair3D(const Pair& currentPa
       _htmlDocStream->pushInfo(jsxGraph.toStr());
       _htmlDocStream->pushInfo("<hr>");
 
-      std::ofstream htmlFileStream(_outputFolder + _htmlLogFile);
+      std::ofstream htmlFileStream(_htmlLogFile);
       htmlFileStream << _htmlDocStream->getDoc();
     }
   }

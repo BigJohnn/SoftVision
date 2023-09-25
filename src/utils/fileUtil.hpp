@@ -12,6 +12,6 @@ namespace utils {
 
     bool create_directory(std::string const& pathname)
     {
-        return 0 == mkdir(pathname.c_str(), S_IFDIR);
+        return 0 == mkdir(pathname.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
     }
 }

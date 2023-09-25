@@ -13,6 +13,8 @@
 #include <atomic>
 #include <cassert>
 #include <unistd.h>
+
+#include <utils/fileUtil.hpp>
 //namespace fs = boost::filesystem;
 
 
@@ -40,8 +42,7 @@ std::unique_ptr<feature::Regions> loadRegions(const std::vector<std::string>& fo
       const std::string&& descPath = folder + basename + "." + imageDescriberTypeName + ".desc";
 
       
-//    if(fs::exists(featPath) && fs::exists(descPath))
-    if(0 == access(featPath.c_str(), F_OK) && 0 == access(descPath.c_str(), F_OK))
+    if(utils::exists(featPath) && utils::exists(descPath))
     {
       featFilename = featPath;
       descFilename = descPath;
@@ -92,8 +93,7 @@ std::unique_ptr<feature::Regions> loadFeatures(const std::vector<std::string>& f
   std::set<std::string> foldersSet;
   for(const auto& folder : folders)
   {
-//    if(fs::exists(folder))
-  if(0 == access(folder.c_str(), F_OK))
+    if(utils::exists(folder))
     {
       foldersSet.insert(folder);
     }
@@ -103,8 +103,8 @@ std::unique_ptr<feature::Regions> loadFeatures(const std::vector<std::string>& f
   {
 //    const fs::path featPath = fs::path(folder) / std::string(basename + "." + imageDescriberTypeName + ".feat");
     const std::string featPath = folder + basename + "." + imageDescriberTypeName + ".feat";
-//    if(fs::exists(featPath))
-    if(0 == access(featPath.c_str(), F_OK))
+      
+    if(utils::exists(featPath))
       featFilename = featPath;
   }
 

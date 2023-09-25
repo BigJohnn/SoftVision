@@ -21,6 +21,7 @@
 
 #include <unistd.h>
 #include <utils/strUtils.hpp>
+#include <utils/fileUtil.hpp>
 #include <dirent.h>
 //namespace fs = boost::filesystem;
 
@@ -30,8 +31,7 @@ namespace matching {
 bool LoadMatchFile(PairwiseMatches& matches, const std::string& filepath)
 {
   const std::string ext = utils::GetFileExtension(filepath);
-//  if(!fs::exists(filepath))
-  if(0 != access(filepath.c_str(), F_OK))
+  if(!utils::exists(filepath))
     return false;
 
   if(ext == ".txt")
@@ -211,7 +211,7 @@ std::size_t loadMatchesFromFolder(PairwiseMatches& matches, const std::string& f
     const std::string& matchFile = matchFiles[i];
     PairwiseMatches fileMatches;
     LOG_DEBUG("Loading match file: %s" , matchFile.c_str());
-    if(!LoadMatchFile(fileMatches, matchFile))
+    if(!LoadMatchFile(fileMatches, folder + matchFile))
     {
 
       LOG_X("Unable to load match file: " << matchFile);
