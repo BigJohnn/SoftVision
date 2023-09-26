@@ -14,9 +14,13 @@
 //#include <sfmDataIO/gtIO.hpp>
 
 //#if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_ALEMBIC)
-//#include <sfmDataIO/AlembicExporter.hpp>
-//#include <sfmDataIO/AlembicImporter.hpp>
+#include <sfmDataIO/AlembicExporter.hpp>
+#include <sfmDataIO/AlembicImporter.hpp>
 //#endif
+
+#include <SoftVisionLog.h>
+
+#include <utils/strUtils.hpp>
 
 //#include <boost/filesystem.hpp>
 
@@ -132,13 +136,13 @@ bool Load(sfmData::SfMData& sfmData, const std::string& foldername, const std::s
 bool Save(const sfmData::SfMData& sfmData, const std::string& foldername, const std::string& filename, ESfMData partFlag)
 {
 //  const fs::path bPath = fs::path(filename);
-//  const std::string extension = bPath.extension().string();
-//  const std::string tmpPath = (bPath.parent_path() / bPath.stem()).string() + "." + fs::unique_path().string() + extension;
+  const std::string extension = utils::GetFileExtension(filename);
+  const std::string tmpPath = foldername + filename;
 //  const std::string tmpPath = filename;
     
   bool status = false;
 
-//  if(extension == ".sfm" || extension == ".json") // JSON File
+  if(extension == ".sfm" || extension == ".json") // JSON File
   {
     status = saveJSON(sfmData, foldername, filename, partFlag);
   }
@@ -150,21 +154,16 @@ bool Save(const sfmData::SfMData& sfmData, const std::string& foldername, const 
 //  {
 //    status = saveBAF(sfmData, tmpPath, partFlag);
 //  }
-//  else if (extension == ".abc") // Alembic
-//  {
-//#if ALICEVISION_IS_DEFINED(ALICEVISION_HAVE_ALEMBIC)
-//      AlembicExporter(tmpPath).addSfM(sfmData, partFlag);
-//      status = true;
-//#else
-//      ALICEVISION_THROW_ERROR("Cannot save the ABC file: \"" << filename
-//                                                             << "\", AliceVision is built without Alembic support.");
-//#endif
-//  }
-//  else
-//  {
-//    LOG_ERROR("Cannot save the SfM data file: '%s'.\nThe file extension is not recognized.", filename.c_str());
-//    return false;
-//  }
+  else if (extension == ".abc") // Alembic
+  {
+      AlembicExporter(tmpPath).addSfM(sfmData, partFlag);
+      status = true;
+  }
+  else
+  {
+    LOG_ERROR("Cannot save the SfM data file: '%s'.\nThe file extension is not recognized.", filename.c_str());
+    return false;
+  }
 
   // rename temporary filename
 //  if(status)

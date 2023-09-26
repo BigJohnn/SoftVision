@@ -17,6 +17,8 @@
 #include <utils/YuvImageProcessor.h>
 #include <matching/svgVisualization.hpp>
 
+#include <utils/fileUtil.hpp>
+
 //#include "PngUtils.h"
 
 namespace featureEngine {
@@ -38,17 +40,13 @@ void FeatureExtractorViewJob::setImageDescribers(
         const std::shared_ptr<feature::ImageDescriber>& imageDescriber = imageDescribers.at(i);
         feature::EImageDescriberType imageDescriberType = imageDescriber->getDescriberType();
 
-        std::fstream f1,f2;
-        f1.open(getFeaturesPath(imageDescriberType), std::ios::in);
-        f2.open(getDescriptorPath(imageDescriberType), std::ios::in);
-        if (f1 && f2)
-        {
+        if(utils::exists(getFeaturesPath(imageDescriberType)) && utils::exists(getDescriptorPath(imageDescriberType))) {
             continue;
         }
-
+        
         _memoryConsuption += imageDescriber->getMemoryConsumption(_view.getWidth(),
                                                                   _view.getHeight());
-
+        
 //        if(imageDescriber->useCuda())
 //            _gpuImageDescriberIndexes.push_back(i);
 //        else
@@ -94,6 +92,9 @@ void FeatureExtractor::process(const HardwareContext & hContext, const image::EI
         viewJob.setImageDescribers(_imageDescribers);
         jobMaxMemoryConsuption = std::max(jobMaxMemoryConsuption, viewJob.memoryConsuption());
 
+//        if(0 == jobMaxMemoryConsuption) {
+//            continue;
+//        }
 //        if (viewJob.useCPU())
         cpuJobs.push_back(viewJob);
 
@@ -101,7 +102,7 @@ void FeatureExtractor::process(const HardwareContext & hContext, const image::EI
 //            gpuJobs.push_back(viewJob);
     }
 
-    if (!cpuJobs.empty())
+    if (!cpuJobs.empty() && jobMaxMemoryConsuption > 0)
     {
         system2::MemoryInfo memoryInformation = system2::getMemoryInfo();
         

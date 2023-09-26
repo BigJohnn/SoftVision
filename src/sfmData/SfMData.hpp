@@ -362,6 +362,10 @@ public:
      * @param[in] path The absolute path to the SfMData file folder
      */
     void setAbsolutePath(const std::string& path);
+    
+    inline std::string getAbsolutePath() {
+        return _absolutePath;
+    }
 
     inline const std::string getRootPath() const
     {

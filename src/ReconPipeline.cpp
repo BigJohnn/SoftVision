@@ -42,6 +42,8 @@
 
 #include <sfmDataIO/sfmDataIO.hpp>
 #include <sfm/pipeline/regionsIO.hpp>
+#include <sfm/generateReport.hpp>
+
 #include <sys/stat.h>
 
 #include <softvision_omp.hpp>
@@ -249,16 +251,14 @@ bool ReconPipeline::FeatureExtraction()
     auto descType = feature::EImageDescriberType::SIFT;
     m_describerTypesName = feature::EImageDescriberType_enumToString(descType);
     
+    m_featureFolder = m_outputFolder + "features/";
+    
     bool needExtract = false;
     for(auto&& item : m_sfmData->views)
     {
-        auto&& prefix = m_outputFolder + std::to_string(item.first) + "." + m_describerTypesName;
-
-        struct stat buffer1;
-        struct stat buffer2;
-        if((stat((prefix + ".desc").c_str(), &buffer1)) != 0 ||
-           (stat((prefix + ".feat").c_str(), &buffer2)) != 0) {
-            LOG_INFO("feat/desc files are not complete, need do extract.");
+        auto&& prefix = m_featureFolder + std::to_string(item.first) + "." + m_describerTypesName;
+        
+        if(!utils::exists(prefix + ".desc") || !utils::exists(prefix + ".feat")) {
             needExtract = true;
             break;
         }
@@ -269,7 +269,7 @@ bool ReconPipeline::FeatureExtraction()
         auto&& mpRegions = m_extractor->getRegionsPerView();
         for(auto&& item : m_sfmData->views)
         {
-            auto&& prefix = m_outputFolder + std::to_string(item.first) + "." + m_describerTypesName;
+            auto&& prefix = m_featureFolder + std::to_string(item.first) + "." + m_describerTypesName;
             
             std::unique_ptr<feature::Regions> regions;
             
@@ -322,7 +322,7 @@ bool ReconPipeline::FeatureExtraction()
     {
         system2::Timer timer;
         
-        m_featureFolder = m_outputFolder + "features/";
+        
         if(!utils::create_directory(m_featureFolder)) {
             LOG_ERROR("Create directory %s Failed!", m_featureFolder.c_str());
         }
@@ -784,6 +784,8 @@ int ReconPipeline::IncrementalSFM()
     if(!utils::exists(extraInfoFolder)) {
         utils::create_directory(extraInfoFolder);
     }
+    
+    sfmParams.sfmStepFileExtension  = ".abc";
     sfm::ReconstructionEngine_sequentialSfM sfmEngine(
         sfmData,
         sfmParams,
@@ -797,9 +799,11 @@ int ReconPipeline::IncrementalSFM()
       sfmEngine.setFeatures(&featuresPerView);
       sfmEngine.setMatches(&pairwiseMatches);
 
+    
       if(!sfmEngine.process())
         return EXIT_FAILURE;
 
+    std::string const& outputSfM = "sfm.abc";
       // set featuresFolders and matchesFolders relative paths
       {
           sfmEngine.getSfMData().addFeaturesFolders(featuresFolders);
@@ -816,5 +820,27 @@ int ReconPipeline::IncrementalSFM()
 
     LOG_X("Structure from motion took (s): " + std::to_string(timer.elapsed()));
     
+    LOG_INFO("Generating HTML report...");
+
+    sfm::generateSfMReport(sfmEngine.getSfMData(), extraInfoFolder + "sfm_report.html");
+
+    // export to disk computed scene (data & visualizable results)
+    
+    LOG_X("Export SfMData to disk: " + outputSfM);
+
+    
+    sfmDataIO::Save(sfmEngine.getSfMData(), extraInfoFolder, "cloud_and_poses" + sfmParams.sfmStepFileExtension, sfmDataIO::ESfMData(sfmDataIO::VIEWS|sfmDataIO::EXTRINSICS|sfmDataIO::INTRINSICS|sfmDataIO::STRUCTURE));
+    sfmDataIO::Save(sfmEngine.getSfMData(), extraInfoFolder,outputSfM, sfmDataIO::ESfMData::ALL);
+
+    std::string outputSfMViewsAndPoses = "cloud_and_poses.abc"; //"Path to the output SfMData file (with only views and poses)."
+    if(!outputSfMViewsAndPoses.empty())
+     sfmDataIO:: Save(sfmEngine.getSfMData(), extraInfoFolder, outputSfMViewsAndPoses, sfmDataIO::ESfMData(sfmDataIO::VIEWS|sfmDataIO::EXTRINSICS|sfmDataIO::INTRINSICS));
+
+    LOG_X("Structure from Motion results:" << std::endl
+      << "\t- # input images: " << sfmEngine.getSfMData().getViews().size() << std::endl
+      << "\t- # cameras calibrated: " << sfmEngine.getSfMData().getValidViews().size() << std::endl
+      << "\t- # poses: " << sfmEngine.getSfMData().getPoses().size() << std::endl
+      << "\t- # landmarks: " << sfmEngine.getSfMData().getLandmarks().size());
+
     return EXIT_SUCCESS;
 }

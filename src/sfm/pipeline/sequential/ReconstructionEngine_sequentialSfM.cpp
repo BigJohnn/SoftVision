@@ -138,7 +138,7 @@ ReconstructionEngine_sequentialSfM::ReconstructionEngine_sequentialSfM(
   : ReconstructionEngine(sfmData, outputFolder),
     _params(params),
     _htmlLogFile(loggingFile),
-    _sfmStepFolder(outputFolder + "intermediate_steps")
+    _sfmStepFolder(outputFolder + "intermediate_steps/")
 {
   if (_params.useLocalBundleAdjustment)
   {
