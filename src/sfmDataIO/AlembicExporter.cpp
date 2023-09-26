@@ -6,17 +6,21 @@
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "AlembicExporter.hpp"
-#include <version.hpp>
+//#include <version.hpp>
 
 #include <Alembic/AbcGeom/All.h>
 #include <Alembic/AbcCoreOgawa/All.h>
 #include <Alembic/Abc/OObject.h>
 
-#include <boost/filesystem.hpp>
+#include <camera/Equidistant.hpp>
+
+//#include <boost/filesystem.hpp>
 
 #include <numeric>
 
-namespace fs = boost::filesystem;
+#include <utils/strUtils.hpp>
+
+//namespace fs = boost::filesystem;
 
 
 namespace sfmDataIO {
@@ -37,14 +41,14 @@ struct AlembicExporter::DataImpl
     _mvgCloud = Alembic::AbcGeom::OXform(_mvgRoot, "mvgCloud");
     _mvgPointCloud = Alembic::AbcGeom::OXform(_mvgCloud, "mvgPointCloud");
 
-    // add version as custom property
-    const std::vector<::uint32_t> abcVersion = {ALICEVISION_SFMDATAIO_VERSION_MAJOR, ALICEVISION_SFMDATAIO_VERSION_MINOR, ALICEVISION_SFMDATAIO_VERSION_REVISION};
-    const std::vector<::uint32_t> aliceVisionVersion = {ALICEVISION_VERSION_MAJOR, ALICEVISION_VERSION_MINOR, ALICEVISION_VERSION_REVISION};
-
-    auto userProps = _mvgRoot.getProperties();
-
-    OUInt32ArrayProperty(userProps, "mvg_ABC_version").set(abcVersion);
-    OUInt32ArrayProperty(userProps, "mvg_aliceVision_version").set(aliceVisionVersion);
+//    // add version as custom property
+//    const std::vector<::uint32_t> abcVersion = {ALICEVISION_SFMDATAIO_VERSION_MAJOR, ALICEVISION_SFMDATAIO_VERSION_MINOR, ALICEVISION_SFMDATAIO_VERSION_REVISION};
+//    const std::vector<::uint32_t> aliceVisionVersion = {ALICEVISION_VERSION_MAJOR, ALICEVISION_VERSION_MINOR, ALICEVISION_VERSION_REVISION};
+//
+//    auto userProps = _mvgRoot.getProperties();
+//
+//    OUInt32ArrayProperty(userProps, "mvg_ABC_version").set(abcVersion);
+//    OUInt32ArrayProperty(userProps, "mvg_aliceVision_version").set(aliceVisionVersion);
 
     // hide mvgCamerasUndefined
     Alembic::AbcGeom::CreateVisibilityProperty(_mvgCamerasUndefined, 0).set(Alembic::AbcGeom::kVisibilityHidden);
@@ -146,11 +150,11 @@ void AlembicExporter::DataImpl::addCamera(const std::string& name,
   OUInt32Property(userProps, "mvg_intrinsicId").set(view.getIntrinsicId());
   OUInt32Property(userProps, "mvg_resectionId").set(view.getResectionId());
 
-  if(view.isPartOfRig())
-  {
-    OUInt32Property(userProps, "mvg_rigId").set(view.getRigId());
-    OUInt32Property(userProps, "mvg_subPoseId").set(view.getSubPoseId());
-  }
+//  if(view.isPartOfRig())
+//  {
+//    OUInt32Property(userProps, "mvg_rigId").set(view.getRigId());
+//    OUInt32Property(userProps, "mvg_subPoseId").set(view.getSubPoseId());
+//  }
 
   if(view.getFrameId() != UndefinedIndexT)
     OUInt32Property(userProps, "mvg_frameId").set(view.getFrameId());
@@ -304,28 +308,28 @@ void AlembicExporter::addSfM(const sfmData::SfMData& sfmData, ESfMData flagsPart
     {
       const sfmData::View& view = *(viewPair.second);
 
-      if(view.isPartOfRig() && !view.isPoseIndependant())
-      {
-        // save rigId, poseId, viewId in a temporary structure, will process later
-        rigsViewIds[view.getRigId()][view.getPoseId()].push_back(view.getViewId());
-        continue;
-      }
+//      if(view.isPartOfRig() && !view.isPoseIndependant())
+//      {
+//        // save rigId, poseId, viewId in a temporary structure, will process later
+//        rigsViewIds[view.getRigId()][view.getPoseId()].push_back(view.getViewId());
+//        continue;
+//      }
       addSfMSingleCamera(sfmData, view, flagsPart);
     }
 
     // save rigs views
-    for(const auto& rigPair : rigsViewIds)
-    {
-      for(const auto& poseViewIds : rigPair.second)
-        addSfMCameraRig(sfmData, rigPair.first, poseViewIds.second, flagsPart); // add one camera rig per rig pose
-    }
+//    for(const auto& rigPair : rigsViewIds)
+//    {
+//      for(const auto& poseViewIds : rigPair.second)
+//        addSfMCameraRig(sfmData, rigPair.first, poseViewIds.second, flagsPart); // add one camera rig per rig pose
+//    }
   }
 }
 
 void AlembicExporter::addSfMSingleCamera(const sfmData::SfMData& sfmData, const sfmData::View& view,
                                          ESfMData flagsPart)
 {
-  const std::string name = fs::path(view.getImagePath()).stem().string();
+  const std::string name = utils::GetFileNameStem(view.getImagePath());
   const sfmData::CameraPose* pose = ((flagsPart & ESfMData::EXTRINSICS) && sfmData.existsPose(view)) ? &(sfmData.getPoses().at(view.getPoseId())) : nullptr;
   const std::shared_ptr<camera::IntrinsicBase> intrinsic = (flagsPart & ESfMData::INTRINSICS) ? sfmData.getIntrinsicsharedPtr(view.getIntrinsicId()) : nullptr;
 
@@ -335,88 +339,88 @@ void AlembicExporter::addSfMSingleCamera(const sfmData::SfMData& sfmData, const 
     _dataImpl->addCamera(name, view, pose, intrinsic, nullptr, &_dataImpl->_mvgCamerasUndefined);
 }
 
-void AlembicExporter::addSfMCameraRig(const sfmData::SfMData& sfmData, IndexT rigId, const std::vector<IndexT>& viewIds,
-                                      ESfMData flagsPart)
-{
-  const sfmData::Rig& rig = sfmData.getRigs().at(rigId);
-  const std::size_t nbSubPoses = rig.getNbSubPoses();
-
-  const sfmData::View& firstView = *(sfmData.getViews().at(viewIds.front()));
-
-  XformSample xformsample;
-  const IndexT rigPoseId = firstView.getPoseId();
-  bool rigPoseLocked = false;
-
-  if(sfmData.getPoses().find(rigPoseId) != sfmData.getPoses().end())
-  {
-    // rig pose
-    const sfmData::CameraPose& rigPose = sfmData.getAbsolutePose(rigPoseId);
-    const geometry::Pose3& rigTransform = rigPose.getTransform();
-    rigPoseLocked = rigPose.isLocked();
-
-    Eigen::Matrix4d M = Eigen::Matrix4d::Identity();
-    M(1, 1) = -1;
-    M(2, 2) = -1;
-
-    Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
-    T.block<3, 3>(0, 0) = rigPose.getTransform().rotation();
-    T.block<3, 1>(0, 3) = rigPose.getTransform().translation();
-
-    Eigen::Matrix4d T2 = (M * T * M).inverse();
-
-
-    // compensate translation with rotation
-    // build transform matrix
-    Abc::M44d xformMatrix;
-    for (int i = 0; i < 4; i++)
-    {
-        for (int j = 0; j < 4; j++)
-        {
-            xformMatrix[j][i] = T2(i, j);
-        }
-    }
-
-    xformsample.setMatrix(xformMatrix);
-  }
-
-  std::stringstream ssLabel;
-  ssLabel << "rigxform_" << std::setfill('0') << std::setw(5) << rigId << "_" << rigPoseId;
-
-  std::map<bool, Alembic::AbcGeom::OXform> rigObj;
-  for(const IndexT viewId : viewIds)
-  {
-    const sfmData::View& view = *(sfmData.getViews().at(viewId));
-    const sfmData::RigSubPose& rigSubPose = rig.getSubPose(view.getSubPoseId());
-    const bool isReconstructed = (rigSubPose.status != sfmData::ERigSubPoseStatus::UNINITIALIZED);
-    const std::string name = fs::path(view.getImagePath()).stem().string();
-    const std::shared_ptr<camera::IntrinsicBase> intrinsic = (flagsPart & ESfMData::INTRINSICS) ? sfmData.getIntrinsicsharedPtr(view.getIntrinsicId()) : nullptr;
-    std::unique_ptr<sfmData::CameraPose> subPosePtr;
-
-    if(isReconstructed && (flagsPart & ESfMData::EXTRINSICS))
-    {
-      subPosePtr = std::unique_ptr<sfmData::CameraPose>(new sfmData::CameraPose(rigSubPose.pose));
-    }
-
-    Alembic::Abc::OObject& parent = isReconstructed ? _dataImpl->_mvgCameras : _dataImpl->_mvgCamerasUndefined;
-
-    if(rigObj.find(isReconstructed) == rigObj.end())
-    {
-      // The first time we declare a view, we have to create a RIG entry.
-      // The RIG entry will be different if the view is reconstructed or not.
-      rigObj[isReconstructed] = Alembic::AbcGeom::OXform(parent, ssLabel.str());
-      auto schema = rigObj.at(isReconstructed).getSchema();
-      schema.set(xformsample);
-      {
-        auto userProps = schema.getUserProperties();
-        OUInt32Property(userProps, "mvg_rigId").set(rigId);
-        OUInt32Property(userProps, "mvg_poseId").set(rigPoseId);
-        OUInt16Property(userProps, "mvg_nbSubPoses").set(nbSubPoses);
-        OBoolProperty(userProps, "mvg_rigPoseLocked").set(rigPoseLocked);
-      }
-    }
-    _dataImpl->addCamera(name, view, subPosePtr.get(), intrinsic, nullptr, &(rigObj.at(isReconstructed)));
-  }
-}
+//void AlembicExporter::addSfMCameraRig(const sfmData::SfMData& sfmData, IndexT rigId, const std::vector<IndexT>& viewIds,
+//                                      ESfMData flagsPart)
+//{
+//  const sfmData::Rig& rig = sfmData.getRigs().at(rigId);
+//  const std::size_t nbSubPoses = rig.getNbSubPoses();
+//
+//  const sfmData::View& firstView = *(sfmData.getViews().at(viewIds.front()));
+//
+//  XformSample xformsample;
+//  const IndexT rigPoseId = firstView.getPoseId();
+//  bool rigPoseLocked = false;
+//
+//  if(sfmData.getPoses().find(rigPoseId) != sfmData.getPoses().end())
+//  {
+//    // rig pose
+//    const sfmData::CameraPose& rigPose = sfmData.getAbsolutePose(rigPoseId);
+//    const geometry::Pose3& rigTransform = rigPose.getTransform();
+//    rigPoseLocked = rigPose.isLocked();
+//
+//    Eigen::Matrix4d M = Eigen::Matrix4d::Identity();
+//    M(1, 1) = -1;
+//    M(2, 2) = -1;
+//
+//    Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
+//    T.block<3, 3>(0, 0) = rigPose.getTransform().rotation();
+//    T.block<3, 1>(0, 3) = rigPose.getTransform().translation();
+//
+//    Eigen::Matrix4d T2 = (M * T * M).inverse();
+//
+//
+//    // compensate translation with rotation
+//    // build transform matrix
+//    Abc::M44d xformMatrix;
+//    for (int i = 0; i < 4; i++)
+//    {
+//        for (int j = 0; j < 4; j++)
+//        {
+//            xformMatrix[j][i] = T2(i, j);
+//        }
+//    }
+//
+//    xformsample.setMatrix(xformMatrix);
+//  }
+//
+//  std::stringstream ssLabel;
+//  ssLabel << "rigxform_" << std::setfill('0') << std::setw(5) << rigId << "_" << rigPoseId;
+//
+//  std::map<bool, Alembic::AbcGeom::OXform> rigObj;
+//  for(const IndexT viewId : viewIds)
+//  {
+//    const sfmData::View& view = *(sfmData.getViews().at(viewId));
+//    const sfmData::RigSubPose& rigSubPose = rig.getSubPose(view.getSubPoseId());
+//    const bool isReconstructed = (rigSubPose.status != sfmData::ERigSubPoseStatus::UNINITIALIZED);
+//    const std::string name = fs::path(view.getImagePath()).stem().string();
+//    const std::shared_ptr<camera::IntrinsicBase> intrinsic = (flagsPart & ESfMData::INTRINSICS) ? sfmData.getIntrinsicsharedPtr(view.getIntrinsicId()) : nullptr;
+//    std::unique_ptr<sfmData::CameraPose> subPosePtr;
+//
+//    if(isReconstructed && (flagsPart & ESfMData::EXTRINSICS))
+//    {
+//      subPosePtr = std::unique_ptr<sfmData::CameraPose>(new sfmData::CameraPose(rigSubPose.pose));
+//    }
+//
+//    Alembic::Abc::OObject& parent = isReconstructed ? _dataImpl->_mvgCameras : _dataImpl->_mvgCamerasUndefined;
+//
+//    if(rigObj.find(isReconstructed) == rigObj.end())
+//    {
+//      // The first time we declare a view, we have to create a RIG entry.
+//      // The RIG entry will be different if the view is reconstructed or not.
+//      rigObj[isReconstructed] = Alembic::AbcGeom::OXform(parent, ssLabel.str());
+//      auto schema = rigObj.at(isReconstructed).getSchema();
+//      schema.set(xformsample);
+//      {
+//        auto userProps = schema.getUserProperties();
+//        OUInt32Property(userProps, "mvg_rigId").set(rigId);
+//        OUInt32Property(userProps, "mvg_poseId").set(rigPoseId);
+//        OUInt16Property(userProps, "mvg_nbSubPoses").set(nbSubPoses);
+//        OBoolProperty(userProps, "mvg_rigPoseLocked").set(rigPoseLocked);
+//      }
+//    }
+//    _dataImpl->addCamera(name, view, subPosePtr.get(), intrinsic, nullptr, &(rigObj.at(isReconstructed)));
+//  }
+//}
 
 void AlembicExporter::addLandmarks(const sfmData::Landmarks& landmarks, const sfmData::LandmarksUncertainty& landmarksUncertainty, bool withVisibility, bool withFeatures)
 {
@@ -678,4 +682,4 @@ void AlembicExporter::jumpKeyframe(const std::string& imagePath)
 }
 
 } //namespace sfmDataIO
-} //namespace aliceVision
+

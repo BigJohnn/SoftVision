@@ -13,7 +13,7 @@
 #include <camera/IntrinsicInitMode.hpp>
 #include <geometry/Pose3.hpp>
 #include <string>
-//#include <version.hpp>
+#include <version.hpp>
 
 namespace camera {
 /**
@@ -260,7 +260,7 @@ public:
 //     * @param[in] inputVersion input source version (for optional transformation)
 //     * @return true if done
 //     */
-//    virtual bool importFromParams(const std::vector<double>& params, const Version & inputVersion) = 0;
+    virtual bool importFromParams(const std::vector<double>& params, const Version & inputVersion) = 0;
 
     /**
      * @brief Transform a point from the camera plane to the image plane

@@ -38,6 +38,12 @@ using Intrinsics = std::map<IndexT, std::shared_ptr<camera::IntrinsicBase> >;
 /// Define a collection of landmarks are indexed by their TrackId
 using Landmarks = HashMap<IndexT, Landmark>;
 
+/// Define uncertainty per pose
+using PosesUncertainty = HashMap<IndexT, Vec6>;
+
+/// Define uncertainty per landmark
+using LandmarksUncertainty = HashMap<IndexT, Vec3>;
+
 ///Define a collection of constraints
 using Constraints2D = std::vector<Constraint2D>;
 
@@ -55,10 +61,10 @@ public:
     Landmarks structure;
 /// Controls points (stored as Landmarks (id_feat has no meaning here))
     Landmarks control_points;
-//    /// Uncertainty per pose
-//    PosesUncertainty _posesUncertainty;
-//    /// Uncertainty per landmark
-//    LandmarksUncertainty _landmarksUncertainty;
+    /// Uncertainty per pose
+    PosesUncertainty _posesUncertainty;
+    /// Uncertainty per landmark
+    LandmarksUncertainty _landmarksUncertainty;
     /// 2D Constraints
     Constraints2D constraints2d;
     /// Rotation priors
@@ -73,6 +79,16 @@ public:
      */
     const Views& getViews() const {return views;}
     Views& getViews() {return views;}
+    
+    /**
+     * @brief Check if the given view has an existing pose
+     * @param[in] view The given view
+     * @return true if the pose exists
+     */
+    bool existsPose(const View& view) const
+    {
+        return (_poses.find(view.getPoseId()) != _poses.end());
+    }
     
     /**
      * @brief Gives the view of the input view id.
@@ -292,6 +308,10 @@ public:
      * @return matches folder paths
      */
     std::vector<std::string> getMatchesFolders() const;
+    
+    std::vector<std::string> getRelativeFeaturesFolders() const;
+    
+    std::vector<std::string> getRelativeMatchesFolders() const;
     
     /**
      * @brief Add the given \p folder to features folders.

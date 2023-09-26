@@ -82,7 +82,7 @@ public:
     /**
      * @brief Import a vector of params loaded from a file. It is similar to updateFromParams but it deals with file compatibility.
      */
-//    bool importFromParams(const std::vector<double>& params, const Version & inputVersion) override;
+    bool importFromParams(const std::vector<double>& params, const Version & inputVersion) override;
 
     /**
      * @brief Set initial Scale (for constraining minimization)

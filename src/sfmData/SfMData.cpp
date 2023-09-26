@@ -8,6 +8,7 @@
 #include "SfMData.hpp"
 #include "View.hpp"
 #include "IntrinsicBase.hpp"
+#include <SoftVisionLog.h>
 
 namespace sfmData{
 
@@ -20,6 +21,20 @@ std::vector<std::string> SfMData::getMatchesFolders() const
 {
     return _matchesFolders;
 }
+
+std::vector<std::string> SfMData::getRelativeFeaturesFolders() const
+{
+    LOG_DEBUG("TODO: check this");
+    return _featuresFolders;
+}
+
+std::vector<std::string> SfMData::getRelativeMatchesFolders() const
+{
+    LOG_DEBUG("TODO: check this");
+    return _matchesFolders;
+}
+
+
 
 void SfMData::addFeaturesFolders(const std::vector<std::string>& folders)
 {

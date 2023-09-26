@@ -13,6 +13,12 @@ namespace utils{
         return filepath.substr(filepath.find_last_of("/") + 1);
     }
 
+    std::string GetFileNameStem(std::string const& filepath)
+    {
+        auto&& last_slide_pos = filepath.find_last_of("/");
+        return filepath.substr(last_slide_pos + 1, filepath.find_last_of(".") - last_slide_pos - 1);
+    }
+
     void split(std::vector<std::string> &out_words, std::string const& str, char const& pivot)
     {
       std::istringstream f(str);

@@ -33,7 +33,7 @@ oiio::ColorConfig& getGlobalColorConfigOCIO()
 std::string getColorConfigFilePathFromSourceCode()
 {
 //    const fs::path moduleFolder = fs::path(__FILE__).parent_path();
-//    return (moduleFolder / "share/aliceVision/config.ocio").string();
+//    return (moduleFolder / "share/config.ocio").string();
     return "no impl";
 }
 
@@ -108,7 +108,7 @@ std::string getDefaultColorConfigFilePath()
         LOG_ERROR("ALICEVISION_ROOT is not defined, embedded OCIO config file cannot be accessed.");
     }
     configOCIOFilePath = std::string(ALICEVISION_ROOT);
-    configOCIOFilePath.append("/share/aliceVision/config.ocio");
+    configOCIOFilePath.append("/share/config.ocio");
 
 //    if (!fs::exists(configOCIOFilePath))
     {

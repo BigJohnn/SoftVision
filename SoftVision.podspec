@@ -242,6 +242,8 @@ Pod::Spec.new do |spec|
 #  spec.compiler_flags = '-DEIGEN_MAX_STATIC_ALIGN_BYTES=0 -DEIGEN_MAX_ALIGN_BYTES=0'
   spec.compiler_flags = '-DEIGEN_MAX_STATIC_ALIGN_BYTES=0 -DEIGEN_MAX_ALIGN_BYTES=0 -DVL_DISABLE_SSE2'
 #   spec.dependency "JSONKit", "~> 1.4"
+
+  spec.dependency "Alembic"
   spec.dependency "glog"
 #  spec.dependency "coin"
   spec.dependency "Eigen"
@@ -251,6 +253,7 @@ Pod::Spec.new do |spec|
   spec.dependency "lemon"
   spec.dependency "Ceres"
   spec.dependency "cJSON"
+  
   
   spec.libraries             = 'stdc++'
   

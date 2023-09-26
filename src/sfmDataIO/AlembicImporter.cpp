@@ -11,6 +11,8 @@
 #include <Alembic/AbcCoreFactory/All.h>
 #include <Alembic/AbcCoreOgawa/All.h>
 
+#include <SoftVisionLog.h>
+#include <camera/camera.hpp>
 #include <version.hpp>
 
 
@@ -157,7 +159,7 @@ struct AV_UInt32ArraySamplePtr
 
 bool readPointCloud(const Version & abcVersion, IObject iObj, M44d mat, sfmData::SfMData &sfmdata, ESfMData flags_part)
 {
-  using namespace aliceVision::geometry;
+  using namespace geometry;
 
   IPoints points(iObj, kWrapExisting);
   IPointsSchema& ms = points.getSchema();
@@ -173,7 +175,7 @@ bool readPointCloud(const Version & abcVersion, IObject iObj, M44d mat, sfmData:
     propColor.get(sampleColors);
     if(sampleColors->size() != positions->size())
     {
-      ALICEVISION_LOG_WARNING("[Alembic Importer] Colors will be ignored. Color vector size: " << sampleColors->size() << ", positions vector size: " << positions->size());
+      LOG_X("[Alembic Importer] Colors will be ignored. Color vector size: " << sampleColors->size() << ", positions vector size: " << positions->size());
       sampleColors.reset();
     }
   }
@@ -184,7 +186,7 @@ bool readPointCloud(const Version & abcVersion, IObject iObj, M44d mat, sfmData:
     sampleDescs.read(userProps, "mvg_describerType");
     if(sampleDescs.size() != positions->size())
     {
-      ALICEVISION_LOG_WARNING("[Alembic Importer] Describer type will be ignored. describerType vector size: " << sampleDescs.size() << ", positions vector size: " << positions->size());
+      LOG_X("[Alembic Importer] Describer type will be ignored. describerType vector size: " << sampleDescs.size() << ", positions vector size: " << positions->size());
       sampleDescs.reset();
     }
   }
@@ -242,14 +244,14 @@ bool readPointCloud(const Version & abcVersion, IObject iObj, M44d mat, sfmData:
 
     if(positions->size() != sampleVisibilitySize.size())
     {
-      ALICEVISION_LOG_ERROR("Alembic Error: number of observations per 3D point should be identical to the number of 2D features.\n"
+      LOG_X("Alembic Error: number of observations per 3D point should be identical to the number of 2D features.\n"
                             "# observations per 3D point: " << sampleVisibilitySize.size() << ".\n"
                             "# 3D points: " << positions->size() << ".");
       return false;
     }
     if(sampleVisibilityIds.size() != sampleFeatPos2d->size())
     {
-      ALICEVISION_LOG_ERROR("Alembic Error: visibility Ids and features 2D pos should have the same size.\n"
+      LOG_X("Alembic Error: visibility Ids and features 2D pos should have the same size.\n"
                             "# visibility Ids: " << sampleVisibilityIds.size() << ".\n"
                             "# features 2D pos: " << sampleFeatPos2d->size() << ".");
       return false;
@@ -292,7 +294,7 @@ bool readPointCloud(const Version & abcVersion, IObject iObj, M44d mat, sfmData:
 
     if(positions->size() != sampleVisibilitySize.size())
     {
-      ALICEVISION_LOG_ERROR("Alembic Error: number of observations per 3D point should be identical to the number of 2D features.\n"
+      LOG_X("Alembic Error: number of observations per 3D point should be identical to the number of 2D features.\n"
                             "# observations per 3D point: " << sampleVisibilitySize.size() << ".\n"
                             "# 3D points: " << positions->size() << ".");
       return false;
@@ -320,7 +322,7 @@ bool readPointCloud(const Version & abcVersion, IObject iObj, M44d mat, sfmData:
       if(sampleVisibilityViewId.size() != sampleVisibilityFeatId.size() ||
          2*sampleVisibilityViewId.size() != sampleVisibilityFeatPos->size())
       {
-        ALICEVISION_LOG_ERROR("Alembic Error: visibility Ids and features id / 2D pos should have the same size.\n"
+        LOG_X("Alembic Error: visibility Ids and features id / 2D pos should have the same size.\n"
                               "# view Ids: " << sampleVisibilityViewId.size() << ".\n"
                               "# features id: " << sampleVisibilityFeatId.size() << ".\n"
                               "# features 2D pos: " << sampleVisibilityFeatPos->size() << ".");
@@ -329,7 +331,7 @@ bool readPointCloud(const Version & abcVersion, IObject iObj, M44d mat, sfmData:
 
     }
     else {
-        ALICEVISION_LOG_WARNING("Alembic LOAD: NO OBSERVATIONS_WITH_FEATURES: "
+        LOG_X("Alembic LOAD: NO OBSERVATIONS_WITH_FEATURES: "
                                 << ", mvg_visibilityFeatId: " << long(userProps.getPropertyHeader("mvg_visibilityFeatId"))
                                 << ", mvg_visibilityFeatPos: " << long(userProps.getPropertyHeader("mvg_visibilityFeatPos"))
                                 << ", OBSERVATIONS_WITH_FEATURES flag: " << bool(flags_part & ESfMData::OBSERVATIONS_WITH_FEATURES)
@@ -383,8 +385,8 @@ bool readPointCloud(const Version & abcVersion, IObject iObj, M44d mat, sfmData:
 bool readCamera(const Version & abcVersion, const ICamera& camera, const M44d& mat, sfmData::SfMData& sfmData,
                 ESfMData flagsPart, const index_t sampleFrame = 0, bool isReconstructed = true)
 {
-  using namespace aliceVision::geometry;
-  using namespace aliceVision::camera;
+  using namespace geometry;
+  using namespace camera;
 
   ICameraSchema cs = camera.getSchema();
   CameraSample camSample;
@@ -479,7 +481,7 @@ bool readCamera(const Version & abcVersion, const ICamera& camera, const M44d& m
         getAbcArrayProp<Alembic::Abc::IStringArrayProperty>(userProps, "mvg_metadata", sampleFrame, rawMetadata);
         if(rawMetadata.size() % 2 != 0)
         {
-          ALICEVISION_THROW_ERROR("[Alembic] 'metadata' property is supposed to be key/values. Number of values is " + std::to_string(rawMetadata.size()) + ".");
+          LOG_X("[Alembic] 'metadata' property is supposed to be key/values. Number of values is " + std::to_string(rawMetadata.size()) + ".");
         }
       }
       if(userProps.getPropertyHeader("mvg_sensorSizePix"))
@@ -487,7 +489,7 @@ bool readCamera(const Version & abcVersion, const ICamera& camera, const M44d& m
         getAbcArrayProp_uint(userProps, "mvg_sensorSizePix", sampleFrame, sensorSize_pix);
         if(sensorSize_pix.size() != 2)
         {
-          ALICEVISION_THROW_ERROR("[Alembic] 'sensorSizePix' property is supposed to be 2 values. Number of values is " + std::to_string(sensorSize_pix.size()) + ".");
+          LOG_X("[Alembic] 'sensorSizePix' property is supposed to be 2 values. Number of values is " + std::to_string(sensorSize_pix.size()) + ".");
         }
       }
       if(userProps.getPropertyHeader("mvg_sensorSizeMm"))
@@ -495,7 +497,7 @@ bool readCamera(const Version & abcVersion, const ICamera& camera, const M44d& m
         getAbcArrayProp<Alembic::Abc::IDoubleArrayProperty>(userProps, "mvg_sensorSizeMm", sampleFrame, sensorSize_mm);
         if(sensorSize_mm.size() != 2)
         {
-          ALICEVISION_THROW_ERROR("[Alembic] 'sensorSizeMm' property is supposed to be 2 values. Number of values is " + std::to_string(sensorSize_mm.size()) + ".");
+          LOG_X("[Alembic] 'sensorSizeMm' property is supposed to be 2 values. Number of values is " + std::to_string(sensorSize_mm.size()) + ".");
         }
       }
       else
@@ -638,14 +640,16 @@ bool readCamera(const Version & abcVersion, const ICamera& camera, const M44d& m
 
   // add imported data to the SfMData container TODO use UID
   // this view is incomplete if no flag VIEWS
-  std::shared_ptr<sfmData::View> view = std::make_shared<sfmData::View>(imagePath,
+    //TODO: 这里需要实现一下
+  std::shared_ptr<sfmData::View> view = std::make_shared<sfmData::View>(//imagePath,
                                                       viewId,
                                                       intrinsicId,
                                                       poseId,
                                                       sensorSize_pix.at(0),
-                                                      sensorSize_pix.at(1),
-                                                      rigId,
-                                                      subPoseId);
+                                                      sensorSize_pix.at(1)
+//                                                      rigId,
+//                                                      subPoseId
+                                                                        );
   if(flagsPart & ESfMData::VIEWS)
   {
     view->setResectionId(resectionId);
@@ -695,20 +699,20 @@ bool readCamera(const Version & abcVersion, const ICamera& camera, const M44d& m
 
     Pose3 pose(T2.block<3, 4>(0, 0));
 
-    if(view->isPartOfRig() && !view->isPoseIndependant())
-    {
-      sfmData::Rig& rig = sfmData.getRigs()[view->getRigId()];
-      std::vector<sfmData::RigSubPose>& sp = rig.getSubPoses();
-      if(view->getSubPoseId() >= sp.size())
-          sp.resize(view->getSubPoseId()+1);
-      sfmData::RigSubPose& subPose = rig.getSubPose(view->getSubPoseId());
-      if(subPose.status == sfmData::ERigSubPoseStatus::UNINITIALIZED)
-      {
-        subPose.status = sfmData::ERigSubPoseStatus::ESTIMATED;
-        subPose.pose = pose;
-      }
-    }
-    else
+//    if(view->isPartOfRig() && !view->isPoseIndependant())
+//    {
+//      sfmData::Rig& rig = sfmData.getRigs()[view->getRigId()];
+//      std::vector<sfmData::RigSubPose>& sp = rig.getSubPoses();
+//      if(view->getSubPoseId() >= sp.size())
+//          sp.resize(view->getSubPoseId()+1);
+//      sfmData::RigSubPose& subPose = rig.getSubPose(view->getSubPoseId());
+//      if(subPose.status == sfmData::ERigSubPoseStatus::UNINITIALIZED)
+//      {
+//        subPose.status = sfmData::ERigSubPoseStatus::ESTIMATED;
+//        subPose.pose = pose;
+//      }
+//    }
+//    else
     {
       sfmData.setPose(*view, sfmData::CameraPose(pose, poseLocked));
     }
@@ -720,8 +724,8 @@ bool readCamera(const Version & abcVersion, const ICamera& camera, const M44d& m
 bool readXform(const Version & abcVersion, IXform& xform, M44d& mat, sfmData::SfMData& sfmData,
                ESfMData flagsPart, bool isReconstructed = true)
 {
-  using namespace aliceVision::geometry;
-  using namespace aliceVision::camera;
+  using namespace geometry;
+  using namespace camera;
 
   IXformSchema schema = xform.getSchema();
   XformSample xsample;
@@ -731,7 +735,7 @@ bool readXform(const Version & abcVersion, IXform& xform, M44d& mat, sfmData::Sf
   // If we have an animated camera we handle it with the xform here
   if(xform.getSchema().getNumSamples() != 1)
   {
-    ALICEVISION_LOG_DEBUG(xform.getSchema().getNumSamples() << " samples found in this animated xform.");
+    LOG_X(xform.getSchema().getNumSamples() << " samples found in this animated xform.");
     for(index_t frame = 0; frame < xform.getSchema().getNumSamples(); ++frame)
     {
       xform.getSchema().get(xsample, ISampleSelector(frame));
@@ -833,8 +837,8 @@ bool readXform(const Version & abcVersion, IXform& xform, M44d& mat, sfmData::Sf
       }
   }
 
-  if((rigId != UndefinedIndexT) && sfmData.getRigs().find(rigId) == sfmData.getRigs().end())
-    sfmData.getRigs().emplace(rigId, sfmData::Rig(nbSubPoses));
+//  if((rigId != UndefinedIndexT) && sfmData.getRigs().find(rigId) == sfmData.getRigs().end())
+//    sfmData.getRigs().emplace(rigId, sfmData::Rig(nbSubPoses));
 
   mat.makeIdentity();
   return true;
@@ -844,7 +848,7 @@ bool readXform(const Version & abcVersion, IXform& xform, M44d& mat, sfmData::Sf
 void visitObject(const Version& abcVersion, IObject iObj, M44d mat, sfmData::SfMData& sfmdata,
                  ESfMData flagsPart, bool isReconstructed = true)
 {
-  // ALICEVISION_LOG_DEBUG("ABC visit: " << iObj.getFullName());
+  // LOG_X("ABC visit: " << iObj.getFullName());
   if(iObj.getName() == "mvgCamerasUndefined")
     isReconstructed = false;
   

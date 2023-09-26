@@ -6,7 +6,7 @@
 
 #include "IntrinsicsScaleOffset.hpp"
 
-//#include <version.hpp>
+#include <version.hpp>
 
 
 namespace camera {
@@ -125,38 +125,38 @@ bool IntrinsicsScaleOffset::updateFromParams(const std::vector<double>& params)
     return true;
 }
 
-//bool IntrinsicsScaleOffset::importFromParams(const std::vector<double>& params, const Version & inputVersion)
-//{
-//    std::vector<double> paramsLocal;
-//    if (inputVersion < Version(1, 2, 0))
-//    {
-//        paramsLocal.resize(params.size() + 1);
-//        paramsLocal[0] = params[0];
-//        paramsLocal[1] = params[0];
-//
-//        for (int i = 1; i < params.size(); i++)
-//        {
-//            paramsLocal[i + 1] = params[i];
-//        }
-//    }
-//    else
-//    {
-//        paramsLocal = params;
-//    }
-//
-//    if (!updateFromParams(paramsLocal))
-//    {
-//        return false;
-//    }
-//
-//    if (inputVersion < Version(1, 2, 1))
-//    {
-//        _offset(0) -= static_cast<double>(_w) / 2.0;
-//        _offset(1) -= static_cast<double>(_h) / 2.0;
-//    }
-//
-//    return true;
-//}
+bool IntrinsicsScaleOffset::importFromParams(const std::vector<double>& params, const Version & inputVersion)
+{
+    std::vector<double> paramsLocal;
+    if (inputVersion < Version(1, 2, 0))
+    {
+        paramsLocal.resize(params.size() + 1);
+        paramsLocal[0] = params[0];
+        paramsLocal[1] = params[0];
+
+        for (int i = 1; i < params.size(); i++)
+        {
+            paramsLocal[i + 1] = params[i];
+        }
+    }
+    else
+    {
+        paramsLocal = params;
+    }
+
+    if (!updateFromParams(paramsLocal))
+    {
+        return false;
+    }
+
+    if (inputVersion < Version(1, 2, 1))
+    {
+        _offset(0) -= static_cast<double>(_w) / 2.0;
+        _offset(1) -= static_cast<double>(_h) / 2.0;
+    }
+
+    return true;
+}
 
 } // namespace camera
 

@@ -11,7 +11,7 @@
 #include <sfmDataIO/sfmDataIO.hpp>
 #include <geometry/Pose3.hpp>
 #include <camera/Pinhole.hpp>
-#include <types.hpp>
+#include <common/types.h>
 
 #include <memory>
 #include <string>
@@ -53,10 +53,10 @@ public:
    * @param rigId The rig Id in the scene
    * @param viewIds The sub-pose view ids in the scene
    */
-  void addSfMCameraRig(const sfmData::SfMData& sfmData,
-                       IndexT rigId,
-                       const std::vector<IndexT>& viewIds,
-                       ESfMData flagsPart);
+//  void addSfMCameraRig(const sfmData::SfMData& sfmData,
+//                       IndexT rigId,
+//                       const std::vector<IndexT>& viewIds,
+//                       ESfMData flagsPart);
 
   /**
    * @brief Add a set of 3d points

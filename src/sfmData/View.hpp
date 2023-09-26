@@ -85,6 +85,61 @@ public:
 //        printf("View destroyed!!\n");
 //    }
     
+    /**
+     * @brief  Set the given view image width
+     * @param[in] width The given view image width
+     */
+    void setWidth(std::size_t width)
+    {
+      _width = width;
+    }
+
+    /**
+     * @brief  Set the given view image height
+     * @param[in] height The given view image height
+     */
+    void setHeight(std::size_t height)
+    {
+      _height = height;
+    }
+
+    /**
+     * @brief Set the given view id
+     * @param[in] viewId The given view id
+     */
+    void setViewId(IndexT viewId)
+    {
+      _viewId = viewId;
+    }
+
+    /**
+     * @brief Set the given intrinsic id
+     * @param[in] intrinsicId The given intrinsic id
+     */
+    void setIntrinsicId(IndexT intrinsicId)
+    {
+      _intrinsicId = intrinsicId;
+    }
+
+    /**
+     * @brief Set the given pose id
+     * @param[in] poseId The given pose id
+     */
+    void setPoseId(IndexT poseId)
+    {
+      _poseId = poseId;
+    }
+
+    /**
+     * @brief setIndependantPose
+     * @param independant
+     */
+    void setIndependantPose(bool independent)
+    {
+        _isPoseIndependent = independent;
+    }
+
+    
       /**
        * @brief Set the given frame id
        * @param[in] frame The given frame id
@@ -152,6 +207,16 @@ public:
       IndexT getPoseId() const
       {
         return _poseId;
+      }
+    
+      /**
+       * @brief Add view metadata
+       * @param[in] key The metadata key
+       * @param[in] value The metadata value
+       */
+      void addMetadata(const std::string& key, const std::string& value)
+      {
+          _metadata[key] = value;
       }
     
     /**
@@ -241,6 +306,15 @@ public:
       void setResectionId(IndexT resectionId)
       {
         _resectionId = resectionId;
+      }
+    
+      /**
+       * @brief Get the frame id
+       * @return frame id
+       */
+      IndexT getFrameId() const
+      {
+        return _frameId;
       }
     
       /**
