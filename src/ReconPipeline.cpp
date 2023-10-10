@@ -212,6 +212,8 @@ void ReconPipeline::SetOutputDataDir(const char* directory)
 {
     printf("%p Do SetOutputDataDir ...\n", this);
     m_outputFolder = directory;
+    m_matchesFolder = m_outputFolder + "matches/";
+    m_featureFolder = m_outputFolder + "features/";
 }
 
 bool ReconPipeline::FeatureExtraction()
@@ -256,7 +258,7 @@ bool ReconPipeline::FeatureExtraction()
     auto descType = feature::EImageDescriberType::SIFT;
     m_describerTypesName = feature::EImageDescriberType_enumToString(descType);
     
-    m_featureFolder = m_outputFolder + "features/";
+    
     
     bool needExtract = false;
     for(auto&& item : m_sfmData->views)
@@ -345,6 +347,19 @@ bool ReconPipeline::FeatureMatching()
     LOG_INFO("FeatureMatching\n"
              "- Compute putative local feature matches (descriptors matching)\n"
              "- Compute geometric coherent feature matches (robust model estimation from putative matches)\n");
+    
+    // If exists then load matches
+    matching::PairwiseMatches pairwiseMatches;
+    std::vector<std::string> matchesFolders{m_matchesFolder};
+    int maxNbMatches = 0;
+    int minNbMatches = 0;
+    bool useOnlyMatchesFromInputFolder = false;
+    const std::vector<feature::EImageDescriberType> describerTypes = feature::EImageDescriberType_stringToEnums(m_describerTypesName);
+    if(sfm::loadPairwiseMatches(pairwiseMatches, *m_sfmData, matchesFolders, describerTypes, maxNbMatches, minNbMatches, useOnlyMatchesFromInputFolder))
+    {
+      LOG_INFO("Load cached matches.");
+      return EXIT_SUCCESS;
+    }
     
     // user optional parameters
     imageMatching::EImageMatchingMethod method = imageMatching::EImageMatchingMethod::SEQUENTIAL_AND_VOCABULARYTREE;
@@ -643,7 +658,7 @@ bool ReconPipeline::FeatureMatching()
       LOG_INFO("Save geometric matches.");
     bool matchFilePerImage = false;
     const std::string fileExtension = "txt";
-    m_matchesFolder = m_outputFolder + "matches/";
+    
     if(!utils::create_directory(m_matchesFolder))
         LOG_ERROR("Create matches dir FAILED!");
       Save(finalMatches, m_matchesFolder, fileExtension, matchFilePerImage, filePrefix);
@@ -689,6 +704,23 @@ int ReconPipeline::IncrementalSFM()
 {
     LOG_INFO("StructureFromMotion\n"
              "- This program performs incremental SfM (Initial Pair Essential + Resection)\n");
+    
+    std::string extraInfoFolder = m_outputFolder + "StructureFromMotion/";
+    std::string const& outputSfM = "sfm.abc";
+    
+    sfmData::SfMData tmpData;
+    if(sfmDataIO::Load(tmpData, extraInfoFolder, extraInfoFolder + outputSfM, sfmDataIO::ESfMData::ALL)) {
+        LOG_INFO("IncrementalSFM already have done! Now use cached data ...");
+//        *m_sfmData = tmpData;
+        m_sfmData->structure = tmpData.structure;
+        m_sfmData->setAbsolutePath(tmpData.getAbsolutePath());
+        m_sfmData->setFeaturesFolders(tmpData.getFeaturesFolders());
+        m_sfmData->setMatchesFolders(tmpData.getMatchesFolders());
+        m_sfmData->getPoses() = tmpData.getPoses();
+        
+        return EXIT_SUCCESS;
+    }
+    
     
     omp_set_num_threads(mp_hwc->getMaxThreads());
 
@@ -785,7 +817,7 @@ int ReconPipeline::IncrementalSFM()
         }
       }
     
-    std::string extraInfoFolder = m_outputFolder + "StructureFromMotion/";
+    
     if(!utils::exists(extraInfoFolder)) {
         utils::create_directory(extraInfoFolder);
     }
@@ -808,7 +840,7 @@ int ReconPipeline::IncrementalSFM()
       if(!sfmEngine.process())
         return EXIT_FAILURE;
 
-    std::string const& outputSfM = "sfm.abc";
+    
       // set featuresFolders and matchesFolders relative paths
       {
           sfmEngine.getSfMData().addFeaturesFolders(featuresFolders);
@@ -1080,9 +1112,6 @@ bool ReconPipeline::PrepareDenseScene()
 //            else
 //            {
             image::Image<image::RGBAColor> imageRGBA;
-//            image::Image<image::RGBAfColor> imageRGBAf;
-            
-//            FlipY(width_new, height_new, buffer, buf.data());
             
             image::byteBuffer2EigenMatrix(view->getWidth(), view->getHeight(), view->getBuffer(), imageRGBA);
             
