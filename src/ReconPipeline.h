@@ -54,6 +54,8 @@ public:
     
     int IncrementalSFM();
     
+    bool PrepareDenseScene();
+    
     void SetOutputDataDir(const char* directory);
     
 private:

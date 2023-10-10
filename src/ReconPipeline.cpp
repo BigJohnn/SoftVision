@@ -15,6 +15,7 @@
 #include <sfmData/SfMData.hpp>
 #include <sfmData/View.hpp>
 #include <camera/PinholeRadial.hpp>
+#include "camera/cameraUndistortImage.hpp"
 #include <featureEngine/FeatureExtractor.hpp>
 #include <feature/ImageDescriber.hpp>
 
@@ -50,6 +51,10 @@
 
 #include <utils/strUtils.hpp>
 #include <utils/fileUtil.hpp>
+#include <utils/PngUtils.h>
+
+#include <image/io.hpp>
+#include <image/convertion.hpp>
 
 std::vector<std::vector<uint8_t>> ReconPipeline::m_cachedBuffers;
 
@@ -841,6 +846,255 @@ int ReconPipeline::IncrementalSFM()
       << "\t- # cameras calibrated: " << sfmEngine.getSfMData().getValidViews().size() << std::endl
       << "\t- # poses: " << sfmEngine.getSfMData().getPoses().size() << std::endl
       << "\t- # landmarks: " << sfmEngine.getSfMData().getLandmarks().size());
+    
+    *m_sfmData = sfmEngine.getSfMData();
 
     return EXIT_SUCCESS;
+}
+
+template <class ImageT, class MaskFuncT>
+void process(const std::string &dstColorImage, const camera::IntrinsicBase* cam, const oiio::ParamValueList & metadata, ImageT& image, bool evCorrection, float exposureCompensation, MaskFuncT && maskFunc)
+{
+//    ImageT image, image_ud;
+    ImageT image_ud;
+//    readImage(srcImage, image, image::EImageColorSpace::LINEAR);
+
+    // exposure correction
+    if(evCorrection)
+    {
+        for(int pix = 0; pix < image.Width() * image.Height(); ++pix)
+        {
+            image(pix) = image(pix) * exposureCompensation;
+        }
+    }
+
+    // mask
+    maskFunc(image);
+
+    // undistort //TODO: write exr
+    if(cam->isValid() && cam->hasDistortion())
+    {
+        // undistort the image and save it
+        using Pix = typename ImageT::Tpixel;
+        Pix pixZero(Pix::Zero());
+        UndistortImage(image, cam, image_ud, pixZero);
+        
+        writeImage(dstColorImage, image_ud, image::ImageWriteOptions(), metadata);
+    }
+    else
+    {
+        
+        writeImage(dstColorImage, image, image::ImageWriteOptions(), metadata);
+        
+    }
+}
+
+bool ReconPipeline::PrepareDenseScene()
+{
+    // defined view Ids
+    std::set<IndexT> viewIds;
+
+    if(!m_sfmData) return false;
+    
+    auto&& sfmData = *m_sfmData;
+    sfmData::Views::const_iterator itViewBegin = sfmData.getViews().begin();
+    sfmData::Views::const_iterator itViewEnd = sfmData.getViews().end();
+
+//    int endIndex = ?; int beginIndex = ?;
+//    if(endIndex > 0)
+//    {
+//        itViewEnd = itViewBegin;
+//        std::advance(itViewEnd, endIndex);
+//    }
+
+//    std::advance(itViewBegin, (beginIndex < 0) ? 0 : beginIndex);
+    
+    // export valid views as projective cameras
+    for(auto it = itViewBegin; it != itViewEnd; ++it)
+    {
+        const sfmData::View* view = it->second.get();
+        if (!sfmData.isPoseAndIntrinsicDefined(view))
+            continue;
+        viewIds.insert(view->getViewId());
+    }
+
+    image::EImageFileType outputFileType = image::EImageFileType::EXR;
+    bool saveMetadata = false;
+    
+    if((outputFileType != image::EImageFileType::EXR) && saveMetadata)
+        LOG_INFO("Cannot save informations in images metadata.\n"
+                                "Choose '.exr' file type if you want custom metadata");
+
+    // export data
+    auto progressDisplay = system2::createConsoleProgressDisplay(viewIds.size(), std::cout,
+                                                                "Exporting Scene Undistorted Images\n");
+
+    // for exposure correction
+    const double medianCameraExposure = sfmData.getMedianCameraExposureSetting().getExposure();
+    LOG_X("Median Camera Exposure: " << medianCameraExposure << ", Median EV: " << std::log2(1.0/medianCameraExposure));
+    
+#pragma omp parallel for num_threads(3)
+    for(int i = 0; i < viewIds.size(); ++i)
+    {
+        auto itView = viewIds.begin();
+        std::advance(itView, i);
+
+        const IndexT viewId = *itView;
+        const sfmData::View* view = sfmData.getViews().at(viewId).get();
+
+        sfmData::Intrinsics::const_iterator iterIntrinsic = sfmData.getIntrinsics().find(view->getIntrinsicId());
+
+        // we have a valid view with a corresponding camera & pose
+        const std::string baseFilename = std::to_string(viewId);
+
+        // get metadata from source image to be sure we get all metadata. We don't use the metadatas from the Views inside the SfMData to avoid type conversion problems with string maps.
+        std::string srcImage = view->getImagePath();
+        oiio::ParamValueList metadata;// = image::readImageMetadata(srcImage); //TODO: fill it
+
+        bool saveMatricesFiles = false;
+        // export camera
+        if(saveMetadata || saveMatricesFiles)
+        {
+            // get camera pose / projection
+            const geometry::Pose3 pose = sfmData.getPose(*view).getTransform();
+
+            std::shared_ptr<camera::IntrinsicBase> cam = iterIntrinsic->second;
+            std::shared_ptr<camera::Pinhole> camPinHole = std::dynamic_pointer_cast<camera::Pinhole>(cam);
+            if (!camPinHole) {
+                LOG_ERROR("Camera is not pinhole in filter");
+                continue;
+            }
+
+            Mat34 P = camPinHole->getProjectiveEquivalent(pose);
+
+            // get camera intrinsics matrices
+            const Mat3 K = dynamic_cast<const camera::Pinhole*>(sfmData.getIntrinsicPtr(view->getIntrinsicId()))->K();
+            const Mat3& R = pose.rotation();
+            const Vec3& t = pose.translation();
+
+            if(saveMatricesFiles)
+            {
+                std::ofstream fileP(m_outputFolder + baseFilename + "_P.txt");
+                fileP << std::setprecision(10)
+                        << P(0, 0) << " " << P(0, 1) << " " << P(0, 2) << " " << P(0, 3) << "\n"
+                        << P(1, 0) << " " << P(1, 1) << " " << P(1, 2) << " " << P(1, 3) << "\n"
+                        << P(2, 0) << " " << P(2, 1) << " " << P(2, 2) << " " << P(2, 3) << "\n";
+                fileP.close();
+
+                std::ofstream fileKRt(m_outputFolder + baseFilename + "_KRt.txt");
+                fileKRt << std::setprecision(10)
+                        << K(0, 0) << " " << K(0, 1) << " " << K(0, 2) << "\n"
+                        << K(1, 0) << " " << K(1, 1) << " " << K(1, 2) << "\n"
+                        << K(2, 0) << " " << K(2, 1) << " " << K(2, 2) << "\n"
+                        << "\n"
+                        << R(0, 0) << " " << R(0, 1) << " " << R(0, 2) << "\n"
+                        << R(1, 0) << " " << R(1, 1) << " " << R(1, 2) << "\n"
+                        << R(2, 0) << " " << R(2, 1) << " " << R(2, 2) << "\n"
+                        << "\n"
+                        << t(0) << " " << t(1) << " " << t(2) << "\n";
+                fileKRt.close();
+            }
+
+            if(saveMetadata)
+            {
+                // convert to 44 matix
+                Mat4 projectionMatrix;
+                projectionMatrix << P(0, 0), P(0, 1), P(0, 2), P(0, 3),
+                                    P(1, 0), P(1, 1), P(1, 2), P(1, 3),
+                                    P(2, 0), P(2, 1), P(2, 2), P(2, 3),
+                                         0,       0,       0,       1;
+
+                // convert matrices to rowMajor
+                std::vector<double> vP(projectionMatrix.size());
+                std::vector<double> vK(K.size());
+                std::vector<double> vR(R.size());
+
+                typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> RowMatrixXd;
+                Eigen::Map<RowMatrixXd>(vP.data(), projectionMatrix.rows(), projectionMatrix.cols()) = projectionMatrix;
+                Eigen::Map<RowMatrixXd>(vK.data(), K.rows(), K.cols()) = K;
+                Eigen::Map<RowMatrixXd>(vR.data(), R.rows(), R.cols()) = R;
+
+                // add metadata
+                metadata.push_back(oiio::ParamValue("SoftVision:downscale", 1));
+                metadata.push_back(oiio::ParamValue("SoftVision:P", oiio::TypeDesc(oiio::TypeDesc::DOUBLE, oiio::TypeDesc::MATRIX44), 1, vP.data()));
+                metadata.push_back(oiio::ParamValue("SoftVision:K", oiio::TypeDesc(oiio::TypeDesc::DOUBLE, oiio::TypeDesc::MATRIX33), 1, vK.data()));
+                metadata.push_back(oiio::ParamValue("SoftVision:R", oiio::TypeDesc(oiio::TypeDesc::DOUBLE, oiio::TypeDesc::MATRIX33), 1, vR.data()));
+                metadata.push_back(oiio::ParamValue("AliceVision:t", oiio::TypeDesc(oiio::TypeDesc::DOUBLE, oiio::TypeDesc::VEC3), 1, t.data()));
+            }
+        }
+
+        // export undistort image
+        {
+//            if(!imagesFolders.empty())
+//            {
+//                std::vector<std::string> paths = sfmDataIO::viewPathsFromFolders(*view, imagesFolders);
+//
+//                // if path was not found
+//                if(paths.empty())
+//                {
+//                    throw std::runtime_error("Cannot find view '" + std::to_string(view->getViewId()) + "' image file in given folder(s)");
+//                }
+//                else if(paths.size() > 1)
+//                {
+//                    throw std::runtime_error( "Ambiguous case: Multiple source image files found in given folder(s) for the view '" +
+//                        std::to_string(view->getViewId()) + "'.");
+//                }
+//
+//                srcImage = paths[0];
+//            }
+//            const std::string dstColorImage = (fs::path(outFolder) / (baseFilename + "." + image::EImageFileType_enumToString(outputFileType))).string();
+            const std::string dstColorImage = m_outputFolder + baseFilename + "." + image::EImageFileType_enumToString(outputFileType);
+            const camera::IntrinsicBase* cam = iterIntrinsic->second.get();
+
+            // add exposure values to images metadata
+            const double cameraExposure = view->getCameraExposureSetting().getExposure();
+            const double ev = std::log2(1.0 / cameraExposure);
+            const float exposureCompensation = float(medianCameraExposure / cameraExposure);
+            metadata.push_back(oiio::ParamValue("SoftVision:EV", float(ev)));
+            metadata.push_back(oiio::ParamValue("SoftVision:EVComp", exposureCompensation));
+
+            bool evCorrection = false;
+            if(evCorrection)
+            {
+                LOG_X("image " << viewId << ", exposure: " << cameraExposure << ", Ev " << ev << " Ev compensation: " + std::to_string(exposureCompensation));
+            }
+
+//            image::Image<unsigned char> mask;
+//            if(tryLoadMask(&mask, masksFolders, viewId, srcImage))
+//            {
+//                process<Image<RGBAfColor>>(dstColorImage, cam, metadata, srcImage, evCorrection, exposureCompensation, [&mask] (Image<RGBAfColor> & image)
+//                {
+//                    if(image.Width() * image.Height() != mask.Width() * mask.Height())
+//                    {
+//                        ALICEVISION_LOG_WARNING("Invalid image mask size: mask is ignored.");
+//                        return;
+//                    }
+//
+//                    for(int pix = 0; pix < image.Width() * image.Height(); ++pix)
+//                    {
+//                        const bool masked = (mask(pix) == 0);
+//                        image(pix).a() = masked ? 0.f : 1.f;
+//                    }
+//                });
+//            }
+//            else
+//            {
+            image::Image<image::RGBAColor> imageRGBA;
+//            image::Image<image::RGBAfColor> imageRGBAf;
+            
+//            FlipY(width_new, height_new, buffer, buf.data());
+            
+            image::byteBuffer2EigenMatrix(view->getWidth(), view->getHeight(), view->getBuffer(), imageRGBA);
+            
+            
+            const auto noMaskingFunc = [] (image::Image<image::RGBAColor> const& image) {};
+                process<image::Image<image::RGBAColor>>(dstColorImage, cam, metadata, imageRGBA, evCorrection, exposureCompensation, noMaskingFunc);
+//            }
+        }
+
+        ++progressDisplay;
+    }
+
+    LOG_INFO("PrepareDenseScene Done!");
+    return true;
 }

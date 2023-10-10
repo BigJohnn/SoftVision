@@ -41,6 +41,34 @@ std::map<std::string, std::string>::const_iterator View::findMetadataIterator(co
     return _metadata.end();
 }
 
+bool View::hasDigitMetadata(const std::vector<std::string>& names, bool isPositive) const
+{
+    bool hasDigitMetadata = false;
+    double value = -1.0;
+
+    for(const std::string& name : names)
+    {
+        const auto it = findMetadataIterator(name);
+
+        if(it == _metadata.end() || it->second.empty())
+        {
+            continue;
+        }
+
+        try
+        {
+            value = std::stod(it->second);
+            hasDigitMetadata = true;
+            break;
+        }
+        catch(std::exception&)
+        {
+            value = -1.0;
+        }
+    }
+    return hasDigitMetadata && (!isPositive || (value > 0));
+}
+
 const std::string& View::getMetadata(const std::vector<std::string>& names) const
 {
     static const std::string emptyString;

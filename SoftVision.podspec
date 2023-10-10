@@ -196,7 +196,9 @@ Pod::Spec.new do |spec|
       ss.source_files = "src/linearProgramming/*.{hpp, cpp}"
   end
   
-  
+  spec.subspec 'mvsData' do |ss|
+      ss.source_files = "src/mvsData/*.{hpp,cpp}"
+  end
   
   # ――― Resources ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
   #
@@ -236,7 +238,7 @@ Pod::Spec.new do |spec|
   spec.header_mappings_dir = 'src'
 #   spec.xcconfig = { "HEADER_SEARCH_PATHS" => "$(SDKROOT)/usr/include/libxml2" }
   spec.xcconfig = { #'CLANG_CXX_LIBRARY' => 'libstdc++',
-  'HEADER_SEARCH_PATHS' => '${PROJECT_DIR}/../deps/eigen3 ${PROJECT_DIR}/../deps/OpenImageIO/include' # To make angled quotes recursive.
+  'HEADER_SEARCH_PATHS' => '${PROJECT_DIR}/../deps/eigen3 ${PROJECT_DIR}/../deps/OpenImageIO/include', # To make angled quotes recursive.
   }
   
 #  spec.compiler_flags = '-DEIGEN_MAX_STATIC_ALIGN_BYTES=0 -DEIGEN_MAX_ALIGN_BYTES=0'

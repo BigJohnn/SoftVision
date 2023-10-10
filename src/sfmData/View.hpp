@@ -44,6 +44,110 @@ struct GPSExifTags
     static std::vector<std::string> all();
 };
 
+class ExposureSetting {
+public:
+    ExposureSetting() {}
+
+    ExposureSetting(double shutter, double fnumber, double iso)
+        : _shutter(shutter)
+        , _fnumber(fnumber)
+        , _iso(iso)
+    {
+    }
+
+    double _shutter{-1.0};
+    double _fnumber{-1.0};
+    double _iso{-1.0};
+
+    bool hasShutter() const { return _shutter > 0.0 && std::isnormal(_shutter); }
+    bool hasFNumber() const { return _fnumber > 0.0 && std::isnormal(_fnumber); }
+    bool hasISO() const { return _iso > 0.0 && std::isnormal(_iso); }
+
+    bool isFullyDefined() const {
+        return hasShutter() && hasFNumber() && hasISO();
+    }
+
+    bool isPartiallyDefined() const {
+        return hasShutter() || hasFNumber();
+    }
+
+    double getExposure(const double referenceISO = 100.0, const double referenceFNumber = 1.0) const
+    {
+        const bool validShutter = hasShutter();
+        const bool validFNumber = hasFNumber();
+
+        if(!validShutter && !validFNumber)
+            return -1.0;
+
+        const bool validRefFNumber = referenceFNumber > 0.0 && std::isnormal(referenceFNumber);
+
+        double shutter = _shutter;
+        if(!validShutter)
+        {
+            shutter = 1.0 / 200.0;
+        }
+        double fnumber = _fnumber;
+        // Usually we should get a valid shutter speed, but we could have invalid fnumber.
+        // For instance, if there is a connection problem between the lens and the camera, all lens related option like fnumber could be invalid.
+        // In this particular case, the exposure should rely only on the shutter speed.
+        if(!validFNumber)
+        {
+            if(validRefFNumber)
+                fnumber = referenceFNumber;
+            else
+                fnumber = 2.0;
+        }
+        double lReferenceFNumber = referenceFNumber;
+        if(!validRefFNumber)
+        {
+            lReferenceFNumber = fnumber;
+        }
+
+        const double iso = _iso;
+        /*
+        iso = qLt / aperture^2
+        isoratio = iso2 / iso1 = (qLt / aperture2^2) / (qLt / aperture1^2)
+        isoratio = aperture1^2 / aperture2^2
+        aperture2^2 = aperture1^2 / isoratio
+        aperture2^2 = (aperture1^2 / (iso2 / iso1))
+        aperture2^2 = (iso1 / iso2)
+        aperture2 = sqrt(iso1 / iso2)
+        */
+        double iso_2_aperture = 1.0;
+        if(iso > 1e-6 && referenceISO > 1e-6)
+        {
+            // Need to have both iso and reference iso to use it
+            iso_2_aperture = std::sqrt(iso / referenceISO);
+        }
+
+        /*
+        aperture = f / diameter
+        aperture2 / aperture1 = diameter1 / diameter2
+        (aperture2 / aperture1)^2 = (area1 / pi) / (area2 / pi)
+        area2 = (aperture1 / aperture2)^2
+        */
+        double new_fnumber = fnumber * iso_2_aperture;
+        double exp_increase = (new_fnumber / lReferenceFNumber) * (new_fnumber / lReferenceFNumber);
+
+        // If the aperture was more important for this image, this means that it received less light than with a default aperture
+        // This means also that if we want to simulate that all the image have the same aperture, we have to increase virtually th
+        // light received as if the aperture was smaller. So we increase the exposure time
+
+        // If the iso is larger than the default value, this means that it recevied more light than with a default iso
+        // This means also that if we want to simulate that all the image have the same iso, we have to decrease virtually th
+        // light received as if the iso was smaller. So we decrease the exposure time or equivalent, increase the aperture value
+
+        // Checks
+        // iso 20, f/2 = 2500
+        // iso 40, f/2.8 = 2500
+
+        return shutter * exp_increase;
+    }
+    bool operator<(const ExposureSetting& other) const { return getExposure() < other.getExposure(); }
+    bool operator==(const ExposureSetting& other) const { return getExposure() == other.getExposure(); }
+};
+
+
 /**
  * @brief A view define an image by a string and unique indexes for
  * the view, the camera intrinsic, the pose and the subpose if the camera is part of a rig
@@ -249,6 +353,19 @@ public:
       double readRealNumber(const std::string& str) const;
     
       /**
+       * @brief Get the Camera Exposure Setting value.
+       * For the same scene, this value is linearly proportional to the amount of light captured by the camera according to
+       * the shooting parameters (shutter speed, f-number, iso).
+       */
+      ExposureSetting getCameraExposureSetting() const
+      {
+          return ExposureSetting(
+              getMetadataShutter(),
+              getMetadataFNumber(),
+              getMetadataISO());
+      }
+    
+      /**
        * @brief If the view is part of a camera rig, the camera can be a sub-pose of the rig pose but can also be temporarily solved independently.
        * @return true if the view is not part of a rig.
        *         true if the view is part of a rig and the camera is solved separately.
@@ -275,6 +392,43 @@ public:
       const std::map<std::string, std::string>& getMetadata() const
       {
         return _metadata;
+      }
+    
+      /**
+       * @brief Get the corresponding "ExposureTime" (shutter) metadata value
+       * @return the metadata value float or -1 if no corresponding value
+       */
+      double getMetadataShutter() const
+      {
+          return getDoubleMetadata({"ExposureTime", "Shutter Speed Value"});
+      }
+
+      /**
+       * @brief Get the corresponding "FNumber" (relative aperture) metadata value
+       * @return the metadata value float or -1 if no corresponding value
+       */
+      double getMetadataFNumber() const
+      {
+          if(hasDigitMetadata({"FNumber"}))
+          {
+              return getDoubleMetadata({"FNumber"});
+          }
+          if (hasDigitMetadata({"ApertureValue", "Aperture Value"}))
+          {
+              const double aperture = getDoubleMetadata({"ApertureValue", "Aperture Value"});
+              // fnumber = 2^(aperture/2)
+              return std::pow(2.0, aperture / 2.0);
+          }
+          return -1;
+      }
+
+      /**
+         * @brief Get the corresponding "PhotographicSensitivity" (ISO) metadata value
+         * @return the metadata value int or -1 if no corresponding value
+         */
+      double getMetadataISO() const
+      {
+        return getDoubleMetadata({"Exif:PhotographicSensitivity", "PhotographicSensitivity", "Photographic Sensitivity", "ISO"});
       }
     
     /**
@@ -355,6 +509,14 @@ public:
        * @return true if GPS data is available
        */
       bool hasGpsMetadata() const;
+    
+      /**
+       * @brief Return true if the given metadata name exists and is a digit
+       * @param[in] names List of possible names for the metadata
+       * @param[in] isPositive true if the metadata must be positive
+       * @return true if the corresponding metadata value exists
+       */
+      bool hasDigitMetadata(const std::vector<std::string>& names, bool isPositive = true) const;
     
       /**
        * @brief Return true if the given metadata name exists

@@ -298,6 +298,32 @@ public:
     }
     
     /**
+     * @brief Get the median Camera Exposure Setting
+     * @return
+     */
+    ExposureSetting getMedianCameraExposureSetting() const
+    {
+        std::vector<ExposureSetting> cameraExposureList;
+        cameraExposureList.reserve(views.size());
+
+        for(const auto& view : views)
+        {
+            const ExposureSetting ce = view.second->getCameraExposureSetting();
+            if (ce.isPartiallyDefined())
+            {
+                auto find = std::find(std::begin(cameraExposureList), std::end(cameraExposureList), ce);
+                if (find == std::end(cameraExposureList))
+                    cameraExposureList.emplace_back(ce);
+            }
+        }
+
+        std::nth_element(cameraExposureList.begin(), cameraExposureList.begin() + cameraExposureList.size()/2, cameraExposureList.end());
+        const ExposureSetting& ceMedian = cameraExposureList[cameraExposureList.size()/2];
+
+        return ceMedian;
+    }
+    
+    /**
      * @brief Get absolute features folder paths
      * @return features folders paths
      */

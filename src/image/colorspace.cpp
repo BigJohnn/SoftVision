@@ -39,6 +39,7 @@ std::string getColorConfigFilePathFromSourceCode()
 
 std::string getDefaultColorConfigFilePath()
 {
+    return ""; //check
     std::string configOCIOFilePath = "";
 
     char const* ALICEVISION_OCIO = std::getenv("ALICEVISION_OCIO");
@@ -95,19 +96,19 @@ std::string getDefaultColorConfigFilePath()
 //        }
 //    }
 
-    char const* ALICEVISION_ROOT = std::getenv("ALICEVISION_ROOT");
-    if (ALICEVISION_ROOT == NULL)
+    char const* SOFTVISION_ROOT = std::getenv("ALICEVISION_ROOT");
+    if (SOFTVISION_ROOT == NULL)
     {
         const std::string configFromSource = getColorConfigFilePathFromSourceCode();
 //        if(fs::exists(configFromSource))
 //        {
-//            LOG_DEBUG("ALICEVISION_ROOT is not defined, use embedded OCIO config file from source code: " << configFromSource);
+//            LOG_DEBUG("SOFTVISION_ROOT is not defined, use embedded OCIO config file from source code: " << configFromSource);
 //            return configFromSource;
 //        }
         // Output message with logging before throw as this function could be called before main.
         LOG_ERROR("ALICEVISION_ROOT is not defined, embedded OCIO config file cannot be accessed.");
     }
-    configOCIOFilePath = std::string(ALICEVISION_ROOT);
+    configOCIOFilePath = std::string(SOFTVISION_ROOT);
     configOCIOFilePath.append("/share/config.ocio");
 
 //    if (!fs::exists(configOCIOFilePath))
