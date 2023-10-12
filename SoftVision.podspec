@@ -200,6 +200,14 @@ Pod::Spec.new do |spec|
       ss.source_files = "src/mvsData/*.{hpp,cpp}"
   end
   
+  spec.subspec 'mvsUtils' do |ss|
+      ss.source_files = "src/mvsUtils/*.{hpp,cpp}"
+  end
+  
+  spec.subspec 'depthMap' do |ss|
+      ss.source_files = "src/depthMap/*.{hpp,cpp}"
+  end
+  
   # ――― Resources ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
   #
   #  A list of resources included with the Pod. These are copied into the

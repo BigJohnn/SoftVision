@@ -14,11 +14,11 @@ RoadMap for iOS:
 
 > (SIFT)Feature Matching done.
 
+> Structure From Motion done.
+
+> PrepareDenseScene done.
+
 ToDoList:
-
-> Structure From Motion.
-
-> PrepareDenseScene.
 
 > DepthMap. # with gpu, metal acc
 

@@ -54,7 +54,9 @@ public:
     
     int IncrementalSFM();
     
-    bool PrepareDenseScene();
+    int PrepareDenseScene();
+    
+    int DepthMapEstimation();
     
     void SetOutputDataDir(const char* directory);
     

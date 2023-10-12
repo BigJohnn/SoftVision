@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string>
 #include <sys/stat.h>
+#include <dirent.h>
 #include <SoftVisionLog.h>
 namespace utils {
     bool exists(std::string const& pathname)
@@ -17,5 +18,50 @@ namespace utils {
             return true;
         }
         return 0 == mkdir(pathname.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
+    }
+
+    bool is_directory(std::string const& pathname)
+    {
+        struct stat s;
+        bool ret = false;
+        if( stat(pathname.c_str(),&s) == 0 )
+        {
+            if( s.st_mode & S_IFDIR )
+            {
+                // it's a directory
+                ret = true;
+            }
+//            else if( s.st_mode & S_IFREG )
+//            {
+//                // it's a file
+//            }
+        }
+        
+        return ret;
+    }
+
+    bool is_empty(std::string const& dirname)
+    {
+        DIR *dp;
+        struct dirent *entry;
+
+        dp = opendir(dirname.c_str());
+        if (dp == NULL) {
+            perror("opendir");
+            return 1;
+        }
+
+        while ((entry = readdir(dp)) != NULL) {
+            if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
+                printf("Directory is not empty\n");
+                closedir(dp);
+                return false;
+            }
+        }
+
+        printf("Directory is empty\n");
+        closedir(dp);
+        
+        return true;
     }
 }

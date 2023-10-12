@@ -333,4 +333,14 @@ bool containsHalfFloatOverflow(const oiio::ImageBuf& image)
     return false;
 }
 
+bool isSupportedUndistortFormat(const std::string &ext)
+{
+    static const std::array<std::string, 6> supportedExtensions = {
+        ".jpg", ".jpeg", ".png",  ".tif", ".tiff", ".exr"
+    };
+    const auto start = supportedExtensions.begin();
+    const auto end = supportedExtensions.end();
+    return(std::find(start, end, utils::to_lower_copy(ext)) != end);
+}
+
 }

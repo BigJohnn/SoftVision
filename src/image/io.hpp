@@ -158,5 +158,7 @@ void writeImage(const std::string& path, const Image<RGBAColor>& image,
 
 bool containsHalfFloatOverflow(const oiio::ImageBuf& image);
 
+bool isSupportedUndistortFormat(const std::string &ext);
+
 }
 #endif /* io_hpp */

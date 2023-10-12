@@ -56,6 +56,14 @@
 #include <image/io.hpp>
 #include <image/convertion.hpp>
 
+#include <mvsUtils/MultiViewParams.hpp>
+#include <depthMap/computeOnMultiGPUs.hpp>
+#include <depthMap/DepthMapEstimator.hpp>
+#include <depthMap/DepthMapParams.hpp>
+#include <depthMap/SgmParams.hpp>
+#include <depthMap/RefineParams.hpp>
+#include <gpu/gpu.hpp>
+
 std::vector<std::vector<uint8_t>> ReconPipeline::m_cachedBuffers;
 
 #ifdef SOFTVISION_DEBUG
@@ -921,7 +929,7 @@ void process(const std::string &dstColorImage, const camera::IntrinsicBase* cam,
     }
 }
 
-bool ReconPipeline::PrepareDenseScene()
+int ReconPipeline::PrepareDenseScene()
 {
     // defined view Ids
     std::set<IndexT> viewIds;
@@ -951,7 +959,7 @@ bool ReconPipeline::PrepareDenseScene()
     }
 
     image::EImageFileType outputFileType = image::EImageFileType::EXR;
-    bool saveMetadata = false;
+    bool saveMetadata = true;
     
     if((outputFileType != image::EImageFileType::EXR) && saveMetadata)
         LOG_INFO("Cannot save informations in images metadata.\n"
@@ -1098,7 +1106,7 @@ bool ReconPipeline::PrepareDenseScene()
 //                {
 //                    if(image.Width() * image.Height() != mask.Width() * mask.Height())
 //                    {
-//                        ALICEVISION_LOG_WARNING("Invalid image mask size: mask is ignored.");
+//                        LOG_X("Invalid image mask size: mask is ignored.");
 //                        return;
 //                    }
 //
@@ -1125,5 +1133,60 @@ bool ReconPipeline::PrepareDenseScene()
     }
 
     LOG_INFO("PrepareDenseScene Done!");
-    return true;
+    return EXIT_SUCCESS;
+}
+
+int ReconPipeline::DepthMapEstimation()
+{
+    LOG_INFO("Dense Reconstruction.\n"
+             "This program estimate a depth map for each input calibrated camera using Plane Sweeping, a multi-view stereo algorithm notable for its efficiency on modern graphics hardware (GPU).\n"
+             "AliceVision depthMapEstimation");
+    
+    // program range
+    int rangeStart = -1;
+    int rangeSize = -1;
+
+    // global image downscale factor
+    int downscale = 2;
+
+    // min / max view angle
+    float minViewAngle = 2.0f;
+    float maxViewAngle = 70.0f;
+
+    // Tiling parameters
+    mvsUtils::TileParams tileParams;
+
+    // DepthMap (global) parameters
+    depthMap::DepthMapParams depthMapParams;
+
+    // Semi Global Matching Parameters
+    depthMap::SgmParams sgmParams;
+
+    // Refine Parameters
+    depthMap::RefineParams refineParams;
+
+    // intermediate results
+    bool exportIntermediateDepthSimMaps = false;
+    bool exportIntermediateNormalMaps = false;
+    bool exportIntermediateVolumes = false;
+    bool exportIntermediateCrossVolumes = false;
+    bool exportIntermediateTopographicCutVolumes = false;
+    bool exportIntermediateVolume9pCsv = false;
+    
+    // intermediate results
+    sgmParams.exportIntermediateDepthSimMaps = exportIntermediateDepthSimMaps;
+    sgmParams.exportIntermediateNormalMaps = exportIntermediateNormalMaps;
+    sgmParams.exportIntermediateVolumes = exportIntermediateVolumes;
+    sgmParams.exportIntermediateCrossVolumes = exportIntermediateCrossVolumes;
+    sgmParams.exportIntermediateTopographicCutVolumes = exportIntermediateTopographicCutVolumes;
+    sgmParams.exportIntermediateVolume9pCsv = exportIntermediateVolume9pCsv;
+
+    refineParams.exportIntermediateDepthSimMaps = exportIntermediateDepthSimMaps;
+    refineParams.exportIntermediateNormalMaps = exportIntermediateNormalMaps;
+    refineParams.exportIntermediateCrossVolumes = exportIntermediateCrossVolumes;
+    refineParams.exportIntermediateTopographicCutVolumes = exportIntermediateTopographicCutVolumes;
+    refineParams.exportIntermediateVolume9pCsv = exportIntermediateVolume9pCsv;
+    
+    LOG_INFO("DepthMapEstimation Done!");
+    return EXIT_SUCCESS;
 }
