@@ -205,7 +205,11 @@ Pod::Spec.new do |spec|
   end
   
   spec.subspec 'depthMap' do |ss|
-      ss.source_files = "src/depthMap/*.{hpp,cpp}"
+      ss.source_files = "src/depthMap/**/*.{hpp,cpp}"
+  end
+  
+  spec.subspec 'gpu' do |ss|
+      ss.source_files = "src/gpu/*.{hpp,cpp,mm}"
   end
   
   # ――― Resources ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #

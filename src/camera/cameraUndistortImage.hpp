@@ -8,7 +8,7 @@
 #pragma once
 
 //#include <config.hpp>
-//#include <system/Logger.hpp>
+//#include <SoftVisionLog.h>
 #include <image/Image.hpp>
 #include <image/Sampler.hpp>
 #include <camera/cameraCommon.hpp>

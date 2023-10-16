@@ -7,7 +7,7 @@
 #include "Refine.hpp"
 
 #include <alicevision_omp.hpp>
-#include <system/Logger.hpp>
+#include <SoftVisionLog.h>
 #include <mvsData/Point2d.hpp>
 #include <mvsData/Point3d.hpp>
 #include <mvsUtils/fileIO.hpp>

@@ -5,7 +5,7 @@
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "fileIO.hpp"
-#include <system/Logger.hpp>
+#include <SoftVisionLog.h>
 #include <image/Image.hpp>
 #include <image/imageAlgo.hpp>
 #include <image/io.hpp>

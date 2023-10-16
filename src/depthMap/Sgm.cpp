@@ -6,7 +6,7 @@
 
 #include "Sgm.hpp"
 
-#include <system/Logger.hpp>
+#include <SoftVisionLog.h>
 #include <mvsUtils/fileIO.hpp>
 #include <depthMap/depthMapUtils.hpp>
 #include <depthMap/volumeIO.hpp>

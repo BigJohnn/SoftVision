@@ -7,7 +7,7 @@
 #include "SgmDepthList.hpp"
 
 #include <alicevision_omp.hpp>
-#include <system/Logger.hpp>
+#include <SoftVisionLog.h>
 #include <system/Timer.hpp>
 #include <mvsData/ROI.hpp>
 #include <mvsData/Point3d.hpp>

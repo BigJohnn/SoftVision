@@ -6,7 +6,7 @@
 
 #include "jetColorMap.hpp"
 
-namespace aliceVision {
+
 
 static float jetr[64] = {0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,
                          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,
@@ -56,4 +56,4 @@ rgb getRGBFromJetColorMap(float value)
             static_cast<unsigned char>(color.b() * 255.0f)};
 }
 
-} // namespace aliceVision
+

@@ -91,7 +91,7 @@ void logTileRoiList(const TileParams& tileParams, int imageWidth, int imageHeigh
   if(hasOnlyOneTile(tileParams, imageWidth, imageHeight))
   {
     LOG_X(ostr.str());
-    LOG_X("Maximum image size is smaller than one tile, use only one tile.");
+    LOG_INFO("Maximum image size is smaller than one tile, use only one tile.");
     return;
   }
 

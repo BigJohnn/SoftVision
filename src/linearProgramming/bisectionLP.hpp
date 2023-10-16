@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <system/Logger.hpp>
+#include <SoftVisionLog.h>
 #include <linearProgramming/ISolver.hpp>
 
 #include <iostream>

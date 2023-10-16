@@ -6,7 +6,7 @@
 
 #include "DepthMapEstimator.hpp"
 
-#include <system/Logger.hpp>
+#include <SoftVisionLog.h>
 #include <system/Timer.hpp>
 #include <mvsUtils/fileIO.hpp>
 #include <mvsUtils/mapIO.hpp>
@@ -24,7 +24,7 @@
 
 #include <boost/filesystem.hpp>
 
-namespace fs = boost::filesystem;
+//namespace fs = boost::filesystem;
 
 
 namespace depthMap {

@@ -22,7 +22,7 @@
 
 
 
-namespace bpt = boost::property_tree;
+//namespace bpt = boost::property_tree;
 
 namespace sfmData {
 class SfMData;

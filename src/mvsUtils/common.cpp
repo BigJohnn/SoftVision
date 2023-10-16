@@ -5,7 +5,7 @@
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "common.hpp"
-#include <system/Logger.hpp>
+#include <SoftVisionLog.h>
 #include <mvsUtils/fileIO.hpp>
 #include <mvsData/geometry.hpp>
 #include <mvsData/geometryTriTri.hpp>
