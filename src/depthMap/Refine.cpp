@@ -13,9 +13,9 @@
 #include <mvsUtils/fileIO.hpp>
 #include <depthMap/depthMapUtils.hpp>
 #include <depthMap/volumeIO.hpp>
-#include <depthMap/cuda/host/DeviceCache.hpp>
-#include <depthMap/cuda/planeSweeping/deviceDepthSimilarityMap.hpp>
-#include <depthMap/cuda/planeSweeping/deviceSimilarityVolume.hpp>
+#include <depthMap/gpu/host/DeviceCache.hpp>
+#include <depthMap/gpu/planeSweeping/deviceDepthSimilarityMap.hpp>
+#include <depthMap/gpu/planeSweeping/deviceSimilarityVolume.hpp>
 
 
 namespace depthMap {

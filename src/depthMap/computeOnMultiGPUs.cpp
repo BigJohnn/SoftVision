@@ -8,14 +8,14 @@
 
 #include <softvision_omp.hpp>
 #include <SoftVisionLog.h>
-//#include <depthMap/cuda/host/utils.hpp>
+#include <depthMap/gpu/host/utils.hpp>
 
 
 namespace depthMap {
 
 void computeOnMultiGPUs(const std::vector<int>& cams, IGPUJob& gpujob, int nbGPUsToUse)
 {
-    const int nbGPUDevices = listCudaDevices();
+    const int nbGPUDevices = listGpuDevices();
     const int nbCPUThreads = omp_get_max_threads();
 
     LOG_X("Number of GPU devices: " << nbGPUDevices << ", number of CPU threads: " << nbCPUThreads);
@@ -28,6 +28,7 @@ void computeOnMultiGPUs(const std::vector<int>& cams, IGPUJob& gpujob, int nbGPU
         nbThreads = std::min(nbThreads, nbGPUsToUse);
     }
 
+    assert(nbThreads == 1);
     if (nbThreads == 1)
     {
         // the GPU sorting is determined by an environment variable named CUDA_DEVICE_ORDER
@@ -35,38 +36,38 @@ void computeOnMultiGPUs(const std::vector<int>& cams, IGPUJob& gpujob, int nbGPU
         const int cudaDeviceId = 0;
         gpujob.compute(cudaDeviceId, cams);
     }
-    else
-    {
-        //backup max threads to keep potentially previously set value
-        int previous_count_threads = omp_get_max_threads();
-        omp_set_num_threads(nbThreads); // create as many CPU threads as there are CUDA devices
-#pragma omp parallel
-        {
-            const int cpuThreadId = omp_get_thread_num();
-            const int cudaDeviceId = cpuThreadId % nbThreads;
-
-            LOG_X("CPU thread " << cpuThreadId << " (of " << nbThreads << ") uses CUDA device: " << cudaDeviceId);
-
-            const int nbCamsPerThread = (cams.size() / nbThreads);
-            const int rcFrom = cudaDeviceId * nbCamsPerThread;
-            int rcTo = (cudaDeviceId + 1) * nbCamsPerThread;
-            if(cudaDeviceId == nbThreads - 1)
-            {
-                rcTo = cams.size();
-            }
-
-            std::vector<int> subcams;
-            subcams.reserve(cams.size());
-
-            for (int rc = rcFrom; rc < rcTo; ++rc)
-            {
-                subcams.push_back(cams[rc]);
-            }
-
-            gpujob.compute(cudaDeviceId, subcams);
-        }
-        omp_set_num_threads(previous_count_threads);
-    }
+//    else
+//    {
+//        //backup max threads to keep potentially previously set value
+//        int previous_count_threads = omp_get_max_threads();
+//        omp_set_num_threads(nbThreads); // create as many CPU threads as there are CUDA devices
+//#pragma omp parallel
+//        {
+//            const int cpuThreadId = omp_get_thread_num();
+//            const int cudaDeviceId = cpuThreadId % nbThreads;
+//
+//            LOG_X("CPU thread " << cpuThreadId << " (of " << nbThreads << ") uses CUDA device: " << cudaDeviceId);
+//
+//            const int nbCamsPerThread = (cams.size() / nbThreads);
+//            const int rcFrom = cudaDeviceId * nbCamsPerThread;
+//            int rcTo = (cudaDeviceId + 1) * nbCamsPerThread;
+//            if(cudaDeviceId == nbThreads - 1)
+//            {
+//                rcTo = cams.size();
+//            }
+//
+//            std::vector<int> subcams;
+//            subcams.reserve(cams.size());
+//
+//            for (int rc = rcFrom; rc < rcTo; ++rc)
+//            {
+//                subcams.push_back(cams[rc]);
+//            }
+//
+//            gpujob.compute(cudaDeviceId, subcams);
+//        }
+//        omp_set_num_threads(previous_count_threads);
+//    }
 }
 
 } // namespace depthMap

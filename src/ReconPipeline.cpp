@@ -6,9 +6,7 @@
 //
 
 #include <ReconPipeline.h>
-//#include <featureEngine/FeatureExtractor.hpp>
 
-//#include <feature/feature.hpp>
 #include <utils/YuvImageProcessor.h>
 #include "PngUtils.h"
 
@@ -923,9 +921,7 @@ void process(const std::string &dstColorImage, const camera::IntrinsicBase* cam,
     }
     else
     {
-        
-        writeImage(dstColorImage, image, image::ImageWriteOptions(), metadata);
-        
+        writeImage(dstColorImage, image, image::ImageWriteOptions(), metadata);   
     }
 }
 

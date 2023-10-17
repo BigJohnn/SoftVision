@@ -16,13 +16,13 @@
 #include <depthMap/SgmDepthList.hpp>
 #include <depthMap/Sgm.hpp>
 #include <depthMap/Refine.hpp>
-#include <depthMap/cuda/host/utils.hpp>
-#include <depthMap/cuda/host/patchPattern.hpp>
-#include <depthMap/cuda/host/DeviceCache.hpp>
-#include <depthMap/cuda/host/DeviceStreamManager.hpp>
-#include <depthMap/cuda/planeSweeping/deviceDepthSimilarityMap.hpp>
+#include <depthMap/gpu/host/utils.hpp>
+//#include <depthMap/gpu/host/patchPattern.hpp>
+//#include <depthMap/gpu/host/DeviceCache.hpp>
+#include <depthMap/gpu/host/DeviceStreamManager.hpp>
+//#include <depthMap/gpu/planeSweeping/deviceDepthSimilarityMap.hpp>
 
-#include <boost/filesystem.hpp>
+//#include <boost/filesystem.hpp>
 
 //namespace fs = boost::filesystem;
 
