@@ -6,7 +6,7 @@
 
 #include "DeviceStreamManager.hpp"
 
-#include<system/Logger.hpp>
+#include <SoftVisionLog.h>
 
 
 namespace depthMap {

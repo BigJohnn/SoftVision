@@ -220,7 +220,7 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
 {
     // set the device to use for GPU executions
     // the CUDA runtime API is thread-safe, it maintains per-thread state about the current device 
-    setCudaDeviceId(cudaDeviceId);
+//    setCudaDeviceId(cudaDeviceId);
 
     // initialize RAM image cache
     // note: maybe move it as class member in order to share it across multiple GPUs
@@ -233,7 +233,7 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
     // get maximum number of simultaneous tiles
     // for now, we use one CUDA stream per tile (SGM + Refine)
     const int nbStreams = std::min(getNbSimultaneousTiles(), int(tiles.size()));
-    DeviceStreamManager deviceStreamManager(nbStreams);
+//    DeviceStreamManager deviceStreamManager(nbStreams);
 
     // build device cache
     const int nbTilesPerCamera = _tileRoiList.size();
@@ -349,7 +349,9 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
         }
 
         // wait for camera loading in device cache
-        cudaDeviceSynchronize();
+//        cudaDeviceSynchronize();
+        //id <MTLBlitCommandEncoder> _cmdEncoder
+        _cmdEncoder->makeFence();
 
         // compute each batch tile
         for(int i = firstTileIndex; i < lastTileIndex; ++i)

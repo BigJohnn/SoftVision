@@ -26,13 +26,13 @@ Sgm::Sgm(const mvsUtils::MultiViewParams& mp,
          const SgmParams& sgmParams,
          bool computeDepthSimMap,
          bool computeNormalMap,
-         cudaStream_t stream)
+         void* device)
     : _mp(mp)
     , _tileParams(tileParams)
     , _sgmParams(sgmParams)
     , _computeDepthSimMap(computeDepthSimMap || sgmParams.exportIntermediateDepthSimMaps)
     , _computeNormalMap(computeNormalMap || sgmParams.exportIntermediateNormalMaps)
-    , _stream(stream)
+    , _device(device)
 {
     // get tile maximum dimensions
     const int downscale = _sgmParams.scale * _sgmParams.stepXY;
@@ -129,7 +129,7 @@ void Sgm::sgmRc(const Tile& tile, const SgmDepthList& tileDepthList)
         _depths_hmh(i, 0) = tileDepthList.getDepths()[i];
 
     // copy rc depth data in device memory
-    _depths_dmp.copyFrom(_depths_hmh, _stream);
+    _depths_dmp.copyFrom(_depths_hmh, _device);
 
     // compute best sim and second best sim volumes
     computeSimilarityVolumes(tile, tileDepthList);
@@ -147,7 +147,7 @@ void Sgm::sgmRc(const Tile& tile, const SgmDepthList& tileDepthList)
     else
     {
         // best sim volume is normally reuse to put optimized similarity
-        _volumeBestSim_dmp.copyFrom(_volumeSecBestSim_dmp, _stream);
+        _volumeBestSim_dmp.copyFrom(_volumeSecBestSim_dmp, _device);
     }
 
     // export intermediate volume information (if requested by user)
@@ -173,7 +173,7 @@ void Sgm::sgmRc(const Tile& tile, const SgmDepthList& tileDepthList)
         const int rcDeviceCameraParamsId = deviceCache.requestCameraParamsId(tile.rc, _sgmParams.scale, _mp);
 
         LOG_X(tile << "SGM compute normal map of view id: " << viewId << ", rc: " << tile.rc << " (" << (tile.rc + 1) << " / " << _mp.ncams << ").");
-        cuda_depthSimMapComputeNormal(_normalMap_dmp, _depthSimMap_dmp, rcDeviceCameraParamsId, _sgmParams.stepXY, downscaledRoi, _stream);
+        cuda_depthSimMapComputeNormal(_normalMap_dmp, _depthSimMap_dmp, rcDeviceCameraParamsId, _sgmParams.stepXY, downscaledRoi, _device);
 
         // export intermediate normal map (if requested by user)
         if(_sgmParams.exportIntermediateNormalMaps)
@@ -193,7 +193,7 @@ void Sgm::smoothThicknessMap(const Tile& tile, const RefineParams& refineParams)
     const ROI downscaledRoi = downscaleROI(tile.roi, _sgmParams.scale * _sgmParams.stepXY);
 
     // in-place result thickness map smoothing with adjacent pixels
-    cuda_depthThicknessSmoothThickness(_depthThicknessMap_dmp, _sgmParams, refineParams, downscaledRoi, _stream);
+    cuda_depthThicknessSmoothThickness(_depthThicknessMap_dmp, _sgmParams, refineParams, downscaledRoi, _device);
 
     LOG_X(tile << "SGM Smooth thickness map done.");
 }
@@ -206,8 +206,8 @@ void Sgm::computeSimilarityVolumes(const Tile& tile, const SgmDepthList& tileDep
     const ROI downscaledRoi = downscaleROI(tile.roi, _sgmParams.scale * _sgmParams.stepXY);
 
     // initialize the two similarity volumes at 255
-    cuda_volumeInitialize(_volumeBestSim_dmp, 255.f, _stream);
-    cuda_volumeInitialize(_volumeSecBestSim_dmp, 255.f, _stream);
+    cuda_volumeInitialize(_volumeBestSim_dmp, 255.f, _device);
+    cuda_volumeInitialize(_volumeSecBestSim_dmp, 255.f, _device);
   
     // get device cache instance
     DeviceCache& deviceCache = DeviceCache::getInstance();
@@ -254,7 +254,7 @@ void Sgm::computeSimilarityVolumes(const Tile& tile, const SgmDepthList& tileDep
                                      _sgmParams, 
                                      tcDepthRange,
                                      downscaledRoi, 
-                                     _stream);
+                                     _device);
     }
 
     // update second best uninitialized similarity volume values with first best similarity volume values
@@ -264,7 +264,7 @@ void Sgm::computeSimilarityVolumes(const Tile& tile, const SgmDepthList& tileDep
     {
         LOG_X(tile << "SGM Update uninitialized similarity volume values from best similarity volume.");
 
-        cuda_volumeUpdateUninitializedSimilarity(_volumeBestSim_dmp, _volumeSecBestSim_dmp, _stream);
+        cuda_volumeUpdateUninitializedSimilarity(_volumeBestSim_dmp, _volumeSecBestSim_dmp, _device);
     }
     
     LOG_X(tile << "SGM Compute similarity volume done.");
@@ -290,7 +290,7 @@ void Sgm::optimizeSimilarityVolume(const Tile& tile, const SgmDepthList& tileDep
                         _sgmParams, 
                         tileDepthList.getDepths().size(),
                         downscaledRoi,
-                        _stream);
+                        _device);
 
     LOG_X(tile << "SGM Optimizing volume done.");
 }
@@ -317,7 +317,7 @@ void Sgm::retrieveBestDepth(const Tile& tile, const SgmDepthList& tileDepthList)
                                  _sgmParams,
                                  depthRange,
                                  downscaledRoi, 
-                                 _stream);
+                                 _device);
 
     LOG_X(tile << "SGM Retrieve best depth in volume done.");
 }

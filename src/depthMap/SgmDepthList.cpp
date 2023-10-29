@@ -6,7 +6,7 @@
 
 #include "SgmDepthList.hpp"
 
-#include <alicevision_omp.hpp>
+#include <softvision_omp.hpp>
 #include <SoftVisionLog.h>
 #include <system/Timer.hpp>
 #include <mvsData/ROI.hpp>
@@ -16,8 +16,10 @@
 #include <mvsUtils/common.hpp>
 #include <sfmData/SfMData.hpp>
 
-#include <boost/accumulators/accumulators.hpp>
-#include <boost/accumulators/statistics.hpp>
+
+#include <utils/statisticUtil.hpp>
+//#include <boost/accumulators/accumulators.hpp>
+//#include <boost/accumulators/statistics.hpp>
 
 
 namespace depthMap {
@@ -274,12 +276,14 @@ void SgmDepthList::getMinMaxMidNbDepthFromSfM(float& out_min,
                                               float& out_mid,
                                               std::size_t& out_nbDepths) const
 {
-    using namespace boost::accumulators;
+//    using namespace boost::accumulators;
 
     const std::size_t cacheSize = 1000;
-    accumulator_set<float, stats<tag::tail_quantile<left>>> accDistanceMin(tag::tail<left>::cache_size = cacheSize);
-    accumulator_set<float, stats<tag::tail_quantile<right>>> accDistanceMax(tag::tail<right>::cache_size = cacheSize);
+//    accumulator_set<float, stats<tag::tail_quantile<left>>> accDistanceMin(tag::tail<left>::cache_size = cacheSize);
+//    accumulator_set<float, stats<tag::tail_quantile<right>>> accDistanceMax(tag::tail<right>::cache_size = cacheSize);
 
+    std::vector<float> accDistanceMin, accDistanceMax;
+    
     const IndexT viewId = _mp.getViewId(_tile.rc);
 
     const ROI fullsizeRoi = upscaleROI(_tile.roi, _mp.getProcessDownscale()); // landmark observations are in the full-size image coordinate system
@@ -313,8 +317,10 @@ void SgmDepthList::getMinMaxMidNbDepthFromSfM(float& out_min,
         if(!_sgmParams.depthListPerTile || fullsizeRoi.contains(obs2d.x(), obs2d.y()))
         {
             const float distance = static_cast<float>(pointPlaneDistance(point, cameraPlane.p, cameraPlane.n));
-            accDistanceMin(distance);
-            accDistanceMax(distance);
+            accDistanceMin.emplace_back(distance);
+            accDistanceMax.emplace_back(distance);
+//            accDistanceMin(distance);
+//            accDistanceMax(distance);
             midDepthPoint = midDepthPoint + point;
             ++out_nbDepths;
         }
@@ -322,8 +328,10 @@ void SgmDepthList::getMinMaxMidNbDepthFromSfM(float& out_min,
 
     if(out_nbDepths > 0)
     {
-      out_min = quantile(accDistanceMin, quantile_probability = 1.0 - _sgmParams.seedsRangePercentile);
-      out_max = quantile(accDistanceMax, quantile_probability = _sgmParams.seedsRangePercentile);
+        out_min = utils::quantile<float>(accDistanceMin, 1.0 - _sgmParams.seedsRangePercentile, cacheSize, false);
+        out_max = utils::quantile<float>(accDistanceMax, _sgmParams.seedsRangePercentile, cacheSize);
+//      out_min = quantile(accDistanceMin, quantile_probability = 1.0 - _sgmParams.seedsRangePercentile);
+//      out_max = quantile(accDistanceMax, quantile_probability = _sgmParams.seedsRangePercentile);
       midDepthPoint = midDepthPoint / static_cast<float>(out_nbDepths);
       out_mid = pointPlaneDistance(midDepthPoint, cameraPlane.p, cameraPlane.n);
     }
@@ -620,7 +628,7 @@ void SgmDepthList::computePixelSizeDepths(float minObsDepth,
         {
             for(int j = 0; j <= i + 1; j++)
             {
-                ALICEVISION_LOG_TRACE(_tile << "getDepthsByPixelSize: check if it is asc: " << out_depths[j]);
+                LOG_X(_tile << "getDepthsByPixelSize: check if it is asc: " << out_depths[j]);
             }
             throw std::runtime_error("getDepthsByPixelSize not asc.");
         }

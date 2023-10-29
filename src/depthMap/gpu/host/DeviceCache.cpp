@@ -6,27 +6,29 @@
 
 #include "DeviceCache.hpp"
 
-#include <system/Logger.hpp>
+#include <SoftVisionLog.h>
 #include <depthMap/gpu/host/utils.hpp>
 #include <depthMap/gpu/device/DeviceCameraParams.hpp>
 #include <depthMap/gpu/imageProcessing/deviceGaussianFilter.hpp>
 
+#include <simd/simd.h>
+
 // maximum pre-computed Gaussian scales
 #define DEVICE_MAX_DOWNSCALE  ( MAX_CONSTANT_GAUSS_SCALES - 1 )
 
-
 namespace depthMap {
 
-float3 M3x3mulV3(const float* M3x3, const float3& V)
+//TODO: cuda float3
+vector_float3 M3x3mulV3(const float* M3x3, const vector_float3& V)
 {
-    return make_float3(M3x3[0] * V.x + M3x3[3] * V.y + M3x3[6] * V.z,
+    return simd_make_float3(M3x3[0] * V.x + M3x3[3] * V.y + M3x3[6] * V.z,
                        M3x3[1] * V.x + M3x3[4] * V.y + M3x3[7] * V.z,
                        M3x3[2] * V.x + M3x3[5] * V.y + M3x3[8] * V.z);
 }
 
-void normalize(float3& a)
+void normalize(vector_float3& a)
 {
-    float d = sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
+    float d = sqrt(a.x * a.x + a.y * a.y + a.z * a.z); //TODO: check whether should be vector_float
     a.x /= d;
     a.y /= d;
     a.z /= d;
@@ -142,10 +144,15 @@ void fillHostCameraParameters(DeviceCameraParams& cameraParameters_h, int camId,
   */
 void fillDeviceCameraParameters(const DeviceCameraParams& cameraParameters_h, int deviceCameraParamsId)
 {
-    const cudaMemcpyKind kind = cudaMemcpyHostToDevice;
-    const cudaError_t err = cudaMemcpyToSymbol(constantCameraParametersArray_d, &cameraParameters_h, sizeof(DeviceCameraParams), deviceCameraParamsId * sizeof(DeviceCameraParams), kind);
-    CHECK_CUDA_RETURN_ERROR(err);
-    THROW_ON_CUDA_ERROR(err, "Failed to copy camera parameters from host to device.");
+//    _vertexBuffer = [_device newBufferWithBytes:cameraParameters_h
+//                                         length:sizeof(cameraParameters_h)
+//                                        options:MTLResourceStorageModeShared];
+    
+//    const cudaMemcpyKind kind = cudaMemcpyHostToDevice;
+//    const cudaError_t err = cudaMemcpyToSymbol(constantCameraParametersArray_d, &cameraParameters_h, sizeof(DeviceCameraParams), deviceCameraParamsId * sizeof(DeviceCameraParams), kind);
+//    CHECK_CUDA_RETURN_ERROR(err);
+//    THROW_ON_CUDA_ERROR(err, "Failed to copy camera parameters from host to device.");
+    LOG_ERROR("TODO: fillDeviceCameraParameters");
 }
 
 DeviceCache::SingleDeviceCache::SingleDeviceCache(int maxMipmapImages, int maxCameraParams)
@@ -153,7 +160,7 @@ DeviceCache::SingleDeviceCache::SingleDeviceCache(int maxMipmapImages, int maxCa
     , cameraParamCache(maxCameraParams)
 {
     // get the current device id
-    const int cudaDeviceId = getCudaDeviceId();
+    const int cudaDeviceId = getGpuDeviceId();
 
     ALICEVISION_LOG_TRACE("Initialize device cache (device id: " << cudaDeviceId << "):" << std::endl
                           << "\t - # mipmap images: " << maxMipmapImages << std::endl
@@ -162,7 +169,7 @@ DeviceCache::SingleDeviceCache::SingleDeviceCache(int maxMipmapImages, int maxCa
     // initialize Gaussian filters in GPU constant memory
     // force at compilation to build with maximum pre-computed Gaussian scales
     // note: useful for downscale with gaussian blur, volume gaussian blur (Z, XYZ)
-    cuda_createConstantGaussianArray(cudaDeviceId, DEVICE_MAX_DOWNSCALE);
+    createConstantGaussianArray(cudaDeviceId, DEVICE_MAX_DOWNSCALE); //TODO: 实现完整
 
     // the maximum number of camera parameters in device cache cannot be superior
     // to the number of camera parameters in the array in device constant memory
@@ -180,7 +187,7 @@ DeviceCache::SingleDeviceCache::SingleDeviceCache(int maxMipmapImages, int maxCa
 void DeviceCache::clear()
 {
     // get the current device id
-    const int cudaDeviceId = getCudaDeviceId();
+    const int cudaDeviceId = getGpuDeviceId();
 
     // find the current SingleDeviceCache
     auto it = _cachePerDevice.find(cudaDeviceId);
@@ -193,7 +200,7 @@ void DeviceCache::clear()
 void DeviceCache::build(int maxMipmapImages, int maxCameraParams)
 {
     // get the current device id
-    const int cudaDeviceId = getCudaDeviceId();
+    const int cudaDeviceId = getGpuDeviceId();
 
     // reset the current device cache
     _cachePerDevice[cudaDeviceId].reset(new SingleDeviceCache(maxMipmapImages, maxCameraParams));
@@ -202,7 +209,7 @@ void DeviceCache::build(int maxMipmapImages, int maxCameraParams)
 DeviceCache::SingleDeviceCache& DeviceCache::getCurrentDeviceCache()
 {
     // get the current device id
-    const int cudaDeviceId = getCudaDeviceId();
+    const int cudaDeviceId = getGpuDeviceId();
 
     // find the current SingleDeviceCache
     auto it = _cachePerDevice.find(cudaDeviceId);
@@ -261,10 +268,10 @@ void DeviceCache::addMipmapImage(int camId,
 
 #ifdef ALICEVISION_DEPTHMAP_TEXTURE_USE_HALF
             // explicit float to half conversion
-            cudaRGBA.x = __float2half(floatRGBA.r() * 255.0f);
-            cudaRGBA.y = __float2half(floatRGBA.g() * 255.0f);
-            cudaRGBA.z = __float2half(floatRGBA.b() * 255.0f);
-            cudaRGBA.w = __float2half(floatRGBA.a() * 255.0f);
+            cudaRGBA.x = half(floatRGBA.r() * 255.0f);
+            cudaRGBA.y = half(floatRGBA.g() * 255.0f);
+            cudaRGBA.z = half(floatRGBA.b() * 255.0f);
+            cudaRGBA.w = half(floatRGBA.a() * 255.0f);
 #else
             cudaRGBA.x = floatRGBA.r() * 255.0f;
             cudaRGBA.y = floatRGBA.g() * 255.0f;
@@ -303,9 +310,10 @@ void DeviceCache::addCameraParams(int camId, int downscale, const mvsUtils::Mult
     // build host-side device camera parameters struct
     DeviceCameraParams* cameraParameters_h = nullptr;
 
-    const cudaError_t err = cudaMallocHost(&cameraParameters_h, sizeof(DeviceCameraParams));
-    CHECK_CUDA_RETURN_ERROR(err);
-    THROW_ON_CUDA_ERROR(err, "Failed to allocate camera parameters in pinned host memory.");
+    cameraParameters_h = malloc(sizeof(DeviceCameraParams));
+//    const cudaError_t err = cudaMallocHost(&cameraParameters_h, sizeof(DeviceCameraParams));
+//    CHECK_CUDA_RETURN_ERROR(err);
+//    THROW_ON_CUDA_ERROR(err, "Failed to allocate camera parameters in pinned host memory.");
 
     // fill the host-side camera parameters from multi-view parameters.
     fillHostCameraParameters(*cameraParameters_h, camId, downscale, mp);
@@ -315,10 +323,11 @@ void DeviceCache::addCameraParams(int camId, int downscale, const mvsUtils::Mult
     fillDeviceCameraParameters(*cameraParameters_h, deviceCameraParamsId);
 
     // free host-side device camera parameters struct
-    CHECK_CUDA_RETURN_ERROR(cudaFreeHost(cameraParameters_h));
+    free(cameraParameters_h);
+//    CHECK_CUDA_RETURN_ERROR(cudaFreeHost(cameraParameters_h));
 
     // check last error
-    CHECK_CUDA_ERROR();
+//    CHECK_CUDA_ERROR();
 }
 
 const DeviceMipmapImage& DeviceCache::requestMipmapImage(int camId, const mvsUtils::MultiViewParams& mp)

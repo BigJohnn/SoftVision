@@ -1,24 +1,25 @@
 #pragma once
 
+#include <simd/simd.h>
 namespace depthMap {
 
 /**
  * @struct DeviceCameraParams
  * @brief Support class to maintain useful camera parameters in gpu memory.
  */
-struct DeviceCameraParams
+typedef struct DeviceCameraParams
 {
-    float P[12];
-    float iP[9];
-    float R[9];
-    float iR[9];
-    float K[9];
-    float iK[9];
-    float3 C;
-    float3 XVect;
-    float3 YVect;
-    float3 ZVect;
-};
+    vector_float P[12];
+    vector_float iP[9];
+    vector_float R[9];
+    vector_float iR[9];
+    vector_float K[9];
+    vector_float iK[9];
+    vector_float3 C;
+    vector_float3 XVect;
+    vector_float3 YVect;
+    vector_float3 ZVect;
+} DeviceCameraParams;
 
 // global / constant data structures
 

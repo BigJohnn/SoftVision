@@ -408,15 +408,17 @@ public:
     {
         this->setSize( size, true );
 
-        cudaError_t err = cudaMallocHost( &buffer, this->getBytesUnpadded() );
-
-        THROW_ON_CUDA_ERROR( err, "Could not allocate pinned host memory in " << __FILE__ << ":" << __LINE__ << ", " << cudaGetErrorString(err) );
+        buffer = malloc(this->getBytesUnpadded());
+//        cudaError_t err = cudaMallocHost( &buffer, this->getBytesUnpadded() );
+//
+//        THROW_ON_CUDA_ERROR( err, "Could not allocate pinned host memory in " << __FILE__ << ":" << __LINE__ << ", " << cudaGetErrorString(err) );
     }
 
     void deallocate( )
     {
         if( buffer == nullptr ) return;
-        cudaFreeHost(buffer);
+//        cudaFreeHost(buffer);
+        free(buffer);
         buffer = nullptr;
     }
 };

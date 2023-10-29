@@ -864,7 +864,7 @@ void computeNewCoordinateSystemFromLandmarks(const sfmData::SfMData& sfmData,
     
 //    99% of distribution is below distMax:
 //    const double distMax = quantile(accDist, quantile_probability = percentile);
-    const double distMax = utils::quantile(accDistribute, percentile);
+    const double distMax = utils::quantile<double>(accDistribute, percentile, cacheSize);
 
     out_S = (distMax > 0.00001 ? 1.0 / distMax : 1.0);
     out_R = U.transpose();
