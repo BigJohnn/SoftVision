@@ -107,6 +107,10 @@ static inline char *timenow();
 #define LOG_IF_ERROR(condition, message, args...)
 #endif
 
+#define ALICEVISION_LOG_DEBUG LOG_X
+#define ALICEVISION_LOG_ERROR LOG_X
+#define ALICEVISION_LOG_INFO LOG_X
+
 static inline char *timenow() {
     static char buffer[64];
     time_t rawtime;

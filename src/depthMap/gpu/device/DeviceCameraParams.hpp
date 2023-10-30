@@ -9,12 +9,12 @@ namespace depthMap {
  */
 typedef struct DeviceCameraParams
 {
-    vector_float P[12];
-    vector_float iP[9];
-    vector_float R[9];
-    vector_float iR[9];
-    vector_float K[9];
-    vector_float iK[9];
+    float P[12];
+    float iP[9];
+    float R[9];
+    float iR[9];
+    float K[9];
+    float iK[9];
     vector_float3 C;
     vector_float3 XVect;
     vector_float3 YVect;

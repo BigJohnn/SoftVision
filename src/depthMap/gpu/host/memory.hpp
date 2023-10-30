@@ -1,5 +1,6 @@
 #pragma once
 
+#import <Metal/Metal.h>
 // #define DEPTHMAP_TEXTURE_USE_UCHAR
 #define DEPTHMAP_TEXTURE_USE_HALF
 #define DEPTHMAP_TEXTURE_USE_INTERPOLATION
@@ -181,6 +182,9 @@ template <class Type, unsigned Dim> class CudaMemorySizeBase
 {
     CudaSize<Dim> _size;
     size_t        _pitch;
+protected:
+    id<MTLDevice> _device;
+    id<MTLBuffer> _buffer;
 public:
     CudaMemorySizeBase( )
     { }
@@ -315,6 +319,7 @@ protected:
 template <class Type, unsigned Dim> class CudaHostMemoryHeap : public CudaMemorySizeBase<Type,Dim>
 {
     Type* buffer = nullptr;
+    
 public:
     CudaHostMemoryHeap( )
         : buffer( nullptr )
@@ -408,7 +413,12 @@ public:
     {
         this->setSize( size, true );
 
-        buffer = malloc(this->getBytesUnpadded());
+//        buffer = malloc(this->getBytesUnpadded());
+        _device = MTLCreateSystemDefaultDevice();
+        
+        _buffer = [_device newBufferWithLength:sizeof(this->getBytesUnpadded())
+                                      options:MTLResourceStorageModeShared];
+        buffer = (Type*)_buffer.contents;
 //        cudaError_t err = cudaMallocHost( &buffer, this->getBytesUnpadded() );
 //
 //        THROW_ON_CUDA_ERROR( err, "Could not allocate pinned host memory in " << __FILE__ << ":" << __LINE__ << ", " << cudaGetErrorString(err) );
@@ -416,9 +426,10 @@ public:
 
     void deallocate( )
     {
+        //appl. ARC
         if( buffer == nullptr ) return;
-//        cudaFreeHost(buffer);
-        free(buffer);
+////        cudaFreeHost(buffer);
+//        free(buffer);
         buffer = nullptr;
     }
 };
@@ -467,8 +478,8 @@ public:
     }
 
     // see below with copy() functions
-    void copyFrom( const CudaDeviceMemoryPitched<Type, Dim>& src, cudaStream_t stream = 0 );
-    void copyFrom( const CudaHostMemoryHeap<Type, Dim>& src, cudaStream_t stream = 0 );
+//    void copyFrom( const CudaDeviceMemoryPitched<Type, Dim>& src, cudaStream_t stream = 0 );
+//    void copyFrom( const CudaHostMemoryHeap<Type, Dim>& src, cudaStream_t stream = 0 );
     void copyFrom( const Type* src, size_t sx, size_t sy );
     
 
@@ -516,51 +527,60 @@ public:
     {
         this->setSize( size, false );
 
+        _device = MTLCreateSystemDefaultDevice();
         if(Dim == 2)
         {
-            cudaError_t err = cudaMallocPitch<Type>(&buffer,
-                                                    &this->getPitchRef(),
-                                                    this->getUnpaddedBytesInRow(),
-                                                    this->getUnitsInDim(1) );
-            if( err != cudaSuccess )
-            {
-                int devid;
-                cudaGetDevice( &devid );
-                std::stringstream ss;
-                ss << "Could not allocate pitched device memory.\n"
-                   << "Device " << devid << " alloc " << this->getBytesUnpadded() << " bytes failed in " << __FILE__ << ":" << __LINE__ << ", " << cudaGetErrorString(err);
-                throw std::runtime_error(ss.str());
-            }
+            _buffer = [_device newBufferWithLength:sizeof(this->getUnpaddedBytesInRow() * this->getUnitsInDim(1))
+                                          options:MTLResourceStorageModePrivate];
+            buffer = (Type*)_buffer.contents;
+            
+//            cudaError_t err = cudaMallocPitch<Type>(&buffer,
+//                                                    &this->getPitchRef(),
+//                                                    this->getUnpaddedBytesInRow(),
+//                                                    this->getUnitsInDim(1) );
+//            if( err != cudaSuccess )
+//            {
+//                int devid;
+//                cudaGetDevice( &devid );
+//                std::stringstream ss;
+//                ss << "Could not allocate pitched device memory.\n"
+//                   << "Device " << devid << " alloc " << this->getBytesUnpadded() << " bytes failed in " << __FILE__ << ":" << __LINE__ << ", " << cudaGetErrorString(err);
+//                throw std::runtime_error(ss.str());
+//            }
         }
         else if(Dim == 3)
         {
-            cudaExtent extent;
-            extent.width  = this->getUnpaddedBytesInRow();
-            extent.height = this->getUnitsInDim(1);
-            extent.depth  = this->getUnitsInDim(2);
-            cudaPitchedPtr pitchDevPtr;
-            cudaError_t err = cudaMalloc3D(&pitchDevPtr, extent);
-            if( err != cudaSuccess )
-            {
-                int devid;
-                cudaGetDevice( &devid );
-                size_t bytes = this->getBytesUnpadded();
-                size_t sx    = this->getUnitsInDim(0);
-                size_t sy    = this->getUnitsInDim(1);
-                size_t sz    = this->getUnitsInDim(2);
-                std::stringstream ss;
-                ss << "Could not allocate 3D device memory.\n"
-                   << "Device " << devid << " alloc "
-                                    << sx << "x" << sy << "x" << sz << "x" << sizeof(Type) << " = "
-                                    << bytes << " bytes ("
-                << (int)(bytes/1024.0f/1024.0f) << " MB) failed in " << __FILE__ << ":" << __LINE__ << ", " << cudaGetErrorString(err);
-                throw std::runtime_error(ss.str());
-            }
+            _buffer = [_device newBufferWithLength:sizeof(this->getUnpaddedBytesInRow() * this->getUnitsInDim(1) * this->getUnitsInDim(2))
+                                          options:MTLResourceStorageModePrivate];
+            buffer = (Type*)_buffer.contents;
+            
+//            cudaExtent extent;
+//            extent.width  = this->getUnpaddedBytesInRow();
+//            extent.height = this->getUnitsInDim(1);
+//            extent.depth  = this->getUnitsInDim(2);
+//            cudaPitchedPtr pitchDevPtr;
+//            cudaError_t err = cudaMalloc3D(&pitchDevPtr, extent);
+//            if( err != cudaSuccess )
+//            {
+//                int devid;
+//                cudaGetDevice( &devid );
+//                size_t bytes = this->getBytesUnpadded();
+//                size_t sx    = this->getUnitsInDim(0);
+//                size_t sy    = this->getUnitsInDim(1);
+//                size_t sz    = this->getUnitsInDim(2);
+//                std::stringstream ss;
+//                ss << "Could not allocate 3D device memory.\n"
+//                   << "Device " << devid << " alloc "
+//                                    << sx << "x" << sy << "x" << sz << "x" << sizeof(Type) << " = "
+//                                    << bytes << " bytes ("
+//                << (int)(bytes/1024.0f/1024.0f) << " MB) failed in " << __FILE__ << ":" << __LINE__ << ", " << cudaGetErrorString(err);
+//                throw std::runtime_error(ss.str());
+//            }
+//
+//            buffer = (Type*)pitchDevPtr.ptr;
+//            this->setPitch( pitchDevPtr.pitch );
 
-            buffer = (Type*)pitchDevPtr.ptr;
-            this->setPitch( pitchDevPtr.pitch );
-
-            LOG_DEBUG("GPU 3D allocation: " << this->getUnitsInDim(0) << "x" << this->getUnitsInDim(1) << "x" << this->getUnitsInDim(2) << ", type size=" << sizeof(Type) << ", pitch=" << pitchDevPtr.pitch);
+            LOG_DEBUG("GPU 3D allocation: " << this->getUnitsInDim(0) << "x" << this->getUnitsInDim(1) << "x" << this->getUnitsInDim(2) << ", type size=" << sizeof(Type);
             LOG_DEBUG("                 : " << this->getBytesUnpadded() << ", padded=" << this->getBytesPadded() << ", wasted=" << this->getBytesPadded() - this->getBytesUnpadded() << ", wasted ratio=" << ((this->getBytesPadded() - this->getBytesUnpadded()) / double(this->getBytesUnpadded())) * 100.0 << "%");
         }
         else
@@ -572,15 +592,15 @@ public:
     void deallocate()
     {
         if( buffer == nullptr ) return;
-
-        cudaError_t err = cudaFree(buffer);
-        if( err != cudaSuccess )
-        {
-            std::stringstream ss;
-            ss << "CudaDeviceMemoryPitched: Device free failed, " << cudaGetErrorString(err);
-            throw std::runtime_error(ss.str());
-        }
-
+//
+//        cudaError_t err = cudaFree(buffer);
+//        if( err != cudaSuccess )
+//        {
+//            std::stringstream ss;
+//            ss << "CudaDeviceMemoryPitched: Device free failed, " << cudaGetErrorString(err);
+//            throw std::runtime_error(ss.str());
+//        }
+//
         buffer = nullptr;
     }
 };
@@ -665,9 +685,15 @@ public:
     {
         this->setSize( size, true );
 
-        cudaError_t err = cudaMalloc(&buffer, this->getBytesUnpadded() );
-
-        THROW_ON_CUDA_ERROR( err, "Could not allocate pinned host memory in " << __FILE__ << ":" << __LINE__ << ", " << cudaGetErrorString(err) );
+        _device = MTLCreateSystemDefaultDevice();
+        
+        _buffer = [_device newBufferWithLength:sizeof(this->getBytesUnpadded())
+                                      options:MTLResourceStorageModePrivate];
+        buffer = (Type*)_buffer.contents;
+            
+//        cudaError_t err = cudaMalloc(&buffer, this->getBytesUnpadded() );
+//
+//        THROW_ON_CUDA_ERROR( err, "Could not allocate pinned host memory in " << __FILE__ << ":" << __LINE__ << ", " << cudaGetErrorString(err) );
     }
     void allocate( const size_t size )
     {
@@ -679,131 +705,137 @@ public:
         if(buffer == nullptr)
           return;
 
-        CHECK_CUDA_RETURN_ERROR(cudaFree(buffer));
+//        CHECK_CUDA_RETURN_ERROR(cudaFree(buffer));
 
         buffer = nullptr;
     }
 
     void copyFrom( const Type* inbuf, const size_t num )
     {
-        cudaMemcpyKind kind = cudaMemcpyHostToDevice;
-        cudaError_t err = cudaMemcpy( buffer,
-                                      inbuf,
-                                      num * sizeof(Type),
-                                      kind );
-
-        THROW_ON_CUDA_ERROR( err, "Failed to copy from flat host buffer to CudaDeviceMemory in " << __FILE__ << ":" << __LINE__ << ": " << cudaGetErrorString(err) );
+        _device = MTLCreateSystemDefaultDevice();
+        
+        _buffer = [_device newBufferWithBytes:inbuf length:sizeof(this->getBytesUnpadded())
+                                      options:MTLResourceStorageModePrivate];
+        buffer = (Type*)_buffer.contents;
+        
+//        cudaMemcpyKind kind = cudaMemcpyHostToDevice;
+//        cudaError_t err = cudaMemcpy( buffer,
+//                                      inbuf,
+//                                      num * sizeof(Type),
+//                                      kind );
+//
+//        THROW_ON_CUDA_ERROR( err, "Failed to copy from flat host buffer to CudaDeviceMemory in " << __FILE__ << ":" << __LINE__ << ": " << cudaGetErrorString(err) );
     }
 
-    void copyFrom( const Type* inbuf, const size_t num, cudaStream_t stream )
-    {
-        cudaMemcpyKind kind = cudaMemcpyHostToDevice;
-        cudaError_t err = cudaMemcpyAsync( buffer,
-                                           inbuf,
-                                           num * sizeof(Type),
-                                           kind,
-                                           stream );
-
-        THROW_ON_CUDA_ERROR( err, "Failed to copy from flat host buffer to CudaDeviceMemory in " << __FILE__ << ":" << __LINE__ << ": " << cudaGetErrorString(err) );
-    }
+//    void copyFrom( const Type* inbuf, const size_t num, cudaStream_t stream )
+//    {
+//        cudaMemcpyKind kind = cudaMemcpyHostToDevice;
+//        cudaError_t err = cudaMemcpyAsync( buffer,
+//                                           inbuf,
+//                                           num * sizeof(Type),
+//                                           kind,
+//                                           stream );
+//
+//        THROW_ON_CUDA_ERROR( err, "Failed to copy from flat host buffer to CudaDeviceMemory in " << __FILE__ << ":" << __LINE__ << ": " << cudaGetErrorString(err) );
+//    }
 };
 
 /*********************************************************************************
  * copyFrom member functions
  *********************************************************************************/
 
-template<class Type, unsigned Dim>
-void CudaDeviceMemoryPitched<Type, Dim>::copyFrom(const CudaDeviceMemoryPitched<Type, Dim>& src, cudaStream_t stream)
-{
-    const cudaMemcpyKind kind = cudaMemcpyDeviceToDevice;
-    cudaError_t err;
-    if(Dim == 1)
-    {
-        if( stream == 0 )
-            err = cudaMemcpy( this->getBytePtr(),
-                              src.getBytePtr(),
-                              src.getUnpaddedBytesInRow(),
-                              kind );
-        else
-            err = cudaMemcpyAsync( this->getBytePtr(),
-                                   src.getBytePtr(),
-                                   src.getUnpaddedBytesInRow(),
-                                   kind,
-                                   stream );
-
-        THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
-    }
-    else if(Dim >= 2)
-    {
-        size_t number_of_rows = 1;
-        for( int i=1; i<Dim; i++ ) number_of_rows *= src.getUnitsInDim(i);
-
-        if( stream == 0 )
-            err = cudaMemcpy2D( this->getBytePtr(),
-                                this->getPitch(),
-                                src.getBytePtr(),
-                                src.getPitch(),
-                                src.getUnpaddedBytesInRow(),
-                                number_of_rows,
-                                kind );
-        else
-            err = cudaMemcpy2DAsync( this->getBytePtr(),
-                                     this->getPitch(),
-                                     src.getBytePtr(),
-                                     src.getPitch(),
-                                     src.getUnpaddedBytesInRow(),
-                                     number_of_rows,
-                                     kind,
-                                     stream );
-        THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
-    }
-}
-
-template<class Type, unsigned Dim>
-void CudaDeviceMemoryPitched<Type, Dim>::copyFrom( const CudaHostMemoryHeap<Type, Dim>& src, cudaStream_t stream )
-{
-    const cudaMemcpyKind kind = cudaMemcpyHostToDevice;
-    cudaError_t err;
-    if(Dim == 1)
-    {
-        if( stream == 0 )
-            err = cudaMemcpy( this->getBytePtr(),
-                              src.getBytePtr(),
-                              src.getBytesUnpadded(),
-                              kind );
-        else
-            err = cudaMemcpyAsync( this->getBytePtr(),
-                                   src.getBytePtr(),
-                                   src.getBytesUnpadded(),
-                                   kind,
-                                   stream );
-        THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
-    }
-    else if(Dim >= 2)
-    {
-        size_t number_of_rows = 1;
-        for( int i=1; i<Dim; i++ ) number_of_rows *= src.getUnitsInDim(i);
-
-        if( stream == 0 )
-            err = cudaMemcpy2D( this->getBytePtr(),
-                                this->getPitch(),
-                                src.getBytePtr(),
-                                src.getPitch(),
-                                src.getUnpaddedBytesInRow(),
-                                number_of_rows,
-                                kind );
-        else
-            err = cudaMemcpy2DAsync( this->getBytePtr(),
-                                     this->getPitch(),
-                                     src.getBytePtr(),
-                                     src.getPitch(),
-                                     src.getUnpaddedBytesInRow(),
-                                     number_of_rows,
-                                     kind,
-                                     stream );
-        THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
-    }
-}
+//template<class Type, unsigned Dim>
+//void CudaDeviceMemoryPitched<Type, Dim>::copyFrom(const CudaDeviceMemoryPitched<Type, Dim>& src, cudaStream_t stream)
+//{
+//    const cudaMemcpyKind kind = cudaMemcpyDeviceToDevice;
+//    cudaError_t err;
+//    if(Dim == 1)
+//    {
+//        if( stream == 0 )
+//            err = cudaMemcpy( this->getBytePtr(),
+//                              src.getBytePtr(),
+//                              src.getUnpaddedBytesInRow(),
+//                              kind );
+//        else
+//            err = cudaMemcpyAsync( this->getBytePtr(),
+//                                   src.getBytePtr(),
+//                                   src.getUnpaddedBytesInRow(),
+//                                   kind,
+//                                   stream );
+//
+//        THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
+//    }
+//    else if(Dim >= 2)
+//    {
+//        size_t number_of_rows = 1;
+//        for( int i=1; i<Dim; i++ ) number_of_rows *= src.getUnitsInDim(i);
+//
+//        if( stream == 0 )
+//            err = cudaMemcpy2D( this->getBytePtr(),
+//                                this->getPitch(),
+//                                src.getBytePtr(),
+//                                src.getPitch(),
+//                                src.getUnpaddedBytesInRow(),
+//                                number_of_rows,
+//                                kind );
+//        else
+//            err = cudaMemcpy2DAsync( this->getBytePtr(),
+//                                     this->getPitch(),
+//                                     src.getBytePtr(),
+//                                     src.getPitch(),
+//                                     src.getUnpaddedBytesInRow(),
+//                                     number_of_rows,
+//                                     kind,
+//                                     stream );
+//        THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
+//    }
+//}
+//
+//template<class Type, unsigned Dim>
+//void CudaDeviceMemoryPitched<Type, Dim>::copyFrom( const CudaHostMemoryHeap<Type, Dim>& src, cudaStream_t stream )
+//{
+//    const cudaMemcpyKind kind = cudaMemcpyHostToDevice;
+//    cudaError_t err;
+//    if(Dim == 1)
+//    {
+//        if( stream == 0 )
+//            err = cudaMemcpy( this->getBytePtr(),
+//                              src.getBytePtr(),
+//                              src.getBytesUnpadded(),
+//                              kind );
+//        else
+//            err = cudaMemcpyAsync( this->getBytePtr(),
+//                                   src.getBytePtr(),
+//                                   src.getBytesUnpadded(),
+//                                   kind,
+//                                   stream );
+//        THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
+//    }
+//    else if(Dim >= 2)
+//    {
+//        size_t number_of_rows = 1;
+//        for( int i=1; i<Dim; i++ ) number_of_rows *= src.getUnitsInDim(i);
+//
+//        if( stream == 0 )
+//            err = cudaMemcpy2D( this->getBytePtr(),
+//                                this->getPitch(),
+//                                src.getBytePtr(),
+//                                src.getPitch(),
+//                                src.getUnpaddedBytesInRow(),
+//                                number_of_rows,
+//                                kind );
+//        else
+//            err = cudaMemcpy2DAsync( this->getBytePtr(),
+//                                     this->getPitch(),
+//                                     src.getBytePtr(),
+//                                     src.getPitch(),
+//                                     src.getUnpaddedBytesInRow(),
+//                                     number_of_rows,
+//                                     kind,
+//                                     stream );
+//        THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
+//    }
+//}
 
 
 template<class Type, unsigned Dim>
@@ -814,63 +846,71 @@ void CudaDeviceMemoryPitched<Type, Dim>::copyFrom( const Type* src, size_t sx, s
         const size_t src_pitch  = sx * sizeof(Type);
         const size_t src_width  = sx * sizeof(Type);
         const size_t src_height = sy;
-        cudaError_t err = cudaMemcpy2D(this->getBytePtr(),
-                                       this->getPitch(),
-                                       src,
-                                       src_pitch,
-                                       src_width,
-                                       src_height,
-                                       cudaMemcpyHostToDevice);
-
-        THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
+        
+        _device = MTLCreateSystemDefaultDevice();
+        
+        _buffer = [_device newBufferWithBytes:src length:sizeof(src_width * src_height)
+                                      options:MTLResourceStorageModePrivate];
+        
+        this->getBytePtr() = (Type*)_buffer.contents;
+        
+//        cudaError_t err = cudaMemcpy2D(this->getBytePtr(),
+//                                       this->getPitch(),
+//                                       src,
+//                                       src_pitch,
+//                                       src_width,
+//                                       src_height,
+//                                       cudaMemcpyHostToDevice);
+//
+//        THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
     }
 }
 
-template<class Type, unsigned Dim>
-void CudaHostMemoryHeap<Type, Dim>::copyFrom(const CudaDeviceMemoryPitched<Type, Dim>& src, cudaStream_t stream)
-{
-    const cudaMemcpyKind kind = cudaMemcpyDeviceToHost;
-    cudaError_t err;
-    if(Dim == 1)
-    {
-        if( stream == 0 )
-            err = cudaMemcpy( this->getBytePtr(),
-                              src.getBytePtr(),
-                              src.getUnpaddedBytesInRow(),
-                              kind );
-        else
-            err = cudaMemcpyAsync( this->getBytePtr(),
-                                   src.getBytePtr(),
-                                   src.getUnpaddedBytesInRow(),
-                                   kind,
-                                   stream );
-        THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
-    }
-    else if(Dim >= 2)
-    {
-        size_t number_of_rows = 1;
-        for( int i=1; i<Dim; i++ ) number_of_rows *= src.getUnitsInDim(i);
-
-        if( stream == 0 )
-            err = cudaMemcpy2D( this->getBytePtr(),
-                                this->getPitch(),
-                                src.getBytePtr(),
-                                src.getPitch(),
-                                src.getUnpaddedBytesInRow(),
-                                number_of_rows,
-                                kind );
-        else
-            err = cudaMemcpy2DAsync( this->getBytePtr(),
-                                     this->getPitch(),
-                                     src.getBytePtr(),
-                                     src.getPitch(),
-                                     src.getUnpaddedBytesInRow(),
-                                     number_of_rows,
-                                     kind,
-                                     stream );
-        THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
-    }
-}
+//template<class Type, unsigned Dim>
+//void CudaHostMemoryHeap<Type, Dim>::copyFrom(const CudaDeviceMemoryPitched<Type, Dim>& src, cudaStream_t stream)
+//{
+//    const cudaMemcpyKind kind = cudaMemcpyDeviceToHost;
+//    cudaError_t err;
+//    if(Dim == 1)
+//    {
+//        if( stream == 0 )
+//            err = cudaMemcpy( this->getBytePtr(),
+//                              src.getBytePtr(),
+//                              src.getUnpaddedBytesInRow(),
+//                              kind );
+//        else
+//            err = cudaMemcpyAsync( this->getBytePtr(),
+//                                   src.getBytePtr(),
+//                                   src.getUnpaddedBytesInRow(),
+//                                   kind,
+//                                   stream );
+//        THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
+//    }
+//    else if(Dim >= 2)
+//    {
+//        size_t number_of_rows = 1;
+//        for( int i=1; i<Dim; i++ ) number_of_rows *= src.getUnitsInDim(i);
+//
+//        if( stream == 0 )
+//            err = cudaMemcpy2D( this->getBytePtr(),
+//                                this->getPitch(),
+//                                src.getBytePtr(),
+//                                src.getPitch(),
+//                                src.getUnpaddedBytesInRow(),
+//                                number_of_rows,
+//                                kind );
+//        else
+//            err = cudaMemcpy2DAsync( this->getBytePtr(),
+//                                     this->getPitch(),
+//                                     src.getBytePtr(),
+//                                     src.getPitch(),
+//                                     src.getUnpaddedBytesInRow(),
+//                                     number_of_rows,
+//                                     kind,
+//                                     stream );
+//        THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
+//    }
+//}
 
 template<class Type, unsigned Dim>
 void CudaDeviceMemoryPitched<Type, Dim>::copyTo( Type* dst, size_t sx, size_t sy ) const
@@ -880,15 +920,23 @@ void CudaDeviceMemoryPitched<Type, Dim>::copyTo( Type* dst, size_t sx, size_t sy
         const size_t dst_pitch  = sx * sizeof(Type);
         const size_t dst_width  = sx * sizeof(Type);
         const size_t dst_height = sy;
-        cudaError_t err = cudaMemcpy2D(dst,
-                                       dst_pitch,
-                                       this->getBytePtr(),
-                                       this->getPitch(),
-                                       dst_width,
-                                       dst_height,
-                                       cudaMemcpyDeviceToHost);
-
-        THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
+        
+        _device = MTLCreateSystemDefaultDevice();
+        
+        _buffer = [_device newBufferWithBytes:this->getBytePtr() length:sizeof(dst_width * dst_height)
+                                      options:MTLResourceStorageModePrivate];
+        
+        dst = (Type*)_buffer.contents;
+        
+//        cudaError_t err = cudaMemcpy2D(dst,
+//                                       dst_pitch,
+//                                       this->getBytePtr(),
+//                                       this->getPitch(),
+//                                       dst_width,
+//                                       dst_height,
+//                                       cudaMemcpyDeviceToHost);
+//
+//        THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
     }
 }
 
@@ -903,12 +951,19 @@ template<class Type, unsigned Dim> void copy(CudaHostMemoryHeap<Type, Dim>& dst,
 
 template<class Type> void copy(CudaHostMemoryHeap<Type,1>& _dst, const CudaDeviceMemory<Type>& _src)
 {
-  cudaMemcpyKind kind = cudaMemcpyDeviceToHost;
-  cudaError_t err = cudaMemcpy(_dst.getBytePtr(),
-                               _src.getBytePtr(),
-                               _dst.getUnpaddedBytesInRow(),
-                               kind);
-  THROW_ON_CUDA_ERROR(err, "Failed to copy from CudaHostMemoryHeap to CudaDeviceMemory");
+    _device = MTLCreateSystemDefaultDevice();
+    
+    _buffer = [_device newBufferWithBytes:_src.getBytePtr() length:_dst.getUnpaddedBytesInRow()/*check this*/
+                                  options:MTLResourceStorageModePrivate];
+    
+    _dst.getBytePtr() = (Type*)_buffer.contents;
+                
+//  cudaMemcpyKind kind = cudaMemcpyDeviceToHost;
+//  cudaError_t err = cudaMemcpy(_dst.getBytePtr(),
+//                               _src.getBytePtr(),
+//                               _dst.getUnpaddedBytesInRow(),
+//                               kind);
+//  THROW_ON_CUDA_ERROR(err, "Failed to copy from CudaHostMemoryHeap to CudaDeviceMemory");
 }
 
 template<class Type, unsigned Dim> void copy(CudaDeviceMemoryPitched<Type, Dim>& _dst, const CudaHostMemoryHeap<Type, Dim>& _src)
@@ -923,12 +978,19 @@ template<class Type, unsigned Dim> void copy(CudaDeviceMemoryPitched<Type, Dim>&
 
 template<class Type> void copy(CudaDeviceMemory<Type>& _dst, const CudaHostMemoryHeap<Type,1>& _src)
 {
-  const cudaMemcpyKind kind = cudaMemcpyHostToDevice;
-  cudaError_t err = cudaMemcpy(_dst.getBytePtr(),
-                               _src.getBytePtr(),
-                               _src.getUnpaddedBytesInRow(),
-                               kind);
-  THROW_ON_CUDA_ERROR(err, "Failed to copy from CudaHostMemoryHeap to CudaDeviceMemory");
+    _device = MTLCreateSystemDefaultDevice();
+    
+    _buffer = [_device newBufferWithBytes:_src.getBytePtr() length:_src.getUnpaddedBytesInRow()
+                                  options:MTLResourceStorageModePrivate];
+    
+    _dst.getBytePtr() = (Type*)_buffer.contents;
+                
+//  const cudaMemcpyKind kind = cudaMemcpyHostToDevice;
+//  cudaError_t err = cudaMemcpy(_dst.getBytePtr(),
+//                               _src.getBytePtr(),
+//                               _src.getUnpaddedBytesInRow(),
+//                               kind);
+//  THROW_ON_CUDA_ERROR(err, "Failed to copy from CudaHostMemoryHeap to CudaDeviceMemory");
 }
 
 template<class Type> void copy(CudaDeviceMemory<Type>& _dst, const Type* buffer, const size_t numelems )
@@ -939,14 +1001,22 @@ template<class Type> void copy(CudaDeviceMemory<Type>& _dst, const Type* buffer,
 template<class Type, unsigned Dim> void copy(Type* _dst, size_t sx, size_t sy, const CudaDeviceMemoryPitched<Type, Dim>& _src)
 {
   if(Dim == 2) {
-    cudaError_t err = cudaMemcpy2D(_dst,
-                                   sx * sizeof (Type),
-                                   _src.getBytePtr(),
-                                   _src.getPitch(),
-                                   sx * sizeof (Type),
-                                   sy,
-                                   cudaMemcpyDeviceToHost);
-    THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
+      
+      _device = MTLCreateSystemDefaultDevice();
+      
+      _buffer = [_device newBufferWithBytes:_src.getBytePtr() length:sx * sizeof (Type) * sy
+                                    options:MTLResourceStorageModePrivate];
+      
+      _dst = (Type*)_buffer.contents;
+      
+//    cudaError_t err = cudaMemcpy2D(_dst,
+//                                   sx * sizeof (Type),
+//                                   _src.getBytePtr(),
+//                                   _src.getPitch(),
+//                                   sx * sizeof (Type),
+//                                   sy,
+//                                   cudaMemcpyDeviceToHost);
+//    THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
   }
 }
 
@@ -959,14 +1029,21 @@ template<class Type, unsigned Dim> void copy(Type* _dst, size_t sx, size_t sy, s
 {
     if(Dim >= 3)
     {
-      cudaError_t err = cudaMemcpy2D( _dst,
-                                      sx * sizeof (Type),
-                                      _src.getBytePtr(),
-                                      _src.getPitch(),
-                                      sx * sizeof (Type),
-                                      sy * sz,
-                                      cudaMemcpyDeviceToHost);
-      THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
+        _device = MTLCreateSystemDefaultDevice();
+        
+        _buffer = [_device newBufferWithBytes:_src.getBytePtr() length:sx * sizeof (Type) * sy * sz
+                                      options:MTLResourceStorageModePrivate];
+        
+        _dst = (Type*)_buffer.contents;
+        
+//      cudaError_t err = cudaMemcpy2D( _dst,
+//                                      sx * sizeof (Type),
+//                                      _src.getBytePtr(),
+//                                      _src.getPitch(),
+//                                      sx * sizeof (Type),
+//                                      sy * sz,
+//                                      cudaMemcpyDeviceToHost);
+//      THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
     }
 }
 
@@ -977,34 +1054,43 @@ template<class Type, unsigned Dim> void copy(CudaDeviceMemoryPitched<Type, Dim>&
       const size_t src_pitch      = sx * sizeof(Type);
       const size_t width_in_bytes = sx * sizeof(Type);
       const size_t height         = sy * sz;
-      cudaError_t err = cudaMemcpy2D( _dst.getBytePtr(),
-                                      _dst.getPitch(),
-                                      _src,
-                                      src_pitch,
-                                      width_in_bytes,
-                                      height,
-                                      cudaMemcpyHostToDevice);
-      THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
+        
+        _device = MTLCreateSystemDefaultDevice();
+        
+        _buffer = [_device newBufferWithBytes:_src length:width_in_bytes * height
+                                      options:MTLResourceStorageModePrivate];
+        
+        _dst.getBytePtr() = (Type*)_buffer.contents;
+        
+//      cudaError_t err = cudaMemcpy2D( _dst.getBytePtr(),
+//                                      _dst.getPitch(),
+//                                      _src,
+//                                      src_pitch,
+//                                      width_in_bytes,
+//                                      height,
+//                                      cudaMemcpyHostToDevice);
+//      THROW_ON_CUDA_ERROR(err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ")");
     }
 }
 
-template<class Type> void copy2D( Type* dst, size_t sx, size_t sy,
-                                  Type* src, size_t src_pitch,
-                                  cudaStream_t stream )
-{
-    const size_t dst_pitch      = sx * sizeof(Type);
-    const size_t width_in_bytes = sx * sizeof(Type);
-    const size_t height         = sy;
-    cudaError_t err = cudaMemcpy2DAsync( dst,
-                                         dst_pitch,
-                                         src,
-                                         src_pitch,
-                                         width_in_bytes,
-                                         height,
-                                         cudaMemcpyDeviceToHost,
-                                         stream );
-    THROW_ON_CUDA_ERROR( err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ", " << cudaGetErrorString(err) << ")" );
-}
+//template<class Type> void copy2D( Type* dst, size_t sx, size_t sy,
+//                                  Type* src, size_t src_pitch,
+//                                  cudaStream_t stream )
+//{
+//    const size_t dst_pitch      = sx * sizeof(Type);
+//    const size_t width_in_bytes = sx * sizeof(Type);
+//    const size_t height         = sy;
+//
+//    cudaError_t err = cudaMemcpy2DAsync( dst,
+//                                         dst_pitch,
+//                                         src,
+//                                         src_pitch,
+//                                         width_in_bytes,
+//                                         height,
+//                                         cudaMemcpyDeviceToHost,
+//                                         stream );
+//    THROW_ON_CUDA_ERROR( err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ", " << cudaGetErrorString(err) << ")" );
+//}
 
 template<class Type> void copy2D( Type* dst, size_t sx, size_t sy,
                                   Type* src, size_t src_pitch )
@@ -1012,14 +1098,22 @@ template<class Type> void copy2D( Type* dst, size_t sx, size_t sy,
     const size_t dst_pitch      = sx * sizeof(Type);
     const size_t width_in_bytes = sx * sizeof(Type);
     const size_t height         = sy;
-    cudaError_t err = cudaMemcpy2D( dst,
-                                    dst_pitch,
-                                    src,
-                                    src_pitch,
-                                    width_in_bytes,
-                                    height,
-                                    cudaMemcpyDeviceToHost );
-    THROW_ON_CUDA_ERROR( err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ", " << cudaGetErrorString(err) << ")" );
+                
+    _device = MTLCreateSystemDefaultDevice();
+    
+    _buffer = [_device newBufferWithBytes:_src length:width_in_bytes * height
+                                  options:MTLResourceStorageModePrivate];
+    
+    _dst = (Type*)_buffer.contents;
+                
+//    cudaError_t err = cudaMemcpy2D( dst,
+//                                    dst_pitch,
+//                                    src,
+//                                    src_pitch,
+//                                    width_in_bytes,
+//                                    height,
+//                                    cudaMemcpyDeviceToHost );
+//    THROW_ON_CUDA_ERROR( err, "Failed to copy (" << __FILE__ << " " << __LINE__ << ", " << cudaGetErrorString(err) << ")" );
 }
 
 /*
@@ -1039,7 +1133,9 @@ template<class Type> void copy2D( Type* dst, size_t sx, size_t sy,
 template <class Type, bool subpixelInterpolation, bool normalizedCoords>
 struct CudaTexture
 {
-    cudaTextureObject_t textureObj = 0;
+    id<MTLTexture> textureObj;
+                //TODO: continue ...
+//    cudaTextureObject_t textureObj = 0;
 
     CudaTexture(CudaDeviceMemoryPitched<Type, 2>& buffer_dmp)
     {
