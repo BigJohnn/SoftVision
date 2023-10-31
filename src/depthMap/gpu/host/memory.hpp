@@ -1134,88 +1134,147 @@ template <class Type, bool subpixelInterpolation, bool normalizedCoords>
 struct CudaTexture
 {
     id<MTLTexture> textureObj;
-                //TODO: continue ...
+
 //    cudaTextureObject_t textureObj = 0;
 
     CudaTexture(CudaDeviceMemoryPitched<Type, 2>& buffer_dmp)
     {
-        cudaTextureDesc  texDesc;
-        memset(&texDesc, 0, sizeof(cudaTextureDesc));
-        texDesc.normalizedCoords = normalizedCoords;
-        texDesc.addressMode[0] = cudaAddressModeClamp;
-        texDesc.addressMode[1] = cudaAddressModeClamp;
-        texDesc.addressMode[2] = cudaAddressModeClamp;
-        texDesc.readMode = cudaReadModeElementType;
-        texDesc.filterMode = (subpixelInterpolation) ? cudaFilterModeLinear : cudaFilterModePoint;
+        MTLTextureDescriptor * descriptor = [MTLTextureDescriptor new];
 
-        cudaResourceDesc resDesc;
-        resDesc.resType = cudaResourceTypePitch2D;
-        resDesc.res.pitch2D.desc = cudaCreateChannelDesc<Type>();
-        resDesc.res.pitch2D.devPtr = buffer_dmp.getBuffer();
-        resDesc.res.pitch2D.width = buffer_dmp.getSize()[0];
-        resDesc.res.pitch2D.height = buffer_dmp.getSize()[1];
-        resDesc.res.pitch2D.pitchInBytes = buffer_dmp.getPitch();
+        if(normalizedCoords) {
+            descriptor.pixelFormat = MTLPixelFormatR16Float;
+        }
+        else {
+            descriptor.pixelFormat = MTLPixelFormatBGRA8Unorm;
+        }
+
+        // Indicate that each pixel has a blue, green, red, and alpha channel, where each channel is
+        // an 8-bit unsigned normalized value (i.e. 0 maps to 0.0 and 255 maps to 1.0)
+        
+
+        // Set the pixel dimensions of the texture
+//        textureDescriptor.width = image.width;
+//        textureDescriptor.height = image.height;
+
+        // Create the texture from the device by using the descriptor
+        
+        
+        descriptor.textureType      = MTLTextureType2D;
+        descriptor.width            = buffer_dmp.getSize()[0];
+        descriptor.height           = buffer_dmp.getSize()[1];
+        
+//        descriptor.depth            = texture.depth;
+//        descriptor.mipmapLevelCount = texture.mipmapLevelCount;
+//        descriptor.arrayLength      = texture.arrayLength;
+//        descriptor.sampleCount      = texture.sampleCount;
+        descriptor.storageMode      = MTLStorageModePrivate;
+        textureObj = [_device newTextureWithDescriptor:descriptor];
+        
+        //TODO: sampler settings MTLSamplerDescriptor
+        MTLSamplerDescriptor* samplerDesc = [MTLSamplerDescriptor new];
+        samplerDesc.normalizedCoordinates = normalizedCoords;
+        samplerDesc.rAddressMode = MTLSamplerAddressModeClampToEdge;
+        samplerDesc.sAddressMode = MTLSamplerAddressModeClampToEdge;
+        samplerDesc.tAddressMode = MTLSamplerAddressModeClampToEdge;
+        
+        id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+        id<MTLSamplerState> state = [device makeSamplerState(descriptor: samplerDesc)];
+//        cudaTextureDesc  texDesc;
+//        memset(&texDesc, 0, sizeof(cudaTextureDesc));
+//        texDesc.normalizedCoords = normalizedCoords;
+//        texDesc.addressMode[0] = cudaAddressModeClamp;
+//        texDesc.addressMode[1] = cudaAddressModeClamp;
+//        texDesc.addressMode[2] = cudaAddressModeClamp;
+//        texDesc.readMode = cudaReadModeElementType;
+//        texDesc.filterMode = (subpixelInterpolation) ? cudaFilterModeLinear : cudaFilterModePoint;
+//
+//        cudaResourceDesc resDesc;
+//        resDesc.resType = cudaResourceTypePitch2D;
+//        resDesc.res.pitch2D.desc = cudaCreateChannelDesc<Type>();
+//        resDesc.res.pitch2D.devPtr = buffer_dmp.getBuffer();
+//        resDesc.res.pitch2D.width = buffer_dmp.getSize()[0];
+//        resDesc.res.pitch2D.height = buffer_dmp.getSize()[1];
+//        resDesc.res.pitch2D.pitchInBytes = buffer_dmp.getPitch();
 
         // create texture object
         // note: we only have to do this once
-        CHECK_CUDA_RETURN_ERROR(cudaCreateTextureObject(&textureObj, &resDesc, &texDesc, nullptr));
+//        CHECK_CUDA_RETURN_ERROR(cudaCreateTextureObject(&textureObj, &resDesc, &texDesc, nullptr));
     }
 
-    ~CudaTexture()
-    {
-        CHECK_CUDA_RETURN_ERROR_NOEXCEPT(cudaDestroyTextureObject(textureObj));
-    }
+//    ~CudaTexture()
+//    {
+//        CHECK_CUDA_RETURN_ERROR_NOEXCEPT(cudaDestroyTextureObject(textureObj));
+//    }
 };
 
 struct CudaRGBATexture
 {
-    cudaTextureObject_t textureObj = 0;
+//    cudaTextureObject_t textureObj = 0;
+    id<MTLTexture> textureObj;
 
     CudaRGBATexture(CudaDeviceMemoryPitched<CudaRGBA, 2>& buffer_dmp)
     {
-        cudaTextureDesc  texDesc;
-        memset(&texDesc, 0, sizeof(cudaTextureDesc));
-        texDesc.normalizedCoords = false;
-        texDesc.addressMode[0] = cudaAddressModeClamp;
-        texDesc.addressMode[1] = cudaAddressModeClamp;
-        texDesc.addressMode[2] = cudaAddressModeClamp;
+        MTLTextureDescriptor * descriptor = [MTLTextureDescriptor new];
 
-#if defined(DEPTHMAP_TEXTURE_USE_UCHAR) && defined(DEPTHMAP_TEXTURE_USE_INTERPOLATION)
-        texDesc.readMode = cudaReadModeNormalizedFloat; // uchar to float [0:1], see tex2d_float4 function
-
-#else
-        texDesc.readMode = cudaReadModeElementType;
-#endif
-
-#if defined DEPTHMAP_TEXTURE_USE_INTERPOLATION
-        texDesc.filterMode = cudaFilterModeLinear;
-#else
-        texDesc.filterMode = cudaFilterModePoint;
-#endif
-
-        cudaResourceDesc resDesc;
-        resDesc.resType = cudaResourceTypePitch2D;
-
-#ifdef DEPTHMAP_TEXTURE_USE_HALF
-        resDesc.res.pitch2D.desc = cudaCreateChannelDescHalf4();
-#else
-        resDesc.res.pitch2D.desc = cudaCreateChannelDesc<CudaRGBA>();
-#endif
-
-        resDesc.res.pitch2D.devPtr = buffer_dmp.getBuffer();
-        resDesc.res.pitch2D.width = buffer_dmp.getSize()[0];
-        resDesc.res.pitch2D.height = buffer_dmp.getSize()[1];
-        resDesc.res.pitch2D.pitchInBytes = buffer_dmp.getPitch();
-
-        // create texture object
-        // note: we only have to do this once
-        CHECK_CUDA_RETURN_ERROR(cudaCreateTextureObject(&textureObj, &resDesc, &texDesc, nullptr));
+        descriptor.pixelFormat = MTLPixelFormatBGRA8Unorm;
+        descriptor.textureType      = MTLTextureType2D;
+        descriptor.width            = buffer_dmp.getSize()[0];
+        descriptor.height           = buffer_dmp.getSize()[1];
+        descriptor.storageMode      = MTLStorageModePrivate;
+        textureObj = [_device newTextureWithDescriptor:descriptor];
+        
+        //TODO: sampler settings MTLSamplerDescriptor
+        MTLSamplerDescriptor* samplerDesc = [MTLSamplerDescriptor new];
+        samplerDesc.normalizedCoordinates = normalizedCoords;
+        samplerDesc.rAddressMode = MTLSamplerAddressModeClampToEdge;
+        samplerDesc.sAddressMode = MTLSamplerAddressModeClampToEdge;
+        samplerDesc.tAddressMode = MTLSamplerAddressModeClampToEdge;
+        
+        id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+        id<MTLSamplerState> state = [device makeSamplerState(descriptor: samplerDesc)];
+//        cudaTextureDesc  texDesc;
+//        memset(&texDesc, 0, sizeof(cudaTextureDesc));
+//        texDesc.normalizedCoords = false;
+//        texDesc.addressMode[0] = cudaAddressModeClamp;
+//        texDesc.addressMode[1] = cudaAddressModeClamp;
+//        texDesc.addressMode[2] = cudaAddressModeClamp;
+//
+//#if defined(DEPTHMAP_TEXTURE_USE_UCHAR) && defined(DEPTHMAP_TEXTURE_USE_INTERPOLATION)
+//        texDesc.readMode = cudaReadModeNormalizedFloat; // uchar to float [0:1], see tex2d_float4 function
+//
+//#else
+//        texDesc.readMode = cudaReadModeElementType;
+//#endif
+//
+//#if defined DEPTHMAP_TEXTURE_USE_INTERPOLATION
+//        texDesc.filterMode = cudaFilterModeLinear;
+//#else
+//        texDesc.filterMode = cudaFilterModePoint;
+//#endif
+//
+//        cudaResourceDesc resDesc;
+//        resDesc.resType = cudaResourceTypePitch2D;
+//
+//#ifdef DEPTHMAP_TEXTURE_USE_HALF
+//        resDesc.res.pitch2D.desc = cudaCreateChannelDescHalf4();
+//#else
+//        resDesc.res.pitch2D.desc = cudaCreateChannelDesc<CudaRGBA>();
+//#endif
+//
+//        resDesc.res.pitch2D.devPtr = buffer_dmp.getBuffer();
+//        resDesc.res.pitch2D.width = buffer_dmp.getSize()[0];
+//        resDesc.res.pitch2D.height = buffer_dmp.getSize()[1];
+//        resDesc.res.pitch2D.pitchInBytes = buffer_dmp.getPitch();
+//
+//        // create texture object
+//        // note: we only have to do this once
+//        CHECK_CUDA_RETURN_ERROR(cudaCreateTextureObject(&textureObj, &resDesc, &texDesc, nullptr));
     }
 
-    ~CudaRGBATexture()
-    {
-        CHECK_CUDA_RETURN_ERROR_NOEXCEPT(cudaDestroyTextureObject(textureObj));
-    }
+//    ~CudaRGBATexture()
+//    {
+//        CHECK_CUDA_RETURN_ERROR_NOEXCEPT(cudaDestroyTextureObject(textureObj));
+//    }
 };
 
 } // namespace depthMap
