@@ -6,15 +6,6 @@
 
 #pragma once
 
-// allows code sharing between NVCC and other compilers
-//#if defined(__NVCC__)
-//#define CUDA_HOST_DEVICE __host__ __device__
-//#define CUDA_HOST __host__
-//#else
-//#define CUDA_HOST_DEVICE
-//#define CUDA_HOST
-//#endif
-
 namespace depthMap {
 
 template <typename T>
@@ -22,18 +13,18 @@ class BufPtr
 {
 public:
 
-    CUDA_HOST_DEVICE BufPtr(T* ptr, size_t pitch)
+    BufPtr(T* ptr, size_t pitch)
         : _ptr( (unsigned char*)ptr )
         , _pitch( pitch )
     {}
 
-    CUDA_HOST_DEVICE inline T* ptr()  { return (T*)(_ptr); }
-    CUDA_HOST_DEVICE inline T* row(size_t y) { return (T*)(_ptr + y * _pitch); }
-    CUDA_HOST_DEVICE inline T& at(size_t x, size_t y) { return row(y)[x]; }
+    inline T* ptr()  { return (T*)(_ptr); }
+    inline T* row(size_t y) { return (T*)(_ptr + y * _pitch); }
+    inline T& at(size_t x, size_t y) { return row(y)[x]; }
 
-    CUDA_HOST_DEVICE inline const T* ptr() const { return (const T*)(_ptr); }
-    CUDA_HOST_DEVICE inline const T* row(size_t y) const { return (const T*)(_ptr + y * _pitch); }
-    CUDA_HOST_DEVICE inline const T& at(size_t x, size_t y) const { return row(y)[x]; }
+    inline const T* ptr() const { return (const T*)(_ptr); }
+    inline const T* row(size_t y) const { return (const T*)(_ptr + y * _pitch); }
+    inline const T& at(size_t x, size_t y) const { return row(y)[x]; }
 
 private:
     BufPtr();

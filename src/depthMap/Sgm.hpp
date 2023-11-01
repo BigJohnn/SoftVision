@@ -43,8 +43,9 @@ public:
         const mvsUtils::TileParams& tileParams, 
         const SgmParams& sgmParams, 
         bool computeDepthSimMap,
-        bool computeNormalMap,
-        void* device);
+        bool computeNormalMap
+//        void* device
+        );
 
     // no default constructor
     Sgm() = delete;
@@ -150,7 +151,7 @@ private:
     CudaDeviceMemoryPitched<TSimAcc, 2> _volumeSliceAccB_dmp;   //< for optimization: volume accumulation slice B
     CudaDeviceMemoryPitched<TSimAcc, 2> _volumeAxisAcc_dmp;     //< for optimization: volume accumulation axis
 //    cudaStream_t _stream;                                       //< stream for gpu execution
-    void* _device;
+//    void* _device;
 };
 
 } // namespace depthMap

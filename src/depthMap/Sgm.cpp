@@ -25,14 +25,15 @@ Sgm::Sgm(const mvsUtils::MultiViewParams& mp,
          const mvsUtils::TileParams& tileParams, 
          const SgmParams& sgmParams,
          bool computeDepthSimMap,
-         bool computeNormalMap,
-         void* device)
+         bool computeNormalMap
+//         void* device
+         )
     : _mp(mp)
     , _tileParams(tileParams)
     , _sgmParams(sgmParams)
     , _computeDepthSimMap(computeDepthSimMap || sgmParams.exportIntermediateDepthSimMaps)
     , _computeNormalMap(computeNormalMap || sgmParams.exportIntermediateNormalMaps)
-    , _device(device)
+//    , _device(device)
 {
     // get tile maximum dimensions
     const int downscale = _sgmParams.scale * _sgmParams.stepXY;
