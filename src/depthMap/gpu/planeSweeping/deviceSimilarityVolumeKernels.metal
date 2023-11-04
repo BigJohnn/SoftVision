@@ -7,9 +7,9 @@
 #pragma once
 
 #include <mvsData/ROI.hpp>
-#include <depthMap/cuda/device/matrix.cuh>
-#include <depthMap/cuda/device/Patch.cuh>
-#include <depthMap/cuda/planeSweeping/similarity.hpp>
+#include <depthMap/gpu/device/matrix.cuh>
+#include <depthMap/gpu/device/Patch.cuh>
+#include <depthMap/gpu/planeSweeping/similarity.hpp>
 
 
 namespace depthMap {

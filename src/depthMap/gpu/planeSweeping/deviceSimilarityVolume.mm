@@ -7,7 +7,7 @@
 #include "deviceSimilarityVolume.hpp"
 #include "deviceSimilarityVolumeKernels.cuh"
 
-#include <depthMap/cuda/host/divUp.hpp>
+#include <depthMap/gpu/host/divUp.hpp>
 
 #include <map>
 

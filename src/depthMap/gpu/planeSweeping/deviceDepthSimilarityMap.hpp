@@ -9,8 +9,8 @@
 #include <mvsData/ROI.hpp>
 #include <depthMap/SgmParams.hpp>
 #include <depthMap/RefineParams.hpp>
-#include <depthMap/cuda/host/memory.hpp>
-#include <depthMap/cuda/host/DeviceMipmapImage.hpp>
+#include <depthMap/gpu/host/memory.hpp>
+#include <depthMap/gpu/host/DeviceMipmapImage.hpp>
 
 
 namespace depthMap {
@@ -47,11 +47,10 @@ extern void cuda_normalMapUpscale(CudaDeviceMemoryPitched<float3, 2>& out_upscal
  * @param[in] roi the 2d region of interest
  * @param[in] stream the stream for gpu execution
  */
-extern void cuda_depthThicknessSmoothThickness(CudaDeviceMemoryPitched<float2, 2>& inout_depthThicknessMap_dmp,
+extern void depthThicknessSmoothThickness(CudaDeviceMemoryPitched<float2, 2>& inout_depthThicknessMap_dmp,
                                              const SgmParams& sgmParams,
                                              const RefineParams& refineParams,
-                                             const ROI& roi,
-                                             cudaStream_t stream);
+                                             const ROI& roi);
 
 /**
  * @brief Upscale the given depth/thickness map, filter masked pixels and compute pixSize from thickness.

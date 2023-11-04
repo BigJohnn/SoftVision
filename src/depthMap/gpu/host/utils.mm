@@ -53,3 +53,4 @@ void getDeviceMemoryInfo(double& availableMB, double& usedMB, double& totalMB)
 
 }
 
+

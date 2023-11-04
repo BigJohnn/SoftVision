@@ -194,7 +194,7 @@ void Sgm::smoothThicknessMap(const Tile& tile, const RefineParams& refineParams)
     const ROI downscaledRoi = downscaleROI(tile.roi, _sgmParams.scale * _sgmParams.stepXY);
 
     // in-place result thickness map smoothing with adjacent pixels
-    cuda_depthThicknessSmoothThickness(_depthThicknessMap_dmp, _sgmParams, refineParams, downscaledRoi, _device);
+    depthThicknessSmoothThickness(_depthThicknessMap_dmp, _sgmParams, refineParams, downscaledRoi);
 
     LOG_X(tile << "SGM Smooth thickness map done.");
 }

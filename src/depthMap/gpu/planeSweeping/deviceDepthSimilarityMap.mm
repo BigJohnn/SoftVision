@@ -3,7 +3,9 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License,
 // v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
-#import <Metal/Metal.h>
+//#import <Metal/Metal.h>
+
+#import <depthMap/gpu/host/ComputePipeline.hpp>
 
 #include "deviceDepthSimilarityMap.hpp"
 //#include "deviceDepthSimilarityMapKernels.cuh"
@@ -11,42 +13,19 @@
 #include <depthMap/gpu/host/divUp.hpp>
 
 #include <utility>
+#include <mvsData/ROI_d.hpp>
+
+#include <simd/simd.h>
 
 
 namespace depthMap {
 
-void cuda_depthSimMapCopyDepthOnly(CudaDeviceMemoryPitched<float2, 2>& out_depthSimMap_dmp,
-                                            const CudaDeviceMemoryPitched<float2, 2>& in_depthSimMap_dmp,
+void cuda_depthSimMapCopyDepthOnly(CudaDeviceMemoryPitched<vector_float2, 2>& out_depthSimMap_dmp,
+                                            const CudaDeviceMemoryPitched<vector_float2, 2>& in_depthSimMap_dmp,
                                             float defaultSim)
 {
     // get output map dimensions
     const CudaSize<2>& depthSimMapDim = out_depthSimMap_dmp.getSize();
-
-    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
-    id<MTLLibrary> defaultLibrary = [device newDefaultLibrary];
-    if (defaultLibrary == nil)
-    {
-        NSLog(@"Failed to find the default library.");
-        return nil;
-    }
-
-    id<MTLFunction> addFunction = [defaultLibrary newFunctionWithName:@"add_arrays"];
-    if (addFunction == nil)
-    {
-        NSLog(@"Failed to find the adder function.");
-        return nil;
-    }
-
-    // Create a compute pipeline state object.
-    _mAddFunctionPSO = [_mDevice newComputePipelineStateWithFunction: addFunction error:&error];
-    if (_mAddFunctionPSO == nil)
-    {
-        //  If the Metal API validation is enabled, you can find out more information about what
-        //  went wrong.  (Metal API validation is enabled by default when a debug build is run
-        //  from Xcode)
-        NSLog(@"Failed to created pipeline state object, error %@.", error);
-        return nil;
-    }
     
     // kernel launch parameters
     const int blockSize = 16;
@@ -67,7 +46,7 @@ void cuda_depthSimMapCopyDepthOnly(CudaDeviceMemoryPitched<float2, 2>& out_depth
     CHECK_CUDA_ERROR();
 }
 
-__host__ void cuda_normalMapUpscale(CudaDeviceMemoryPitched<float3, 2>& out_upscaledMap_dmp,
+void cuda_normalMapUpscale(CudaDeviceMemoryPitched<float3, 2>& out_upscaledMap_dmp,
                                     const CudaDeviceMemoryPitched<float3, 2>& in_map_dmp,
                                     const ROI& roi,
                                     cudaStream_t stream)
@@ -95,11 +74,10 @@ __host__ void cuda_normalMapUpscale(CudaDeviceMemoryPitched<float3, 2>& out_upsc
     CHECK_CUDA_ERROR();
 }
 
-__host__ void cuda_depthThicknessSmoothThickness(CudaDeviceMemoryPitched<float2, 2>& inout_depthThicknessMap_dmp,
+void depthThicknessSmoothThickness(CudaDeviceMemoryPitched<float2, 2>& inout_depthThicknessMap_dmp,
                                                const SgmParams& sgmParams,
                                                const RefineParams& refineParams,
-                                               const ROI& roi,
-                                               cudaStream_t stream)
+                                               const ROI& roi)
 {
     const int sgmScaleStep = sgmParams.scale * sgmParams.stepXY;
     const int refineScaleStep = refineParams.scale * refineParams.stepXY;
@@ -112,24 +90,42 @@ __host__ void cuda_depthThicknessSmoothThickness(CudaDeviceMemoryPitched<float2,
     const float minThicknessInflate = refineParams.halfNbDepths / maxNbRefineSamples;
     const float maxThicknessInflate = refineParams.halfNbDepths / minNbRefineSamples;
 
+    // Calculate a threadgroup size.
+    NSUInteger threadGroupSize = 8;
+    MTLSize gridSize = MTLSizeMake(divUp(roi.width(), threadGroupSize), divUp(roi.height(), threadGroupSize), 1);
+    MTLSize threadgroupSize = MTLSizeMake(threadGroupSize, threadGroupSize, 1);
+    
+    ROI_d roi_d;
+    roi_d.lt = simd_make_float2(roi.x.begin, roi.y.begin);
+    roi_d.rb = simd_make_float2(roi.x.end, roi.y.end);
+    NSArray* args = @[inout_depthThicknessMap_dmp.getBuffer(),
+                      inout_depthThicknessMap_dmp.getPitch(),
+                      minThicknessInflate,
+                      maxThicknessInflate,
+                      roi_d
+    ];
+    
+    [ComputePipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthThicknessMapSmoothThickness_kernel" Args:args];
+    
+    
     // kernel launch parameters
-    const int blockSize = 8;
-    const dim3 block(blockSize, blockSize, 1);
-    const dim3 grid(divUp(roi.width(), blockSize), divUp(roi.height(), blockSize), 1);
-
-    // kernel execution
-    depthThicknessMapSmoothThickness_kernel<<<grid, block, 0, stream>>>(
-        inout_depthThicknessMap_dmp.getBuffer(),
-        inout_depthThicknessMap_dmp.getPitch(),
-        minThicknessInflate,
-        maxThicknessInflate,
-        roi);
-
-    // check cuda last error
-    CHECK_CUDA_ERROR();
+//    const int blockSize = 8;
+//    const dim3 block(blockSize, blockSize, 1);
+//    const dim3 grid(divUp(roi.width(), blockSize), divUp(roi.height(), blockSize), 1);
+//
+//    // kernel execution
+//    depthThicknessMapSmoothThickness_kernel<<<grid, block, 0, stream>>>(
+//        inout_depthThicknessMap_dmp.getBuffer(),
+//        inout_depthThicknessMap_dmp.getPitch(),
+//        minThicknessInflate,
+//        maxThicknessInflate,
+//        roi);
+//
+//    // check cuda last error
+//    CHECK_CUDA_ERROR();
 }
 
-__host__ void cuda_computeSgmUpscaledDepthPixSizeMap(CudaDeviceMemoryPitched<float2, 2>& out_upscaledDepthPixSizeMap_dmp,
+void cuda_computeSgmUpscaledDepthPixSizeMap(CudaDeviceMemoryPitched<float2, 2>& out_upscaledDepthPixSizeMap_dmp,
                                                      const CudaDeviceMemoryPitched<float2, 2>& in_sgmDepthThicknessMap_dmp,
                                                      const int rcDeviceCameraParamsId,
                                                      const DeviceMipmapImage& rcDeviceMipmapImage,
@@ -191,7 +187,7 @@ __host__ void cuda_computeSgmUpscaledDepthPixSizeMap(CudaDeviceMemoryPitched<flo
     CHECK_CUDA_ERROR();
 }
 
-__host__ void cuda_depthSimMapComputeNormal(CudaDeviceMemoryPitched<float3, 2>& out_normalMap_dmp,
+void cuda_depthSimMapComputeNormal(CudaDeviceMemoryPitched<float3, 2>& out_normalMap_dmp,
                                             const CudaDeviceMemoryPitched<float2, 2>& in_depthSimMap_dmp,
                                             const int rcDeviceCameraParamsId,
                                             const int stepXY,
@@ -216,7 +212,7 @@ __host__ void cuda_depthSimMapComputeNormal(CudaDeviceMemoryPitched<float3, 2>& 
     CHECK_CUDA_ERROR();
 }
 
-__host__ void cuda_depthSimMapOptimizeGradientDescent(CudaDeviceMemoryPitched<float2, 2>& out_optimizeDepthSimMap_dmp,
+void cuda_depthSimMapOptimizeGradientDescent(CudaDeviceMemoryPitched<float2, 2>& out_optimizeDepthSimMap_dmp,
                                                       CudaDeviceMemoryPitched<float, 2>& inout_imgVariance_dmp,
                                                       CudaDeviceMemoryPitched<float, 2>& inout_tmpOptDepthMap_dmp,
                                                       const CudaDeviceMemoryPitched<float2, 2>& in_sgmDepthPixSizeMap_dmp,

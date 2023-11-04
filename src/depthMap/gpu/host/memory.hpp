@@ -360,14 +360,24 @@ public:
     // see below with copy() functions
     void copyFrom( const CudaDeviceMemoryPitched<Type, Dim>& src, cudaStream_t stream = 0);
 
-    inline Type *getBuffer()
+//    inline Type *getBuffer()
+//    {
+//        return buffer;
+//    }
+//    inline const Type *getBuffer() const
+//    {
+//        return buffer;
+//    }
+    
+    inline id<MTLBuffer> getBuffer()
     {
-        return buffer;
+        return _buffer;
     }
-    inline const Type *getBuffer() const
+    inline const id<MTLBuffer> getBuffer() const
     {
-        return buffer;
+        return _buffer;
     }
+    
     inline Type& operator()(size_t x)
     {
         return buffer[x];

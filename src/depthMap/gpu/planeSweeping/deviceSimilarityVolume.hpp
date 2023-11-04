@@ -9,9 +9,9 @@
 #include <mvsData/ROI.hpp>
 #include <depthMap/SgmParams.hpp>
 #include <depthMap/RefineParams.hpp>
-#include <depthMap/cuda/host/memory.hpp>
-#include <depthMap/cuda/host/DeviceMipmapImage.hpp>
-#include <depthMap/cuda/planeSweeping/similarity.hpp>
+#include <depthMap/gpu/host/memory.hpp>
+#include <depthMap/gpu/host/DeviceMipmapImage.hpp>
+#include <depthMap/gpu/planeSweeping/similarity.hpp>
 
 
 namespace depthMap {
