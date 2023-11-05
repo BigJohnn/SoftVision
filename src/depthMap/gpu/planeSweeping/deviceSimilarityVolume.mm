@@ -25,7 +25,7 @@ namespace depthMap {
  * @return recommended or default block size for kernel execution
  */
 template<class T>
-__host__ dim3 getMaxPotentialBlockSize(T kernelFuction)
+dim3 getMaxPotentialBlockSize(T kernelFuction)
 {
     const dim3 defaultBlock(32, 1, 1); // minimal default settings
 
@@ -54,7 +54,7 @@ __host__ dim3 getMaxPotentialBlockSize(T kernelFuction)
     return defaultBlock;
 }
 
-__host__ void cuda_volumeInitialize(CudaDeviceMemoryPitched<TSim, 3>& inout_volume_dmp, TSim value, cudaStream_t stream)
+void cuda_volumeInitialize(CudaDeviceMemoryPitched<TSim, 3>& inout_volume_dmp, TSim value)
 {
     // get input/output volume dimensions
     const CudaSize<3>& volDim = inout_volume_dmp.getSize();
@@ -76,7 +76,7 @@ __host__ void cuda_volumeInitialize(CudaDeviceMemoryPitched<TSim, 3>& inout_volu
     CHECK_CUDA_ERROR();
 }
 
-__host__ void cuda_volumeInitialize(CudaDeviceMemoryPitched<TSimRefine, 3>& inout_volume_dmp, TSimRefine value, cudaStream_t stream)
+void cuda_volumeInitialize(CudaDeviceMemoryPitched<TSimRefine, 3>& inout_volume_dmp, TSimRefine value)
 {
     // get input/output volume dimensions
     const CudaSize<3>& volDim = inout_volume_dmp.getSize();
@@ -98,7 +98,7 @@ __host__ void cuda_volumeInitialize(CudaDeviceMemoryPitched<TSimRefine, 3>& inou
     CHECK_CUDA_ERROR();
 }
 
-__host__ void cuda_volumeAdd(CudaDeviceMemoryPitched<TSimRefine, 3>& inout_volume_dmp, 
+void cuda_volumeAdd(CudaDeviceMemoryPitched<TSimRefine, 3>& inout_volume_dmp,
                              const CudaDeviceMemoryPitched<TSimRefine, 3>& in_volume_dmp, 
                              cudaStream_t stream)
 {
@@ -124,7 +124,7 @@ __host__ void cuda_volumeAdd(CudaDeviceMemoryPitched<TSimRefine, 3>& inout_volum
     CHECK_CUDA_ERROR();
 }
 
-__host__ void cuda_volumeUpdateUninitializedSimilarity(const CudaDeviceMemoryPitched<TSim, 3>& in_volBestSim_dmp,
+void cuda_volumeUpdateUninitializedSimilarity(const CudaDeviceMemoryPitched<TSim, 3>& in_volBestSim_dmp,
                                                        CudaDeviceMemoryPitched<TSim, 3>& inout_volSecBestSim_dmp,
                                                        cudaStream_t stream)
 {
@@ -152,7 +152,7 @@ __host__ void cuda_volumeUpdateUninitializedSimilarity(const CudaDeviceMemoryPit
     CHECK_CUDA_ERROR();
 }
 
-__host__ void cuda_volumeComputeSimilarity(CudaDeviceMemoryPitched<TSim, 3>& out_volBestSim_dmp,
+void cuda_volumeComputeSimilarity(CudaDeviceMemoryPitched<TSim, 3>& out_volBestSim_dmp,
                                            CudaDeviceMemoryPitched<TSim, 3>& out_volSecBestSim_dmp,
                                            const CudaDeviceMemoryPitched<float, 2>& in_depths_dmp,
                                            const int rcDeviceCameraParamsId,
@@ -161,8 +161,7 @@ __host__ void cuda_volumeComputeSimilarity(CudaDeviceMemoryPitched<TSim, 3>& out
                                            const DeviceMipmapImage& tcDeviceMipmapImage,
                                            const SgmParams& sgmParams,
                                            const Range& depthRange,
-                                           const ROI& roi,
-                                           cudaStream_t stream)
+                                           const ROI& roi)
 {
     // get mipmap images level and dimensions
     const float rcMipmapLevel = rcDeviceMipmapImage.getLevel(sgmParams.scale);
@@ -259,7 +258,7 @@ extern void cuda_volumeRefineSimilarity(CudaDeviceMemoryPitched<TSimRefine, 3>& 
 }
 
 
-__host__ void cuda_volumeAggregatePath(CudaDeviceMemoryPitched<TSim, 3>& out_volAgr_dmp,
+void cuda_volumeAggregatePath(CudaDeviceMemoryPitched<TSim, 3>& out_volAgr_dmp,
                                        CudaDeviceMemoryPitched<TSimAcc, 2>& inout_volSliceAccA_dmp,
                                        CudaDeviceMemoryPitched<TSimAcc, 2>& inout_volSliceAccB_dmp,
                                        CudaDeviceMemoryPitched<TSimAcc, 2>& inout_volAxisAcc_dmp,
@@ -373,7 +372,7 @@ __host__ void cuda_volumeAggregatePath(CudaDeviceMemoryPitched<TSim, 3>& out_vol
     CHECK_CUDA_ERROR();
 }
 
-__host__ void cuda_volumeOptimize(CudaDeviceMemoryPitched<TSim, 3>& out_volSimFiltered_dmp,
+void cuda_volumeOptimize(CudaDeviceMemoryPitched<TSim, 3>& out_volSimFiltered_dmp,
                                   CudaDeviceMemoryPitched<TSimAcc, 2>& inout_volSliceAccA_dmp,
                                   CudaDeviceMemoryPitched<TSimAcc, 2>& inout_volSliceAccB_dmp,
                                   CudaDeviceMemoryPitched<TSimAcc, 2>& inout_volAxisAcc_dmp,
@@ -424,7 +423,7 @@ __host__ void cuda_volumeOptimize(CudaDeviceMemoryPitched<TSim, 3>& out_volSimFi
     }
 }
 
-__host__ void cuda_volumeRetrieveBestDepth(CudaDeviceMemoryPitched<float2, 2>& out_sgmDepthThicknessMap_dmp,
+void cuda_volumeRetrieveBestDepth(CudaDeviceMemoryPitched<float2, 2>& out_sgmDepthThicknessMap_dmp,
                                            CudaDeviceMemoryPitched<float2, 2>& out_sgmDepthSimMap_dmp,
                                            const CudaDeviceMemoryPitched<float, 2>& in_depths_dmp, 
                                            const CudaDeviceMemoryPitched<TSim, 3>& in_volSim_dmp, 

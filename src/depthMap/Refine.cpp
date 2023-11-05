@@ -122,13 +122,12 @@ void Refine::refineRc(const Tile& tile, const CudaDeviceMemoryPitched<float2, 2>
         // - upscale SGM depth/thickness map
         // - filter masked pixels (alpha)
         // - compute pixSize from SGM thickness
-        cuda_computeSgmUpscaledDepthPixSizeMap(_sgmDepthPixSizeMap_dmp,
+        computeSgmUpscaledDepthPixSizeMap(_sgmDepthPixSizeMap_dmp,
                                                in_sgmDepthThicknessMap_dmp,
                                                rcDeviceCameraParamsId,
                                                rcDeviceMipmapImage,
                                                _refineParams,
-                                               downscaledRoi,
-                                               _stream);
+                                               downscaledRoi);
 
         // export intermediate depth/pixSize map (if requested by user)
         if(_refineParams.exportIntermediateDepthSimMaps)
@@ -137,7 +136,7 @@ void Refine::refineRc(const Tile& tile, const CudaDeviceMemoryPitched<float2, 2>
         // upscale SGM normal map (if needed)
         if(_refineParams.useSgmNormalMap && in_sgmNormalMap_dmp.getBuffer() != nullptr)
         {
-            cuda_normalMapUpscale(_sgmNormalMap_dmp, in_sgmNormalMap_dmp, downscaledRoi, _stream);
+            cuda_normalMapUpscale(_sgmNormalMap_dmp, in_sgmNormalMap_dmp, downscaledRoi);
         }
     }
 
@@ -150,7 +149,7 @@ void Refine::refineRc(const Tile& tile, const CudaDeviceMemoryPitched<float2, 2>
     else
     {
         LOG_X(tile << "Refine and fuse depth/sim map volume disabled.");
-        cuda_depthSimMapCopyDepthOnly(_refinedDepthSimMap_dmp, _sgmDepthPixSizeMap_dmp, 1.0f, _stream);
+        depthSimMapCopyDepthOnly(_refinedDepthSimMap_dmp, _sgmDepthPixSizeMap_dmp, 1.0f, _stream);
     }
 
     // export intermediate depth/sim map (if requested by user)
@@ -191,7 +190,7 @@ void Refine::refineAndFuseDepthSimMap(const Tile& tile)
 
     // initialize the similarity volume at 0
     // each tc filtered and inverted similarity value will be summed in this volume
-    cuda_volumeInitialize(_volumeRefineSim_dmp, TSimRefine(0.f), _stream);
+    cuda_volumeInitialize(_volumeRefineSim_dmp, TSimRefine(0.f));
 
     // get device cache instance
     DeviceCache& deviceCache = DeviceCache::getInstance();

@@ -22,7 +22,7 @@ namespace depthMap {
  * @param[in] value the value to initalize with
  * @param[in] stream the stream for gpu execution
  */
-extern void cuda_volumeInitialize(CudaDeviceMemoryPitched<TSim, 3>& inout_volume_dmp, TSim value, cudaStream_t stream);
+extern void cuda_volumeInitialize(CudaDeviceMemoryPitched<TSim, 3>& inout_volume_dmp, TSim value);
 
 /**
  * @brief Initialize all the given similarity volume in device memory to the given value.
@@ -30,7 +30,7 @@ extern void cuda_volumeInitialize(CudaDeviceMemoryPitched<TSim, 3>& inout_volume
  * @param[in] value the value to initalize with
  * @param[in] stream the stream for gpu execution
  */
-extern void cuda_volumeInitialize(CudaDeviceMemoryPitched<TSimRefine, 3>& inout_volume_dmp, TSimRefine value, cudaStream_t stream);
+extern void cuda_volumeInitialize(CudaDeviceMemoryPitched<TSimRefine, 3>& inout_volume_dmp, TSimRefine value);
 
 /**
  * @brief Add similarity values from a given volume to another given volume.
@@ -60,7 +60,6 @@ extern void cuda_volumeUpdateUninitializedSimilarity(const CudaDeviceMemoryPitch
  * @param[in] sgmParams the Semi Global Matching parameters
  * @param[in] depthRange the volume depth range to compute
  * @param[in] roi the 2d region of interest
- * @param[in] stream the stream for gpu execution
  */
 extern void cuda_volumeComputeSimilarity(CudaDeviceMemoryPitched<TSim, 3>& out_volBestSim_dmp, 
                                          CudaDeviceMemoryPitched<TSim, 3>& out_volSecBestSim_dmp,
@@ -71,8 +70,7 @@ extern void cuda_volumeComputeSimilarity(CudaDeviceMemoryPitched<TSim, 3>& out_v
                                          const DeviceMipmapImage& tcDeviceMipmapImage,
                                          const SgmParams& sgmParams, 
                                          const Range& depthRange,
-                                         const ROI& roi,
-                                         cudaStream_t stream);
+                                         const ROI& roi);
 
 /**
  * @brief Refine the best similarity volume for the given RC / TC.

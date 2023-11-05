@@ -1,9 +1,3 @@
-// This file is part of the AliceVision project.
-// Copyright (c) 2017 AliceVision contributors.
-// This Source Code Form is subject to the terms of the Mozilla Public License,
-// v. 2.0. If a copy of the MPL was not distributed with this file,
-// You can obtain one at https://mozilla.org/MPL/2.0/.
-
 #pragma once
 
 #include <mvsData/ROI_d.hpp>
@@ -22,7 +16,7 @@ namespace depthMap {
 /**
  * @return (smoothStep, energy)
  */
-__device__ float2 getCellSmoothStepEnergy(const DeviceCameraParams& rcDeviceCamParams,
+kernel float2 getCellSmoothStepEnergy(const DeviceCameraParams& rcDeviceCamParams,
                                           const cudaTextureObject_t in_depth_tex,
                                           const float2& cell0,
                                           const float2& offsetRoi)
@@ -100,7 +94,7 @@ __device__ float2 getCellSmoothStepEnergy(const DeviceCameraParams& rcDeviceCamP
     return out;
 }
 
-__device__ static inline float orientedPointPlaneDistanceNormalizedNormal(const float3& point,
+kernel static inline float orientedPointPlaneDistanceNormalizedNormal(const float3& point,
                                                                           const float3& planePoint,
                                                                           const float3& planeNormalNormalized)
 {
@@ -134,15 +128,15 @@ kernel void mapUpscale_kernel(T* out_upscaledMap_d, int out_upscaledMap_p,
     const unsigned int x = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned int y = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if(x >= roi.width() || y >= roi.height())
+    if(x >= roiWidth || y >= roiHeight)
         return;
 
     const float ox = (float(x) - 0.5f) * ratio;
     const float oy = (float(y) - 0.5f) * ratio;
 
     // nearest neighbor, no interpolation
-    const int xp = min(int(floor(ox + 0.5)), int(roi.width()  * ratio) - 1);
-    const int yp = min(int(floor(oy + 0.5)), int(roi.height() * ratio) - 1);
+    const int xp = min(int(floor(ox + 0.5)), int(roiWidth  * ratio) - 1);
+    const int yp = min(int(floor(oy + 0.5)), int(roiHeight * ratio) - 1);
 
     // write output upscaled map
     *get2DBufferAt(out_upscaledMap_d, out_upscaledMap_p, x, y) = *get2DBufferAt(in_map_d, in_map_p, xp, yp);
@@ -214,33 +208,38 @@ kernel void depthThicknessMapSmoothThickness_kernel(device float2* inout_depthTh
     // write output smooth thickness
     inout_depthThickness->y = sumCenterDepthDist / nbValidPatchPixels;
 }
-kernel void computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel(float2* out_upscaledDepthPixSizeMap_d, int out_upscaledDepthPixSizeMap_p,
-                                                                         const float2* in_sgmDepthThicknessMap_d, const int in_sgmDepthThicknessMap_p,
-                                                                         const int rcDeviceCameraParamsId, // useful for direct pixSize computation
-                                                                         const cudaTextureObject_t rcMipmapImage_tex,
-                                                                         const unsigned int rcLevelWidth,
-                                                                         const unsigned int rcLevelHeight,
-                                                                         const float rcMipmapLevel,
-                                                                         const int stepXY,
-                                                                         const int halfNbDepths,
-                                                                         const float ratio,
-                                                                         const ROI roi)
+kernel void computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel(device float2* out_upscaledDepthPixSizeMap_d, constant int* out_upscaledDepthPixSizeMap_p,
+                                                                     constant float2* in_sgmDepthThicknessMap_d, constant int* in_sgmDepthThicknessMap_p,
+                                                                     constant int* rcDeviceCameraParamsId, // useful for direct pixSize computation
+//                                                                         const cudaTextureObject_t rcMipmapImage_tex,//TODO: impl
+                                                                         texture2d<half, access::read> rcMipmapImage_tex [[ texture(0) ]]
+                                                                     constant unsigned int* rcLevelWidth,
+                                                                     constant unsigned int* rcLevelHeight,
+                                                                     constant float* rcMipmapLevel,
+                                                                     constant int* stepXY,
+                                                                     constant int* halfNbDepths,
+                                                                     constant float* pRatio,
+                                                                     constant ROI_d* roi,
+                                                                         uint2 index [[thread_position_in_threadgroup]])
 {
-    const unsigned int roiX = blockIdx.x * blockDim.x + threadIdx.x;
-    const unsigned int roiY = blockIdx.y * blockDim.y + threadIdx.y;
-
-    if(roiX >= roi.width() || roiY >= roi.height())
+    const unsigned int roiX = index.x;
+    const unsigned int roiY = index.y;
+    unsigned int roiWidth = roi->rb.x - roi->lt.x;
+    unsigned int roiHeight = roi->rb.y - roi->lt.y;
+    if(roiX >= roiWidth || roiY >= roiHeight)
         return;
+    
+    float ratio = pRatio[0];
 
     // corresponding image coordinates
-    const unsigned int x = (roi.x.begin + roiX) * (unsigned int)(stepXY);
-    const unsigned int y = (roi.y.begin + roiY) * (unsigned int)(stepXY);
+    const unsigned int x = (roi.x.begin + roiX) * (unsigned int)(stepXY[0]);
+    const unsigned int y = (roi.y.begin + roiY) * (unsigned int)(stepXY[0]);
 
     // corresponding output upscaled depth/pixSize map
-    float2* out_depthPixSize = get2DBufferAt(out_upscaledDepthPixSizeMap_d, out_upscaledDepthPixSizeMap_p, roiX, roiY);
+    float2* out_depthPixSize = get2DBufferAt(out_upscaledDepthPixSizeMap_d, out_upscaledDepthPixSizeMap_p[0], roiX, roiY);
 
     // filter masked pixels (alpha < 0.9f)
-    if(tex2DLod<float4>(rcMipmapImage_tex, (float(x) + 0.5f) / float(rcLevelWidth), (float(y) + 0.5f) / float(rcLevelHeight), rcMipmapLevel).w < 0.9f)
+    if(tex2DLod<float4>(rcMipmapImage_tex, (float(x) + 0.5f) / float(rcLevelWidth[0]), (float(y) + 0.5f) / float(rcLevelHeight[0]), rcMipmapLevel[0]).w < 0.9f)
     {
         *out_depthPixSize = make_float2(-2.f, 0.f);
         return;
@@ -254,14 +253,14 @@ kernel void computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel(float2* out
     int xp = floor(ox + 0.5);
     int yp = floor(oy + 0.5);
 
-    xp = min(xp, int(roi.width()  * ratio) - 1);
-    yp = min(yp, int(roi.height() * ratio) - 1);
+    xp = min(xp, int(roiWidth  * ratio) - 1);
+    yp = min(yp, int(roiHeight * ratio) - 1);
 
-    const float2 out_depthThickness = *get2DBufferAt(in_sgmDepthThicknessMap_d, in_sgmDepthThicknessMap_p, xp, yp);
+    const float2 out_depthThickness = *get2DBufferAt(in_sgmDepthThicknessMap_d, in_sgmDepthThicknessMap_p[0], xp, yp);
 
 #ifdef ALICEVISION_DEPTHMAP_COMPUTE_PIXSIZEMAP
     // R camera parameters
-    const DeviceCameraParams& rcDeviceCamParams = constantCameraParametersArray_d[rcDeviceCameraParamsId];
+    const DeviceCameraParams& rcDeviceCamParams = constantCameraParametersArray_d[rcDeviceCameraParamsId[0]];
 
     // get rc 3d point
     const float3 p = get3DPointForPixelAndDepthFromRC(rcDeviceCamParams, make_float2(float(x), float(y)), out_depthThickness.x);
@@ -270,7 +269,7 @@ kernel void computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel(float2* out
     const float out_pixSize = computePixSize(rcDeviceCamParams, p);
 #else
     // compute pixSize from depth thickness
-    const float out_pixSize = out_depthThickness.y / halfNbDepths;
+    const float out_pixSize = out_depthThickness.y / halfNbDepths[0];
 #endif
 
     // write output depth/pixSize
@@ -278,33 +277,35 @@ kernel void computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel(float2* out
     out_depthPixSize->y = out_pixSize;
 }
 
-kernel void computeSgmUpscaledDepthPixSizeMap_bilinear_kernel(float2* out_upscaledDepthPixSizeMap_d, int out_upscaledDepthPixSizeMap_p,
-                                                                  const float2* in_sgmDepthThicknessMap_d, const int in_sgmDepthThicknessMap_p,
-                                                                  const int rcDeviceCameraParamsId, // useful for direct pixSize computation
-                                                                  const cudaTextureObject_t rcMipmapImage_tex,
-                                                                  const unsigned int rcLevelWidth,
-                                                                  const unsigned int rcLevelHeight,
-                                                                  const float rcMipmapLevel,
-                                                                  const int stepXY,
-                                                                  const int halfNbDepths,
-                                                                  const float ratio,
-                                                                  const ROI roi)
+kernel void computeSgmUpscaledDepthPixSizeMap_bilinear_kernel(device float2* out_upscaledDepthPixSizeMap_d, constant int* out_upscaledDepthPixSizeMap_p,
+                                                              device const float2* in_sgmDepthThicknessMap_d, constant int* in_sgmDepthThicknessMap_p,
+                                                                  constant int* rcDeviceCameraParamsId, // useful for direct pixSize computation
+//                                                                  const cudaTextureObject_t rcMipmapImage_tex,
+                                                                  texture2d<half, access::read> rcMipmapImage_tex [[ texture(0) ]],
+                                                              constant unsigned int* rcLevelWidth,
+                                                              constant unsigned int* rcLevelHeight,
+                                                              constant float* rcMipmapLevel,
+                                                              constant int* stepXY,
+                                                              constant int* halfNbDepths,
+                                                              constant float* ratio,
+                                                              constant ROI_d* roi,
+                                                                  uint2 index [[thread_position_in_threadgroup]])
 {
-    const unsigned int roiX = blockIdx.x * blockDim.x + threadIdx.x;
-    const unsigned int roiY = blockIdx.y * blockDim.y + threadIdx.y;
+    const unsigned int roiX = index.x;
+    const unsigned int roiY = index.y;
 
-    if(roiX >= roi.width() || roiY >= roi.height())
+    if(roiX >= roiWidth || roiY >= roiHeight)
         return;
 
     // corresponding image coordinates
-    const unsigned int x = (roi.x.begin + roiX) * (unsigned int)(stepXY);
-    const unsigned int y = (roi.y.begin + roiY) * (unsigned int)(stepXY);
+    const unsigned int x = (roi.x.begin + roiX) * (unsigned int)(stepXY[0]);
+    const unsigned int y = (roi.y.begin + roiY) * (unsigned int)(stepXY[0]);
 
     // corresponding output upscaled depth/pixSize map
     float2* out_depthPixSize = get2DBufferAt(out_upscaledDepthPixSizeMap_d, out_upscaledDepthPixSizeMap_p, roiX, roiY);
 
     // filter masked pixels with alpha
-    if(tex2DLod<float4>(rcMipmapImage_tex, (float(x) + 0.5f) / float(rcLevelWidth), (float(y) + 0.5f) / float(rcLevelHeight), rcMipmapLevel).w < ALICEVISION_DEPTHMAP_RC_MIN_ALPHA)
+    if(tex2DLod<float4>(rcMipmapImage_tex, (float(x) + 0.5f) / float(rcLevelWidth[0]), (float(y) + 0.5f) / float(rcLevelHeight[0]), rcMipmapLevel).w < ALICEVISION_DEPTHMAP_RC_MIN_ALPHA)
     {
         *out_depthPixSize = make_float2(-2.f, 0.f);
         return;
@@ -317,8 +318,8 @@ kernel void computeSgmUpscaledDepthPixSizeMap_bilinear_kernel(float2* out_upscal
     int xp = floor(ox);
     int yp = floor(oy);
 
-    xp = min(xp, int(roi.width()  * ratio) - 2);
-    yp = min(yp, int(roi.height() * ratio) - 2);
+    xp = min(xp, int(roiWidth  * ratio) - 2);
+    yp = min(yp, int(roiHeight * ratio) - 2);
 
     const float2 lu = *get2DBufferAt(in_sgmDepthThicknessMap_d, in_sgmDepthThicknessMap_p, xp, yp);
     const float2 ru = *get2DBufferAt(in_sgmDepthThicknessMap_d, in_sgmDepthThicknessMap_p, xp + 1, yp);
@@ -405,7 +406,7 @@ kernel void depthSimMapComputeNormal_kernel(float3* out_normalMap_d, int out_nor
     const unsigned int roiX = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned int roiY = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if(roiX >= roi.width() || roiY >= roi.height())
+    if(roiX >= roiWidth || roiY >= roiHeight)
         return;
 
     // R camera parameters
@@ -493,7 +494,7 @@ kernel void optimize_varLofLABtoW_kernel(float* out_varianceMap_d, int out_varia
     const unsigned int roiX = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned int roiY = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if(roiX >= roi.width() || roiY >= roi.height())
+    if(roiX >= roiWidth || roiY >= roiHeight)
         return;
 
     // corresponding image coordinates
@@ -527,7 +528,7 @@ kernel void optimize_getOptDeptMapFromOptDepthSimMap_kernel(float* out_tmpOptDep
     const unsigned int roiX = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned int roiY = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if(roiX >= roi.width() || roiY >= roi.height())
+    if(roiX >= roiWidth || roiY >= roiHeight)
         return;
 
     *get2DBufferAt(out_tmpOptDepthMap_d, out_tmpOptDepthMap_p, roiX, roiY) = get2DBufferAt(in_optDepthSimMap_d, in_optDepthSimMap_p, roiX, roiY)->x; // depth
@@ -546,7 +547,7 @@ kernel void optimize_depthSimMap_kernel(float2* out_optimizeDepthSimMap_d, int o
     const unsigned int roiX = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned int roiY = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if(roiX >= roi.width() || roiY >= roi.height())
+    if(roiX >= roiWidth || roiY >= roiHeight)
         return;
 
     // R camera parameters

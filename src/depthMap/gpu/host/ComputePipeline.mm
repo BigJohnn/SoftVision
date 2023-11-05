@@ -21,7 +21,7 @@
         NSLog(@"Failed to find the default library.");
     }
 
-    id<MTLFunction> func = [defaultLibrary newFunctionWithName:@"depthThicknessMapSmoothThickness_kernel"];
+    id<MTLFunction> func = [defaultLibrary newFunctionWithName:kernelFuncName];
     if (func == nil)
     {
         NSLog(@"Failed to find the depthThicknessMapSmoothThickness_kernel function.");
@@ -52,33 +52,20 @@
     id<MTLComputeCommandEncoder> computeEncoder = [commandBuffer computeCommandEncoder];
     assert(computeEncoder != nil);
 
-//    [self encodeAddCommand:computeEncoder];
     // Encode the pipeline state object and its parameters.
     [computeEncoder setComputePipelineState:funcPSO];
     
     for(int i=0;i<args.count; ++i) {
         id elem = args[i];
-        [elem isKindOfClass:[NSNumber class]];
+        
         if([elem isKindOfClass:[NSNumber class]] || [elem isKindOfClass:[NSData class]]) {
             [computeEncoder setBytes:&elem length:sizeof(elem) atIndex:i];
         }
-        else if([elem isKindOfClass:[NSObject class]]) { // TODO: check
+        else if([elem isKindOfClass:[NSObject class]]) { // TODO: check 如何判断这个NSOBject是MTLBuffer 或者MTLTexture
             [computeEncoder setBuffer:elem offset:0 atIndex:i];
         }
     }
-//    [computeEncoder setBuffer:inout_depthThicknessMap_dmp.getBuffer() offset:0 atIndex:0];
-//    auto&& pitch = inout_depthThicknessMap_dmp.getPitch();
-//    [computeEncoder setBytes:&pitch length:sizeof(pitch) atIndex:1];
-//    [computeEncoder setBytes:&minThicknessInflate length:sizeof(minThicknessInflate) atIndex:2];
-//    [computeEncoder setBytes:&maxThicknessInflate length:sizeof(minThicknessInflate) atIndex:3];
-//
-//    ROI_d roi_d;
-//    roi_d.lt = simd_make_float2(roi.x.begin, roi.y.begin);
-//    roi_d.rb = simd_make_float2(roi.x.end, roi.y.end);
-//
-//
-//    [computeEncoder setBytes:&roi_d length:sizeof(roi_d) atIndex:4];
-
+    
     // Encode the compute command.
     [computeEncoder dispatchThreads:gridSize
               threadsPerThreadgroup:threadgroupSize];

@@ -70,14 +70,14 @@ public:
      * @note Normalized coordinates: texture coordinates (x,y) in [0, 1]
      * @return CUDA mipmapped array texture object with normalized coordinates
      */
-    inline cudaTextureObject_t getTextureObject() const { return _textureObject; }
+    inline id<MTLTexture> getTextureObject() const { return _textureObject; }
 
 private:
 
     // private members
-
-    cudaMipmappedArray_t _mipmappedArray = nullptr;    //< mipmapped array in device memory
-    cudaTextureObject_t _textureObject = 0;            //< mipmapped array texture object with normalized coordinates
+    
+//    cudaMipmappedArray_t _mipmappedArray = nullptr;    //< mipmapped array in device memory
+    id<MTLTexture> _textureObject = 0;            //< mipmapped array texture object with normalized coordinates
     unsigned int _minDownscale = 0;                    //< the min downscale factor (must be power of two), first downscale level
     unsigned int _maxDownscale = 0;                    //< the max downscale factor (must be power of two), last downscale level
     unsigned int _levels = 0;                          //< the number of downscale levels in the mipmapped array

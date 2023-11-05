@@ -78,7 +78,7 @@ public:
     return r;
   }
 
-#if 0
+//#if 0
   inline size_t getSize() const {
     size_t s = 1;
 
@@ -88,7 +88,7 @@ public:
 
     return s;
   }
-#endif
+//#endif
 
 protected:
   size_t size[Dim];
@@ -495,14 +495,14 @@ public:
 
     void copyTo( Type* dst, size_t sx, size_t sy ) const;
 
-    Type* getBuffer()
+    id<MTLBuffer> getBuffer()
     {
-        return buffer;
+        return _buffer;
     }
 
-    const Type* getBuffer() const
+    const id<MTLBuffer> getBuffer() const
     {
-        return buffer;
+        return _buffer;
     }
 
     Type& operator()(size_t x)

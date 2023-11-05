@@ -22,7 +22,7 @@ namespace depthMap {
  * @param[in] defaultSim the default similarity value to copy
  * @param[in] stream the stream for gpu execution
  */
-extern void cuda_depthSimMapCopyDepthOnly(CudaDeviceMemoryPitched<float2, 2>& out_depthSimMap_dmp,
+extern void depthSimMapCopyDepthOnly(CudaDeviceMemoryPitched<float2, 2>& out_depthSimMap_dmp,
                                           const CudaDeviceMemoryPitched<float2, 2>& in_depthSimMap_dmp,
                                           float defaultSim,
                                           cudaStream_t stream);
@@ -36,8 +36,7 @@ extern void cuda_depthSimMapCopyDepthOnly(CudaDeviceMemoryPitched<float2, 2>& ou
  */
 extern void cuda_normalMapUpscale(CudaDeviceMemoryPitched<float3, 2>& out_upscaledMap_dmp,
                                   const CudaDeviceMemoryPitched<float3, 2>& in_map_dmp,
-                                  const ROI& roi,
-                                  cudaStream_t stream);
+                                  const ROI& roi);
 
 /**
  * @brief Smooth thickness map with adjacent pixels.
@@ -62,13 +61,12 @@ extern void depthThicknessSmoothThickness(CudaDeviceMemoryPitched<float2, 2>& in
  * @param[in] roi the 2d region of interest
  * @param[in] stream the stream for gpu execution
  */
-extern void cuda_computeSgmUpscaledDepthPixSizeMap(CudaDeviceMemoryPitched<float2, 2>& out_upscaledDepthPixSizeMap_dmp,
+extern void computeSgmUpscaledDepthPixSizeMap(CudaDeviceMemoryPitched<float2, 2>& out_upscaledDepthPixSizeMap_dmp,
                                                    const CudaDeviceMemoryPitched<float2, 2>& in_sgmDepthThicknessMap_dmp,
                                                    const int rcDeviceCameraParamsId,
                                                    const DeviceMipmapImage& rcDeviceMipmapImage,
                                                    const RefineParams& refineParams,
-                                                   const ROI& roi,
-                                                   cudaStream_t stream);
+                                                   const ROI& roi);
 
 /**
  * @brief Compute the normal map from the depth/sim map (only depth is used).

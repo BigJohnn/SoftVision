@@ -20,7 +20,7 @@
 
 namespace depthMap {
 
-void cuda_depthSimMapCopyDepthOnly(CudaDeviceMemoryPitched<vector_float2, 2>& out_depthSimMap_dmp,
+void depthSimMapCopyDepthOnly(CudaDeviceMemoryPitched<vector_float2, 2>& out_depthSimMap_dmp,
                                             const CudaDeviceMemoryPitched<vector_float2, 2>& in_depthSimMap_dmp,
                                             float defaultSim)
 {
@@ -28,28 +28,43 @@ void cuda_depthSimMapCopyDepthOnly(CudaDeviceMemoryPitched<vector_float2, 2>& ou
     const CudaSize<2>& depthSimMapDim = out_depthSimMap_dmp.getSize();
     
     // kernel launch parameters
-    const int blockSize = 16;
-    const dim3 block(blockSize, blockSize, 1);
-    const dim3 grid(divUp(depthSimMapDim.x(), blockSize), divUp(depthSimMapDim.y(), blockSize), 1);
+//    const int blockSize = 16;
+//    const dim3 block(blockSize, blockSize, 1);
+//    const dim3 grid(divUp(depthSimMapDim.x(), blockSize), divUp(depthSimMapDim.y(), blockSize), 1);
+    
+    NSUInteger threadGroupSize = 16;
+    MTLSize gridSize = MTLSizeMake(divUp(depthSimMapDim.x(), threadGroupSize), divUp(depthSimMapDim.y(), threadGroupSize), 1);
+    MTLSize threadgroupSize = MTLSizeMake(threadGroupSize, threadGroupSize, 1);
 
     // kernel execution
-    depthSimMapCopyDepthOnly_kernel<<<grid, block, 0, stream>>>(
-        out_depthSimMap_dmp.getBuffer(),
-        out_depthSimMap_dmp.getPitch(),
-        in_depthSimMap_dmp.getBuffer(),
-        in_depthSimMap_dmp.getPitch(),
-        (unsigned int)(depthSimMapDim.x()),
-        (unsigned int)(depthSimMapDim.y()),
-        defaultSim);
+    NSArray* args = @[
+                out_depthSimMap_dmp.getBuffer(),
+                out_depthSimMap_dmp.getPitch(),
+                in_depthSimMap_dmp.getBuffer(),
+                in_depthSimMap_dmp.getPitch(),
+                (unsigned int)(depthSimMapDim.x()),
+                (unsigned int)(depthSimMapDim.y()),
+                defaultSim
 
-    // check cuda last error
-    CHECK_CUDA_ERROR();
+    ];
+    
+    [ComputePipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthSimMapCopyDepthOnly_kernel" Args:args];
+//    depthSimMapCopyDepthOnly_kernel<<<grid, block, 0, stream>>>(
+//        out_depthSimMap_dmp.getBuffer(),
+//        out_depthSimMap_dmp.getPitch(),
+//        in_depthSimMap_dmp.getBuffer(),
+//        in_depthSimMap_dmp.getPitch(),
+//        (unsigned int)(depthSimMapDim.x()),
+//        (unsigned int)(depthSimMapDim.y()),
+//        defaultSim);
+//
+//    // check cuda last error
+//    CHECK_CUDA_ERROR();
 }
 
-void cuda_normalMapUpscale(CudaDeviceMemoryPitched<float3, 2>& out_upscaledMap_dmp,
-                                    const CudaDeviceMemoryPitched<float3, 2>& in_map_dmp,
-                                    const ROI& roi,
-                                    cudaStream_t stream)
+void cuda_normalMapUpscale(CudaDeviceMemoryPitched<vector_float3, 2>& out_upscaledMap_dmp,
+                                    const CudaDeviceMemoryPitched<vector_float3, 2>& in_map_dmp,
+                                    const ROI& roi)
 {
     // compute upscale ratio
     const CudaSize<2>& out_mapDim = out_upscaledMap_dmp.getSize();
@@ -57,21 +72,38 @@ void cuda_normalMapUpscale(CudaDeviceMemoryPitched<float3, 2>& out_upscaledMap_d
     const float ratio = float(in_mapDim.x()) / float(out_mapDim.x());
 
     // kernel launch parameters
-    const int blockSize = 16;
-    const dim3 block(blockSize, blockSize, 1);
-    const dim3 grid(divUp(roi.width(), blockSize), divUp(roi.height(), blockSize), 1);
+//    const int blockSize = 16;
+//    const dim3 block(blockSize, blockSize, 1);
+//    const dim3 grid(divUp(roi.width(), blockSize), divUp(roi.height(), blockSize), 1);
+    
+    NSUInteger threadGroupSize = 16;
+    MTLSize gridSize = MTLSizeMake(divUp(roi.width(), threadGroupSize), divUp(roi.height(), threadGroupSize), 1);
+    MTLSize threadgroupSize = MTLSizeMake(threadGroupSize, threadGroupSize, 1);
 
+    ROI_d roi_d(roi.x.begin, roi.y.begin,
+                roi.x.end, roi.y.end);
+    
+    NSArray* args = @[
+                out_upscaledMap_dmp.getBuffer(),
+                out_upscaledMap_dmp.getPitch(),
+                in_map_dmp.getBuffer(),
+                in_map_dmp.getPitch(),
+                ratio,
+                roi_d
+    ];
+    
+    [ComputePipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"mapUpscale_kernel" Args:args];
     // kernel execution
-    mapUpscale_kernel<float3><<<grid, block, 0, stream>>>(
-        out_upscaledMap_dmp.getBuffer(),
-        out_upscaledMap_dmp.getPitch(),
-        in_map_dmp.getBuffer(),
-        in_map_dmp.getPitch(),
-        ratio,
-        roi);
-
-    // check cuda last error
-    CHECK_CUDA_ERROR();
+//    mapUpscale_kernel<float3><<<grid, block, 0, stream>>>(
+//        out_upscaledMap_dmp.getBuffer(),
+//        out_upscaledMap_dmp.getPitch(),
+//        in_map_dmp.getBuffer(),
+//        in_map_dmp.getPitch(),
+//        ratio,
+//        roi);
+//
+//    // check cuda last error
+//    CHECK_CUDA_ERROR();
 }
 
 void depthThicknessSmoothThickness(CudaDeviceMemoryPitched<float2, 2>& inout_depthThicknessMap_dmp,
@@ -95,9 +127,8 @@ void depthThicknessSmoothThickness(CudaDeviceMemoryPitched<float2, 2>& inout_dep
     MTLSize gridSize = MTLSizeMake(divUp(roi.width(), threadGroupSize), divUp(roi.height(), threadGroupSize), 1);
     MTLSize threadgroupSize = MTLSizeMake(threadGroupSize, threadGroupSize, 1);
     
-    ROI_d roi_d;
-    roi_d.lt = simd_make_float2(roi.x.begin, roi.y.begin);
-    roi_d.rb = simd_make_float2(roi.x.end, roi.y.end);
+    ROI_d roi_d(roi.x.begin, roi.y.begin,
+                roi.x.end, roi.y.end);
     NSArray* args = @[inout_depthThicknessMap_dmp.getBuffer(),
                       inout_depthThicknessMap_dmp.getPitch(),
                       minThicknessInflate,
@@ -125,13 +156,12 @@ void depthThicknessSmoothThickness(CudaDeviceMemoryPitched<float2, 2>& inout_dep
 //    CHECK_CUDA_ERROR();
 }
 
-void cuda_computeSgmUpscaledDepthPixSizeMap(CudaDeviceMemoryPitched<float2, 2>& out_upscaledDepthPixSizeMap_dmp,
+void computeSgmUpscaledDepthPixSizeMap(CudaDeviceMemoryPitched<float2, 2>& out_upscaledDepthPixSizeMap_dmp,
                                                      const CudaDeviceMemoryPitched<float2, 2>& in_sgmDepthThicknessMap_dmp,
                                                      const int rcDeviceCameraParamsId,
                                                      const DeviceMipmapImage& rcDeviceMipmapImage,
                                                      const RefineParams& refineParams,
-                                                     const ROI& roi,
-                                                     cudaStream_t stream)
+                                                     const ROI& roi)
 {
     // compute upscale ratio
     const CudaSize<2>& out_mapDim = out_upscaledDepthPixSizeMap_dmp.getSize();
@@ -142,49 +172,89 @@ void cuda_computeSgmUpscaledDepthPixSizeMap(CudaDeviceMemoryPitched<float2, 2>& 
     const float rcMipmapLevel = rcDeviceMipmapImage.getLevel(refineParams.scale);
     const CudaSize<2> rcLevelDim = rcDeviceMipmapImage.getDimensions(refineParams.scale);
 
-    // kernel launch parameters
-    const int blockSize = 16;
-    const dim3 block(blockSize, blockSize, 1);
-    const dim3 grid(divUp(roi.width(), blockSize), divUp(roi.height(), blockSize), 1);
+//    // kernel launch parameters
+//    const int blockSize = 16;
+//    const dim3 block(blockSize, blockSize, 1);
+//    const dim3 grid(divUp(roi.width(), blockSize), divUp(roi.height(), blockSize), 1);
+    
+    NSUInteger threadGroupSize = 16;
+    MTLSize gridSize = MTLSizeMake(divUp(roi.width(), threadGroupSize), divUp(roi.height(), threadGroupSize), 1);
+    MTLSize threadgroupSize = MTLSizeMake(threadGroupSize, threadGroupSize, 1);
 
+    ROI_d roi_d(roi.x.begin, roi.y.begin,
+                roi.x.end, roi.y.end);
+    
     // kernel execution
     if(refineParams.interpolateMiddleDepth)
     {
-        computeSgmUpscaledDepthPixSizeMap_bilinear_kernel<<<grid, block, 0, stream>>>(
-            out_upscaledDepthPixSizeMap_dmp.getBuffer(),
-            out_upscaledDepthPixSizeMap_dmp.getPitch(),
-            in_sgmDepthThicknessMap_dmp.getBuffer(),
-            in_sgmDepthThicknessMap_dmp.getPitch(),
-            rcDeviceCameraParamsId,
-            rcDeviceMipmapImage.getTextureObject(),
-            (unsigned int)(rcLevelDim.x()),
-            (unsigned int)(rcLevelDim.y()),
-            rcMipmapLevel,
-            refineParams.stepXY,
-            refineParams.halfNbDepths,
-            ratio,
-            roi);
+        
+        NSArray* args = @[
+                        out_upscaledDepthPixSizeMap_dmp.getBuffer(),
+                        out_upscaledDepthPixSizeMap_dmp.getPitch(),
+                        in_sgmDepthThicknessMap_dmp.getBuffer(),
+                        in_sgmDepthThicknessMap_dmp.getPitch(),
+                        rcDeviceCameraParamsId,
+                        rcDeviceMipmapImage.getTextureObject(),
+                        (unsigned int)(rcLevelDim.x()),
+                        (unsigned int)(rcLevelDim.y()),
+                        rcMipmapLevel,
+                        refineParams.stepXY,
+                        refineParams.halfNbDepths,
+                        ratio,
+                        roi_d
+        ];
+        
+        [ComputePipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"computeSgmUpscaledDepthPixSizeMap_bilinear_kernel" Args:args];
+        
+//        computeSgmUpscaledDepthPixSizeMap_bilinear_kernel<<<grid, block, 0, stream>>>(
+//            out_upscaledDepthPixSizeMap_dmp.getBuffer(),
+//            out_upscaledDepthPixSizeMap_dmp.getPitch(),
+//            in_sgmDepthThicknessMap_dmp.getBuffer(),
+//            in_sgmDepthThicknessMap_dmp.getPitch(),
+//            rcDeviceCameraParamsId,
+//            rcDeviceMipmapImage.getTextureObject(),
+//            (unsigned int)(rcLevelDim.x()),
+//            (unsigned int)(rcLevelDim.y()),
+//            rcMipmapLevel,
+//            refineParams.stepXY,
+//            refineParams.halfNbDepths,
+//            ratio,
+//            roi);
     }
     else
     {
-        computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel<<<grid, block, 0, stream>>>(
-            out_upscaledDepthPixSizeMap_dmp.getBuffer(),
-            out_upscaledDepthPixSizeMap_dmp.getPitch(),
-            in_sgmDepthThicknessMap_dmp.getBuffer(),
-            in_sgmDepthThicknessMap_dmp.getPitch(),
-            rcDeviceCameraParamsId,
-            rcDeviceMipmapImage.getTextureObject(),
-            (unsigned int)(rcLevelDim.x()),
-            (unsigned int)(rcLevelDim.y()),
-            rcMipmapLevel,
-            refineParams.stepXY,
-            refineParams.halfNbDepths,
-            ratio,
-            roi);
+        NSArray* args = @[
+                        out_upscaledDepthPixSizeMap_dmp.getBuffer(),
+                        out_upscaledDepthPixSizeMap_dmp.getPitch(),
+                        in_sgmDepthThicknessMap_dmp.getBuffer(),
+                        in_sgmDepthThicknessMap_dmp.getPitch(),
+                        rcDeviceCameraParamsId,
+                        rcDeviceMipmapImage.getTextureObject(),
+                        (unsigned int)(rcLevelDim.x()),
+                        (unsigned int)(rcLevelDim.y()),
+                        rcMipmapLevel,
+                        refineParams.stepXY,
+                        refineParams.halfNbDepths,
+                        ratio,
+                        roi_d
+        ];
+        
+        [ComputePipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel" Args:args];
+//        computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel<<<grid, block, 0, stream>>>(
+//            out_upscaledDepthPixSizeMap_dmp.getBuffer(),
+//            out_upscaledDepthPixSizeMap_dmp.getPitch(),
+//            in_sgmDepthThicknessMap_dmp.getBuffer(),
+//            in_sgmDepthThicknessMap_dmp.getPitch(),
+//            rcDeviceCameraParamsId,
+//            rcDeviceMipmapImage.getTextureObject(),
+//            (unsigned int)(rcLevelDim.x()),
+//            (unsigned int)(rcLevelDim.y()),
+//            rcMipmapLevel,
+//            refineParams.stepXY,
+//            refineParams.halfNbDepths,
+//            ratio,
+//            roi);
     }
-
-    // check cuda last error
-    CHECK_CUDA_ERROR();
 }
 
 void cuda_depthSimMapComputeNormal(CudaDeviceMemoryPitched<float3, 2>& out_normalMap_dmp,
