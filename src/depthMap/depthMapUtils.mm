@@ -277,15 +277,16 @@ void writeDepthSimMapFromTileList(int rc,
   mvsUtils::writeMap(rc, mp, mvsUtils::EFileType::simMap,   simMap,   scale, step, customSuffix); // write the merged similarity map
 }
 
-void resetDepthSimMap(CudaHostMemoryHeap<float2, 2>& inout_depthSimMap_hmh, float depth, float sim)
+void resetDepthSimMap(DeviceBuffer* inout_depthSimMap_hmh, float depth, float sim)
 {
-  const CudaSize<2>& depthSimMapSize = inout_depthSimMap_hmh.getSize();
-
-  for(size_t x = 0; x < depthSimMapSize.x(); ++x)
+  MTLSize depthSimMapSize = [inout_depthSimMap_hmh getSize];
+    
+  for(size_t x = 0; x < depthSimMapSize.width; ++x)
   {
-      for(size_t y = 0; y < depthSimMapSize.y(); ++y)
+      for(size_t y = 0; y < depthSimMapSize.height; ++y)
       {
-          float2& depthSim_hmh = inout_depthSimMap_hmh(x, y);
+          simd_float2 depthSim_hmh = [inout_depthSimMap_hmh getVec2f:x y:y];
+//          float2& depthSim_hmh = inout_depthSimMap_hmh(x, y);
           depthSim_hmh.x = depth;
           depthSim_hmh.y = sim;
       }

@@ -75,14 +75,12 @@ extern void computeSgmUpscaledDepthPixSizeMap(CudaDeviceMemoryPitched<float2, 2>
  * @param[in] rcDeviceCameraParamsId the R camera parameters id for array in device constant memory
  * @param[in] stepXY the input depth/sim map stepXY factor
  * @param[in] roi the 2d region of interest
- * @param[in] stream the stream for gpu execution
  */
 extern void cuda_depthSimMapComputeNormal(CudaDeviceMemoryPitched<float3, 2>& out_normalMap_dmp,
                                           const CudaDeviceMemoryPitched<float2, 2>& in_depthSimMap_dmp,
                                           const int rcDeviceCameraParamsId,
                                           const int stepXY,
-                                          const ROI& roi,
-                                          cudaStream_t stream);
+                                          const ROI& roi);
 
 /**
  * @brief Optimize a depth/sim map with the refineFused depth/sim map and the SGM depth/pixSize map.

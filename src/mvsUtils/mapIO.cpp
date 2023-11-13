@@ -11,10 +11,10 @@
 #include <numeric/numeric.hpp>
 #include <image/io.hpp>
 
-#include <boost/filesystem.hpp>
-#include <boost/regex.hpp>
-
-namespace fs = boost::filesystem;
+//#include <boost/filesystem.hpp>
+//#include <boost/regex.hpp>
+//
+//namespace fs = boost::filesystem;
 
 
 namespace mvsUtils {

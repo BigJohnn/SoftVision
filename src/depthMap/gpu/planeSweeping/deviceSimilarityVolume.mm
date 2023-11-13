@@ -54,14 +54,16 @@ dim3 getMaxPotentialBlockSize(T kernelFuction)
     return defaultBlock;
 }
 
-void cuda_volumeInitialize(CudaDeviceMemoryPitched<TSim, 3>& inout_volume_dmp, TSim value)
+void cuda_volumeInitialize(DeviceBuffer* inout_volume_dmp, TSim value)
 {
     // get input/output volume dimensions
-    const CudaSize<3>& volDim = inout_volume_dmp.getSize();
+    MTLSize volDim = [inout_volume_dmp getSize];
 
     // kernel launch parameters
-    const dim3 block(32, 4, 1);
-    const dim3 grid(divUp(volDim.x(), block.x), divUp(volDim.y(), block.y), volDim.z());
+    MTLSize block = MTLSizeMake(32, 4, 1);
+    MTLSize grid = MTLSizeMake(divUp(volDim.width, block.width), divUp(volDim.height, block.height), volDim.depth);
+//    const dim3 block(32, 4, 1);
+//    const dim3 grid(divUp(volDim.x(), block.x), divUp(volDim.y(), block.y), volDim.z());
 
     // kernel execution
     volume_init_kernel<TSim><<<grid, block, 0, stream>>>(

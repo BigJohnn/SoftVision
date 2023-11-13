@@ -22,12 +22,11 @@ namespace depthMap {
 
 Refine::Refine(const mvsUtils::MultiViewParams& mp,
                const mvsUtils::TileParams& tileParams, 
-               const RefineParams& refineParams, 
-               cudaStream_t stream)
+               const RefineParams& refineParams)
     : _mp(mp)
     , _tileParams(tileParams)
     , _refineParams(refineParams)
-    , _stream(stream)
+    
 {
     // get tile maximum dimensions
     const int downscale = _refineParams.scale * _refineParams.stepXY;
@@ -290,7 +289,7 @@ void Refine::computeAndWriteNormalMap(const Tile& tile, const CudaDeviceMemoryPi
 
     LOG_X(tile << "Refine compute normal map of view id: " << _mp.getViewId(tile.rc) << ", rc: " << tile.rc << " (" << (tile.rc + 1) << " / " << _mp.ncams << ").");
 
-    cuda_depthSimMapComputeNormal(_normalMap_dmp, in_depthSimMap_dmp, rcDeviceCameraParamsId, _refineParams.stepXY, downscaledRoi, _stream);
+    cuda_depthSimMapComputeNormal(_normalMap_dmp, in_depthSimMap_dmp, rcDeviceCameraParamsId, _refineParams.stepXY, downscaledRoi);
 
     writeNormalMap(tile.rc, _mp, _tileParams, tile.roi, _normalMap_dmp, _refineParams.scale, _refineParams.stepXY, name);
 }

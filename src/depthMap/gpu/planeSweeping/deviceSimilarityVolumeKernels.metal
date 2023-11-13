@@ -4,18 +4,18 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#pragma once
 
-#include <mvsData/ROI.hpp>
+#include <mvsData/ROI_d.hpp>
 #include <depthMap/gpu/device/matrix.cuh>
 #include <depthMap/gpu/device/Patch.cuh>
 #include <depthMap/gpu/planeSweeping/similarity.hpp>
-
+#include <depahMap/gpu/device/DeviceCameraParams.metal>
+//#include "DeviceCameraParams.metal"
 
 namespace depthMap {
 
-inline __device__ void move3DPointByRcPixSize(float3& p,
-                                              const DeviceCameraParams& rcDeviceCamParams,
+void move3DPointByRcPixSize(device float3& p,
+                                              constant DeviceCameraParams& rcDeviceCamParams,
                                               const float rcPixSize)
 {
     float3 rpv = p - rcDeviceCamParams.C;
@@ -23,7 +23,7 @@ inline __device__ void move3DPointByRcPixSize(float3& p,
     p = p + rpv * rcPixSize;
 }
 
-inline __device__ void volume_computePatch(Patch& patch,
+void volume_computePatch(Patch& patch,
                                            const DeviceCameraParams& rcDeviceCamParams,
                                            const DeviceCameraParams& tcDeviceCamParams,
                                            const float fpPlaneDepth,
@@ -34,7 +34,7 @@ inline __device__ void volume_computePatch(Patch& patch,
     computeRotCSEpip(patch, rcDeviceCamParams, tcDeviceCamParams);
 }
 
-inline __device__ float depthPlaneToDepth(const DeviceCameraParams& deviceCamParams,
+float depthPlaneToDepth(const DeviceCameraParams& deviceCamParams,
                                           const float fpPlaneDepth,
                                           const float2& pix)
 {
@@ -46,10 +46,10 @@ inline __device__ float depthPlaneToDepth(const DeviceCameraParams& deviceCamPar
 }
 
 template <typename T>
-__global__ void volume_init_kernel(T* inout_volume_d, int inout_volume_s, int inout_volume_p,
-                                   const unsigned int volDimX,
-                                   const unsigned int volDimY,
-                                   const T value)
+kernel void volume_init_kernel(device T* inout_volume_d, device int* inout_volume_s, device int* inout_volume_p,
+                               device const unsigned int* volDimX,
+                               device const unsigned int* volDimY,
+                               device const T* value)
 {
     const unsigned int vx = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned int vy = blockIdx.y * blockDim.y + threadIdx.y;
@@ -61,7 +61,7 @@ __global__ void volume_init_kernel(T* inout_volume_d, int inout_volume_s, int in
     *get3DBufferAt(inout_volume_d, inout_volume_s, inout_volume_p, vx, vy, vz) = value;
 }
 
-__global__ void volume_add_kernel(TSimRefine* inout_volume_d, int inout_volume_s, int inout_volume_p, 
+kernel void volume_add_kernel(TSimRefine* inout_volume_d, int inout_volume_s, int inout_volume_p,
                                   const TSimRefine* in_volume_d, const int in_volume_s, const int in_volume_p,
                                   const unsigned int volDimX,
                                   const unsigned int volDimY)
@@ -84,7 +84,7 @@ __global__ void volume_add_kernel(TSimRefine* inout_volume_d, int inout_volume_s
 #endif
 }
 
-__global__ void volume_updateUninitialized_kernel(TSim* inout_volume2nd_d, int inout_volume2nd_s, int inout_volume2nd_p, 
+kernel void volume_updateUninitialized_kernel(TSim* inout_volume2nd_d, int inout_volume2nd_s, int inout_volume2nd_p,
                                                   const TSim* in_volume1st_d, const int in_volume1st_s, const int in_volume1st_p,
                                                   const unsigned int volDimX,
                                                   const unsigned int volDimY)
@@ -106,7 +106,7 @@ __global__ void volume_updateUninitialized_kernel(TSim* inout_volume2nd_d, int i
     }
 }
 
-__global__ void volume_computeSimilarity_kernel(TSim* out_volume1st_d, int out_volume1st_s, int out_volume1st_p,
+kernel void volume_computeSimilarity_kernel(TSim* out_volume1st_d, int out_volume1st_s, int out_volume1st_p,
                                                 TSim* out_volume2nd_d, int out_volume2nd_s, int out_volume2nd_p,
                                                 const float* in_depths_d, const int in_depths_p,
                                                 const int rcDeviceCameraParamsId,
@@ -232,7 +232,7 @@ __global__ void volume_computeSimilarity_kernel(TSim* out_volume1st_d, int out_v
     }
 }
 
-__global__ void volume_refineSimilarity_kernel(TSimRefine* inout_volSim_d, int inout_volSim_s, int inout_volSim_p,
+kernel void volume_refineSimilarity_kernel(TSimRefine* inout_volSim_d, int inout_volSim_s, int inout_volSim_p,
                                                const float2* in_sgmDepthPixSizeMap_d, const int in_sgmDepthPixSizeMap_p,
                                                const float3* in_sgmNormalMap_d, const int in_sgmNormalMap_p,
                                                const int rcDeviceCameraParamsId,
@@ -390,7 +390,7 @@ __global__ void volume_refineSimilarity_kernel(TSimRefine* inout_volSim_d, int i
 #endif
 }
 
-__global__ void volume_retrieveBestDepth_kernel(float2* out_sgmDepthThicknessMap_d, int out_sgmDepthThicknessMap_p,
+kernel void volume_retrieveBestDepth_kernel(float2* out_sgmDepthThicknessMap_d, int out_sgmDepthThicknessMap_p,
                                                 float2* out_sgmDepthSimMap_d, int out_sgmDepthSimMap_p, // output depth/sim map is optional (nullptr)
                                                 const float* in_depths_d, const int in_depths_p,
                                                 const TSim* in_volSim_d, const int in_volSim_s, const int in_volSim_p,
@@ -512,7 +512,7 @@ __global__ void volume_retrieveBestDepth_kernel(float2* out_sgmDepthThicknessMap
 }
 
 
-__global__ void volume_refineBestDepth_kernel(float2* out_refineDepthSimMap_d, int out_refineDepthSimMap_p,
+kernel void volume_refineBestDepth_kernel(float2* out_refineDepthSimMap_d, int out_refineDepthSimMap_p,
                                               const float2* in_sgmDepthPixSizeMap_d, int in_sgmDepthPixSizeMap_p,
                                               const TSimRefine* in_volSim_d, int in_volSim_s, int in_volSim_p,
                                               int volDimZ,
@@ -594,7 +594,7 @@ __global__ void volume_refineBestDepth_kernel(float2* out_refineDepthSimMap_d, i
 }
 
 template <typename T>
-__global__ void volume_initVolumeYSlice_kernel(T* volume_d, int volume_s, int volume_p, const int3 volDim, const int3 axisT, int y, T cst)
+kernel void volume_initVolumeYSlice_kernel(T* volume_d, int volume_s, int volume_p, const int3 volDim, const int3 axisT, int y, T cst)
 {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int z = blockIdx.y * blockDim.y + threadIdx.y;
@@ -612,7 +612,7 @@ __global__ void volume_initVolumeYSlice_kernel(T* volume_d, int volume_s, int vo
 }
 
 template <typename T1, typename T2>
-__global__ void volume_getVolumeXZSlice_kernel(T1* slice_d, int slice_p,
+kernel void volume_getVolumeXZSlice_kernel(T1* slice_d, int slice_p,
                                                const T2* volume_d, int volume_s, int volume_p,
                                                const int3 volDim, const int3 axisT, int y)
 {
@@ -632,7 +632,7 @@ __global__ void volume_getVolumeXZSlice_kernel(T1* slice_d, int slice_p,
     *slice_xz = (T1)(*volume_xyz);
 }
 
-__global__ void volume_computeBestZInSlice_kernel(TSimAcc* xzSlice_d, int xzSlice_p, TSimAcc* ySliceBestInColCst_d, int volDimX, int volDimZ)
+kernel void volume_computeBestZInSlice_kernel(TSimAcc* xzSlice_d, int xzSlice_p, TSimAcc* ySliceBestInColCst_d, int volDimX, int volDimZ)
 {
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -655,7 +655,7 @@ __global__ void volume_computeBestZInSlice_kernel(TSimAcc* xzSlice_d, int xzSlic
  * @param[in] xSliceBestInColCst
  * @param[out] volSimT output similarity volume
  */
-__global__ void volume_agregateCostVolumeAtXinSlices_kernel(const cudaTextureObject_t rcMipmapImage_tex,
+kernel void volume_agregateCostVolumeAtXinSlices_kernel(const cudaTextureObject_t rcMipmapImage_tex,
                                                             const unsigned int rcSgmLevelWidth,
                                                             const unsigned int rcSgmLevelHeight,
                                                             const float rcMipmapLevel,

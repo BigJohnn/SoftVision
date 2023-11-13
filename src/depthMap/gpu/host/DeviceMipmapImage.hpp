@@ -6,6 +6,7 @@
 
 #pragma once
 
+#import <Metal/Metal.h>
 #include <depthMap/gpu/host/memory.hpp>
 
 
@@ -37,7 +38,7 @@ public:
      * @param[in] minDownscale the first downscale level of the mipmap image (level 0)
      * @param[in] maxDownscale the last downscale level of the mipmap image
      */
-    void fill(const CudaHostMemoryHeap<CudaRGBA, 2>& in_img_hmh, int minDownscale, int maxDownscale);
+    void fill(id<MTLCommandBuffer> command_buffer, const CudaHostMemoryHeap<CudaRGBA, 2>& in_img_hmh, int minDownscale, int maxDownscale);
 
     /**
      * @brief Get the corresponding mipmap image level of the given downscale
@@ -77,7 +78,7 @@ private:
     // private members
     
 //    cudaMipmappedArray_t _mipmappedArray = nullptr;    //< mipmapped array in device memory
-    id<MTLTexture> _textureObject = 0;            //< mipmapped array texture object with normalized coordinates
+    id<MTLTexture> _textureObject;            //< mipmapped array texture object with normalized coordinates
     unsigned int _minDownscale = 0;                    //< the min downscale factor (must be power of two), first downscale level
     unsigned int _maxDownscale = 0;                    //< the max downscale factor (must be power of two), last downscale level
     unsigned int _levels = 0;                          //< the number of downscale levels in the mipmapped array

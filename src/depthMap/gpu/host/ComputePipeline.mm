@@ -5,7 +5,7 @@
 //  Created by HouPeihong on 2023/11/3.
 //
 
-#include <depthMap/gpu/host/ComputePipeline.hpp>
+#import <depthMap/gpu/host/ComputePipeline.hpp>
 
 @interface ComputePipeline()
 @end

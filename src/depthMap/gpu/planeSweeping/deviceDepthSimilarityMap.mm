@@ -257,29 +257,47 @@ void computeSgmUpscaledDepthPixSizeMap(CudaDeviceMemoryPitched<float2, 2>& out_u
     }
 }
 
-void cuda_depthSimMapComputeNormal(CudaDeviceMemoryPitched<float3, 2>& out_normalMap_dmp,
+void cuda_depthSimMapComputeNormal(CudaDeviceMemoryPitched<float, 2>& out_normalMap_dmp,
                                             const CudaDeviceMemoryPitched<float2, 2>& in_depthSimMap_dmp,
                                             const int rcDeviceCameraParamsId,
                                             const int stepXY,
-                                            const ROI& roi,
-                                            cudaStream_t stream)
+                                            const ROI& roi)
 {
     // kernel launch parameters
-    const dim3 block(8, 8, 1);
-    const dim3 grid(divUp(roi.width(), block.x), divUp(roi.height(), block.y), 1);
+    NSUInteger threadGroupSize = 8;
+    MTLSize gridSize = MTLSizeMake(divUp(roi.width(), threadGroupSize), divUp(roi.height(), threadGroupSize), 1);
+    MTLSize threadgroupSize = MTLSizeMake(threadGroupSize, threadGroupSize, 1);
+
+    ROI_d roi_d(roi.x.begin, roi.y.begin,
+                roi.x.end, roi.y.end);
+    
+    NSArray* args = @[
+                out_normalMap_dmp.getBuffer(),
+                out_normalMap_dmp.getPitch(),
+                in_depthSimMap_dmp.getBuffer(),
+                in_depthSimMap_dmp.getPitch(),
+                rcDeviceCameraParamsId,
+                stepXY,
+                roi_d
+    ];
+    
+    [ComputePipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthSimMapComputeNormal_kernel" Args:args];
+    
+//    const dim3 block(8, 8, 1);
+//    const dim3 grid(divUp(roi.width(), block.x), divUp(roi.height(), block.y), 1);
 
     // kernel execution
-    depthSimMapComputeNormal_kernel<3 /* wsh */><<<grid, block, 0, stream>>>(
-        out_normalMap_dmp.getBuffer(),
-        out_normalMap_dmp.getPitch(),
-        in_depthSimMap_dmp.getBuffer(),
-        in_depthSimMap_dmp.getPitch(),
-        rcDeviceCameraParamsId,
-        stepXY,
-        roi);
-
-    // check cuda last error
-    CHECK_CUDA_ERROR();
+//    depthSimMapComputeNormal_kernel<3 /* wsh */><<<grid, block, 0, stream>>>(
+//        out_normalMap_dmp.getBuffer(),
+//        out_normalMap_dmp.getPitch(),
+//        in_depthSimMap_dmp.getBuffer(),
+//        in_depthSimMap_dmp.getPitch(),
+//        rcDeviceCameraParamsId,
+//        stepXY,
+//        roi);
+//
+//    // check cuda last error
+//    CHECK_CUDA_ERROR();
 }
 
 void cuda_depthSimMapOptimizeGradientDescent(CudaDeviceMemoryPitched<float2, 2>& out_optimizeDepthSimMap_dmp,

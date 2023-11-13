@@ -294,6 +294,9 @@ kernel void computeSgmUpscaledDepthPixSizeMap_bilinear_kernel(device float2* out
     const unsigned int roiX = index.x;
     const unsigned int roiY = index.y;
 
+    unsigned int roiWidth = roi->rb.x - roi->lt.x;
+    unsigned int roiHeight = roi->rb.y - roi->lt.y;
+    
     if(roiX >= roiWidth || roiY >= roiHeight)
         return;
 
@@ -397,15 +400,18 @@ kernel void computeSgmUpscaledDepthPixSizeMap_bilinear_kernel(device float2* out
 }
 
 template<int TWsh>
-kernel void depthSimMapComputeNormal_kernel(float3* out_normalMap_d, int out_normalMap_p,
-                                                const float2* in_depthSimMap_d, int in_depthSimMap_p,
-                                                const int rcDeviceCameraParamsId,
-                                                const int stepXY,
-                                                const ROI roi)
+kernel void depthSimMapComputeNormal_kernel(device float3* out_normalMap_d, constant int* out_normalMap_p,
+                                            device const float2* in_depthSimMap_d, constant int* in_depthSimMap_p,
+                                            constant  int* rcDeviceCameraParamsId,
+                                            constant  int* stepXY,
+                                            constant  ROI_d* roi,
+                                            uint2 index [[thread_position_in_threadgroup]])
 {
-    const unsigned int roiX = blockIdx.x * blockDim.x + threadIdx.x;
-    const unsigned int roiY = blockIdx.y * blockDim.y + threadIdx.y;
+    const unsigned int roiX = index.x;
+    const unsigned int roiY = index.y;
 
+    unsigned int roiWidth = roi->rb.x - roi->lt.x;
+    unsigned int roiHeight = roi->rb.y - roi->lt.y;
     if(roiX >= roiWidth || roiY >= roiHeight)
         return;
 
@@ -534,18 +540,19 @@ kernel void optimize_getOptDeptMapFromOptDepthSimMap_kernel(float* out_tmpOptDep
     *get2DBufferAt(out_tmpOptDepthMap_d, out_tmpOptDepthMap_p, roiX, roiY) = get2DBufferAt(in_optDepthSimMap_d, in_optDepthSimMap_p, roiX, roiY)->x; // depth
 }
 
-kernel void optimize_depthSimMap_kernel(float2* out_optimizeDepthSimMap_d, int out_optimizeDepthSimMap_p,         // output optimized depth/sim map
-                                            const float2* in_sgmDepthPixSizeMap_d, const int in_sgmDepthPixSizeMap_p, // input upscaled rough depth/pixSize map
-                                            const float2* in_refineDepthSimMap_d, const int in_refineDepthSimMap_p,   // input fine depth/sim map
-                                            const int rcDeviceCameraParamsId,
-                                            const cudaTextureObject_t imgVariance_tex,
-                                            const cudaTextureObject_t depth_tex,
-                                            const int iter,
-                                            const ROI roi)
+kernel void optimize_depthSimMap_kernel(device float2* out_optimizeDepthSimMap_d, constant int* out_optimizeDepthSimMap_p,         // output optimized depth/sim map
+                                           device const float2* in_sgmDepthPixSizeMap_d, constant int* in_sgmDepthPixSizeMap_p, // input upscaled rough depth/pixSize map
+                                           device const float2* in_refineDepthSimMap_d, constant  int* in_refineDepthSimMap_p,   // input fine depth/sim map
+                                        constant  int* rcDeviceCameraParamsId,
+                                            texture2d<half, access::read> imgVariance_tex[[texture(0)]],
+                                            texture2d<half, access::read> depth_tex[[texture(1)]],
+                                            constant int* iter,
+                                        constant ROI_d* roi,
+                                        uint2 index [[thread_position_in_threadgroup]])
 {
     // roi and imgVariance_tex, depth_tex coordinates
-    const unsigned int roiX = blockIdx.x * blockDim.x + threadIdx.x;
-    const unsigned int roiY = blockIdx.y * blockDim.y + threadIdx.y;
+    const unsigned int roiX = index.x;
+    const unsigned int roiY = index.y;
 
     if(roiX >= roiWidth || roiY >= roiHeight)
         return;

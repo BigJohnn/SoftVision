@@ -4,6 +4,7 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 #import <Metal/Metal.h>
+#import <depthMap/gpu/host/memory.hpp>
 
 #include "DeviceCache.hpp"
 
@@ -268,7 +269,7 @@ DeviceCache::SingleDeviceCache::SingleDeviceCache(int maxMipmapImages, int maxCa
     // initialize Gaussian filters in GPU constant memory
     // force at compilation to build with maximum pre-computed Gaussian scales
     // note: useful for downscale with gaussian blur, volume gaussian blur (Z, XYZ)
-    createConstantGaussianArray(cudaDeviceId, DEVICE_MAX_DOWNSCALE); //TODO: 实现完整
+//    createConstantGaussianArray(cudaDeviceId, DEVICE_MAX_DOWNSCALE); //TODO: use MPS?
 
     // the maximum number of camera parameters in device cache cannot be superior
     // to the number of camera parameters in the array in device constant memory
@@ -381,7 +382,7 @@ void DeviceCache::addMipmapImage(int camId,
     }
 
     DeviceMipmapImage& deviceMipmapImage = *(currentDeviceCache.mipmaps.at(deviceMipmapId));
-    deviceMipmapImage.fill(img_hmh, minDownscale, maxDownscale);
+    deviceMipmapImage.fill(img_hmh, minDownscale, maxDownscale); //TODO: USE MTLMipmap ?
 }
 
 void DeviceCache::addCameraParams(int camId, int downscale, const mvsUtils::MultiViewParams& mp)

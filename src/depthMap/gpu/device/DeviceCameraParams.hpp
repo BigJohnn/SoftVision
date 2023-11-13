@@ -25,6 +25,6 @@ typedef struct DeviceCameraParams
 
 #define ALICEVISION_DEVICE_MAX_CONSTANT_CAMERA_PARAM_SETS 50 // CUDA constant memory is limited to 65K(100) TODO: check this, we use metal 32k(50)
 
-extern __constant__ DeviceCameraParams constantCameraParametersArray_d[ALICEVISION_DEVICE_MAX_CONSTANT_CAMERA_PARAM_SETS];
+extern DeviceCameraParams constantCameraParametersArray_d[ALICEVISION_DEVICE_MAX_CONSTANT_CAMERA_PARAM_SETS];
 
 } // namespace depthMap

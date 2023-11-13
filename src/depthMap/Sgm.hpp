@@ -6,6 +6,8 @@
 
 #pragma once
 
+#import <depthMap/gpu/host/memory.hpp>
+
 #include <mvsData/ROI.hpp>
 #include <mvsUtils/MultiViewParams.hpp>
 #include <mvsUtils/TileParams.hpp>
@@ -13,7 +15,7 @@
 #include <depthMap/RefineParams.hpp>
 #include <depthMap/SgmParams.hpp>
 #include <depthMap/SgmDepthList.hpp>
-#include <depthMap/gpu/host/memory.hpp>
+
 #include <depthMap/gpu/planeSweeping/similarity.hpp>
 
 #include <vector>
@@ -37,14 +39,12 @@ public:
      * @param[in] sgmParams the Semi Global Matching parameters
      * @param[in] computeDepthSimMap Enable final depth/sim map computation
      * @param[in] computeNormalMap Enable final normal map computation
-     * @param[in] stream the stream for gpu execution
      */
     Sgm(const mvsUtils::MultiViewParams& mp, 
         const mvsUtils::TileParams& tileParams, 
         const SgmParams& sgmParams, 
         bool computeDepthSimMap,
         bool computeNormalMap
-//        void* device
         );
 
     // no default constructor
@@ -72,7 +72,7 @@ public:
      * @brief Get unpadded memory consumpyion in device memory.
      * @return unpadded device memory consumpyion (in MB)
      */
-    double getDeviceMemoryConsumptionUnpadded() const;
+//    double getDeviceMemoryConsumptionUnpadded() const;
 
     /**
      * @brief Compute for a single R camera the Semi-Global Matching.
@@ -140,16 +140,16 @@ private:
 
     // private members in device memory
 
-    CudaHostMemoryHeap<float, 2> _depths_hmh;                   //< rc depth data host memory
-    CudaDeviceMemoryPitched<float, 2> _depths_dmp;              //< rc depth data device memory
-    CudaDeviceMemoryPitched<float2, 2> _depthThicknessMap_dmp;  //< rc result depth thickness map
-    CudaDeviceMemoryPitched<float2, 2> _depthSimMap_dmp;        //< rc result depth/sim map
-    CudaDeviceMemoryPitched<float3, 2> _normalMap_dmp;          //< rc normal map
-    CudaDeviceMemoryPitched<TSim, 3> _volumeBestSim_dmp;        //< rc best similarity volume
-    CudaDeviceMemoryPitched<TSim, 3> _volumeSecBestSim_dmp;     //< rc second best similarity volume
-    CudaDeviceMemoryPitched<TSimAcc, 2> _volumeSliceAccA_dmp;   //< for optimization: volume accumulation slice A
-    CudaDeviceMemoryPitched<TSimAcc, 2> _volumeSliceAccB_dmp;   //< for optimization: volume accumulation slice B
-    CudaDeviceMemoryPitched<TSimAcc, 2> _volumeAxisAcc_dmp;     //< for optimization: volume accumulation axis
+//    CudaHostMemoryHeap<float, 2> _depths_hmh;                   //< rc depth data host memory
+    DeviceBuffer* _depths_dmp;              //< rc depth data device memory
+    DeviceBuffer* _depthThicknessMap_dmp;  //< rc result depth thickness map
+    DeviceBuffer* _depthSimMap_dmp;        //< rc result depth/sim map
+    DeviceBuffer* _normalMap_dmp;          //< rc normal map
+    DeviceBuffer* _volumeBestSim_dmp;        //< rc best similarity volume
+    DeviceBuffer* _volumeSecBestSim_dmp;     //< rc second best similarity volume
+    DeviceBuffer* _volumeSliceAccA_dmp;   //< for optimization: volume accumulation slice A
+    DeviceBuffer* _volumeSliceAccB_dmp;   //< for optimization: volume accumulation slice B
+    DeviceBuffer* _volumeAxisAcc_dmp;     //< for optimization: volume accumulation axis
 //    cudaStream_t _stream;                                       //< stream for gpu execution
 //    void* _device;
 };

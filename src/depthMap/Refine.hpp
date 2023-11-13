@@ -6,12 +6,14 @@
 
 #pragma once
 
+#import <depthMap/gpu/host/memory.hpp>
+
 #include <mvsData/ROI.hpp>
 #include <mvsUtils/MultiViewParams.hpp>
 #include <mvsUtils/TileParams.hpp>
 #include <depthMap/Tile.hpp>
 #include <depthMap/RefineParams.hpp>
-#include <depthMap/gpu/host/memory.hpp>
+
 #include <depthMap/gpu/planeSweeping/similarity.hpp>
 
 #include <vector>
@@ -37,8 +39,7 @@ public:
      */
     Refine(const mvsUtils::MultiViewParams& mp,
            const mvsUtils::TileParams& tileParams,   
-           const RefineParams& refineParams, 
-           cudaStream_t stream);
+           const RefineParams& refineParams);
 
     // no default constructor
     Refine() = delete;
@@ -47,7 +48,7 @@ public:
     ~Refine() = default;
 
     // final depth/similarity map getter
-    inline const CudaDeviceMemoryPitched<float2, 2>& getDeviceDepthSimMap() const { return _optimizedDepthSimMap_dmp; }
+    inline const DeviceBuffer* getDeviceDepthSimMap() const { return _optimizedDepthSimMap_dmp; }
 
     /**
      * @brief Get memory consumpyion in device memory.
@@ -108,14 +109,14 @@ private:
 
     // private members in device memory
 
-    CudaDeviceMemoryPitched<float2, 2> _sgmDepthPixSizeMap_dmp;    //< rc upscaled SGM depth/pixSize map
-    CudaDeviceMemoryPitched<float2, 2> _refinedDepthSimMap_dmp;    //< rc refined and fused depth/sim map
-    CudaDeviceMemoryPitched<float2, 2> _optimizedDepthSimMap_dmp;  //< rc optimized depth/sim map
-    CudaDeviceMemoryPitched<float3, 2> _sgmNormalMap_dmp;          //< rc upscaled SGM normal map (for experimentation purposes)
-    CudaDeviceMemoryPitched<float3, 2> _normalMap_dmp;             //< rc normal map (for debug / intermediate results purposes)
-    CudaDeviceMemoryPitched<TSimRefine, 3> _volumeRefineSim_dmp;   //< rc refine similarity volume
-    CudaDeviceMemoryPitched<float, 2> _optTmpDepthMap_dmp;         //< for color optimization: temporary depth map buffer
-    CudaDeviceMemoryPitched<float, 2> _optImgVariance_dmp;         //< for color optimization: image variance buffer
+    DeviceBuffer* _sgmDepthPixSizeMap_dmp;    //< rc upscaled SGM depth/pixSize map
+    DeviceBuffer* _refinedDepthSimMap_dmp;    //< rc refined and fused depth/sim map
+    DeviceBuffer* _optimizedDepthSimMap_dmp;  //< rc optimized depth/sim map
+    DeviceBuffer* _sgmNormalMap_dmp;          //< rc upscaled SGM normal map (for experimentation purposes)
+    DeviceBuffer* _normalMap_dmp;             //< rc normal map (for debug / intermediate results purposes)
+    DeviceBuffer* _volumeRefineSim_dmp;   //< rc refine similarity volume
+    DeviceBuffer* _optTmpDepthMap_dmp;         //< for color optimization: temporary depth map buffer
+    DeviceBuffer* _optImgVariance_dmp;         //< for color optimization: image variance buffer
 //    cudaStream_t _stream;                                          //< stream for gpu execution
 };
 

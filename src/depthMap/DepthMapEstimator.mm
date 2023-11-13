@@ -3,6 +3,7 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License,
 // v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
+#import <depthMap/gpu/host/memory.hpp>
 
 #include "DepthMapEstimator.hpp"
 
@@ -17,10 +18,10 @@
 #include <depthMap/Sgm.hpp>
 #include <depthMap/Refine.hpp>
 #include <depthMap/gpu/host/utils.hpp>
-//#include <depthMap/gpu/host/patchPattern.hpp>
-//#include <depthMap/gpu/host/DeviceCache.hpp>
-#include <depthMap/gpu/host/DeviceStreamManager.hpp>
-//#include <depthMap/gpu/planeSweeping/deviceDepthSimilarityMap.hpp>
+#include <depthMap/gpu/host/patchPattern.hpp>
+#include <depthMap/gpu/host/DeviceCache.hpp>
+//#include <depthMap/gpu/host/DeviceStreamManager.hpp>
+#include <depthMap/gpu/planeSweeping/deviceDepthSimilarityMap.hpp>
 
 //#include <boost/filesystem.hpp>
 
@@ -50,13 +51,11 @@ DepthMapEstimator::DepthMapEstimator(const mvsUtils::MultiViewParams& mp,
     logTileRoiList(_tileParams, _mp.getMaxImageWidth(), _mp.getMaxImageHeight(), maxDownscale, _tileRoiList);
 
     // log SGM downscale & stepXY
-    LOG_X("SGM parameters:" << std::endl
-                         << "\t- scale: " << _sgmParams.scale << std::endl
+    LOG_X("SGM parameters:\t- scale: " << _sgmParams.scale
                          << "\t- stepXY: " <<_sgmParams.stepXY);
 
     // log Refine downscale & stepXY
-    LOG_X("Refine parameters:" << std::endl
-                         << "\t- scale: " << _refineParams.scale << std::endl
+    LOG_X("Refine parameters:\t- scale: "<< _refineParams.scale
                          << "\t- stepXY: " <<_refineParams.stepXY);
 }
 
@@ -84,10 +83,10 @@ int DepthMapEstimator::getNbSimultaneousTiles() const
     double sgmTileCostUnpaddedMB = 0.0;
 
     {
-      const bool sgmComputeDepthSimMap = !_depthMapParams.useRefine;
-      const bool sgmComputeNormalMap = _refineParams.useSgmNormalMap;
+      const bool sgmComputeDepthSimMap = !_depthMapParams.useRefine; //false
+      const bool sgmComputeNormalMap = _refineParams.useSgmNormalMap; //false
 
-      Sgm sgm(_mp, _tileParams, _sgmParams, sgmComputeDepthSimMap, sgmComputeNormalMap, 0 /*stream*/);
+      Sgm sgm(_mp, _tileParams, _sgmParams, sgmComputeDepthSimMap, sgmComputeNormalMap);
       sgmTileCostMB = sgm.getDeviceMemoryConsumption();
       sgmTileCostUnpaddedMB = sgm.getDeviceMemoryConsumptionUnpadded();
     }
@@ -98,7 +97,7 @@ int DepthMapEstimator::getNbSimultaneousTiles() const
 
     if(_depthMapParams.useRefine)
     {
-      Refine refine(_mp, _tileParams, _refineParams, 0 /*stream*/);
+      Refine refine(_mp, _tileParams, _refineParams);
       refineTileCostMB = refine.getDeviceMemoryConsumption();
       refineTileCostUnpaddedMB = refine.getDeviceMemoryConsumptionUnpadded();
     }
@@ -224,7 +223,7 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
 
     // initialize RAM image cache
     // note: maybe move it as class member in order to share it across multiple GPUs
-    mvsUtils::ImagesCache<image::Image<image::RGBAfColor>> ic(_mp, image::EImageColorSpace::LINEAR);
+    mvsUtils::ImagesCache<image::Image<image::RGBAfColor>> ic(_mp, image::EImageColorSpace::LINEAR);// TODO: reimpl
 
     // build tile list order by R camera
     std::vector<Tile> tiles;
@@ -267,33 +266,42 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
 
         // initialize Sgm objects
         for(int i = 0; i < nbStreams; ++i)
-          sgmPerStream.emplace_back(_mp, _tileParams, _sgmParams, sgmComputeDepthSimMap, sgmComputeNormalMap, deviceStreamManager.getStream(i));
+          sgmPerStream.emplace_back(_mp, _tileParams, _sgmParams, sgmComputeDepthSimMap, sgmComputeNormalMap);
 
         // initialize Refine objects
         if(_depthMapParams.useRefine)
           for(int i = 0; i < nbStreams; ++i)
-              refinePerStream.emplace_back(_mp, _tileParams, _refineParams, deviceStreamManager.getStream(i));
+              refinePerStream.emplace_back(_mp, _tileParams, _refineParams);
     }
 
     // allocate final deth/similarity map tile list in host memory
-    std::vector<std::vector<CudaHostMemoryHeap<float2, 2>>> depthSimMapTilePerCam(nbRcPerBatch);
+//    std::vector<std::vector<CudaHostMemoryHeap<float2, 2>>> depthSimMapTilePerCam(nbRcPerBatch);
+    NSMutableArray* depthSimMapTilePerCam = [NSMutableArray new];
     std::vector<std::vector<std::pair<float, float>>> depthMinMaxTilePerCam(nbRcPerBatch);
 
     for(int i = 0; i < nbRcPerBatch; ++i)
     {
-        auto& depthSimMapTiles = depthSimMapTilePerCam.at(i);
+        NSMutableArray* depthSimMapTiles = [NSMutableArray new];
+        DeviceBuffer* depthSimMapTile = [DeviceBuffer new];
+//        auto& depthSimMapTiles = depthSimMapTilePerCam.at(i);
         auto& depthMinMaxTiles = depthMinMaxTilePerCam.at(i);
 
-        depthSimMapTiles.resize(nbTilesPerCamera);
+//        depthSimMapTiles.resize(nbTilesPerCamera);
         depthMinMaxTiles.resize(nbTilesPerCamera);
 
         for(int j = 0; j < nbTilesPerCamera; ++j)
         {
           if(_depthMapParams.useRefine)
-            depthSimMapTiles.at(j).allocate(refinePerStream.front().getDeviceDepthSimMap().getSize());
+              [depthSimMapTile allocate:[refinePerStream.front().getDeviceDepthSimMap() getSize]];
+//            depthSimMapTiles.at(j).allocate(refinePerStream.front().getDeviceDepthSimMap().getSize());
           else // final depth/similarity map is SGM only
-            depthSimMapTiles.at(j).allocate(sgmPerStream.front().getDeviceDepthSimMap().getSize());
+              [depthSimMapTile allocate:[sgmPerStream.front().getDeviceDepthSimMap() getSize]];
+//            depthSimMapTiles.at(j).allocate(sgmPerStream.front().getDeviceDepthSimMap().getSize());
+            
+            [depthSimMapTiles insertObject:depthSimMapTile atIndex:j];
         }
+        
+        [depthSimMapTilePerCam insertObject:depthSimMapTiles atIndex:i];
     }
 
     // log device memory information
@@ -351,7 +359,7 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
         // wait for camera loading in device cache
 //        cudaDeviceSynchronize();
         //id <MTLBlitCommandEncoder> _cmdEncoder
-        _cmdEncoder->makeFence();
+//        _cmdEncoder->makeFence();
 
         // compute each batch tile
         for(int i = firstTileIndex; i < lastTileIndex; ++i)
@@ -366,7 +374,8 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
                 continue;
 
             // get tile result depth/similarity map in host memory
-            CudaHostMemoryHeap<float2, 2>& tileDepthSimMap_hmh = depthSimMapTilePerCam.at(batchCamIndex).at(tile.id);
+            
+            auto* tileDepthSimMap_hmh = [[depthSimMapTilePerCam objectAtIndex:batchCamIndex] objectAtIndex:tile.id];
 
             // check T cameras
             if(tile.sgmTCams.empty() || (_depthMapParams.useRefine && tile.refineTCams.empty())) // no T camera found

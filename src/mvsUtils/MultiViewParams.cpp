@@ -19,6 +19,9 @@
 #include <utils/strUtils.hpp>
 #include <camera/camera.hpp>
 
+#include <utils/strUtils.hpp>
+#include <utils/fileUtil.hpp>
+
 //#include <boost/filesystem.hpp>
 //#include <boost/accumulators/accumulators.hpp>
 //#include <boost/accumulators/statistics.hpp>
@@ -47,9 +50,8 @@ MultiViewParams::MultiViewParams(const sfmData::SfMData& sfmData,
     , _depthMapsFilterFolder(depthMapsFilterFolder + "/")
     , _processDownscale(downscale)
 {
-    verbose = userParams.get<bool>("global.verbose", true);
-    simThr = userParams.get<double>("global.simThr", 0.0);
-    _useSil = userParams.get<bool>("global.use_silhouettes", _useSil);
+    verbose = true;
+    simThr = 0.0;
 
     // load image uid, path and dimensions
     {
@@ -61,6 +63,8 @@ MultiViewParams::MultiViewParams(const sfmData::SfMData& sfmData,
 
           if(!sfmData.isPoseAndIntrinsicDefined(&view))
             continue;
+            
+          imageBuffersCache.emplace_back(view._buffer);
 
           std::string path = view.getImagePath();
 
@@ -100,7 +104,7 @@ MultiViewParams::MultiViewParams(const sfmData::SfMData& sfmData,
                     std::to_string(view.getViewId()) + "' in folder '" + _imagesFolder + "'.");
             }
 
-            path = _imagesFolder + std::to_string(view.getViewId()) + fs::path(paths[0]).extension().string();
+            path = _imagesFolder + std::to_string(view.getViewId()) + utils::GetFileExtension(paths[0]);
           }
 
           dimensions.emplace(view.getWidth(), view.getHeight());
@@ -127,10 +131,10 @@ MultiViewParams::MultiViewParams(const sfmData::SfMData& sfmData,
         oiio::ParamValueList::const_iterator scaleIt = metadata.end();
         oiio::ParamValueList::const_iterator pIt = metadata.end();
         
-        const bool fileExists = fs::exists(imgParams.path);
+        const bool fileExists = utils::exists(imgParams.path);
         if(fileExists)
         {
-            metadata = image::readImageMetadata(imgParams.path);
+//            metadata = image::readImageMetadata(imgParams.path);
             scaleIt = metadata.find("AliceVision:downscale");
             pIt = metadata.find("AliceVision:P");
         }
@@ -144,18 +148,19 @@ MultiViewParams::MultiViewParams(const sfmData::SfMData& sfmData,
         else if(fileExists)
         {
             // use image dimension
-            int w, h;
-            image::readImageSize(imgParams.path, w, h);
-            const int widthScale = imgParams.width / w;
-            const int heightScale = imgParams.height / h;
+//            int w, h;
+//            image::readImageSize(imgParams.path, w, h);
+//            const int widthScale = imgParams.width / w;
+//            const int heightScale = imgParams.height / h;
+//
+//            if((widthScale != 1) && (heightScale != 1))
+//                LOG_X("Reading '" << imgParams.path << "' x" << widthScale << "downscale from file dimension" << std::endl
+//                                                 << "\t- No 'AliceVision:downscale' metadata found.");
+//
+//            if(widthScale != heightScale)
+//                throw std::runtime_error("Scale of file: '" + imgParams.path + "' is not uniform, check image dimension ratio.");
 
-            if((widthScale != 1) && (heightScale != 1))
-                LOG_X("Reading '" << imgParams.path << "' x" << widthScale << "downscale from file dimension" << std::endl
-                                                 << "\t- No 'AliceVision:downscale' metadata found.");
-
-            if(widthScale != heightScale)
-                throw std::runtime_error("Scale of file: '" + imgParams.path + "' is not uniform, check image dimension ratio.");
-
+            const int widthScale = 1;
             _imagesScale.at(i) = widthScale;
         }
 
@@ -173,7 +178,7 @@ MultiViewParams::MultiViewParams(const sfmData::SfMData& sfmData,
             const std::string fileNameP = getFileNameFromIndex(*this, i, EFileType::P);
             const std::string fileNameD = getFileNameFromIndex(*this, i, EFileType::D);
 
-            if(fs::exists(fileNameP) && fs::exists(fileNameD))
+            if(utils::exists(fileNameP) && utils::exists(fileNameD))
             {
                 LOG_X("Reading view " << getViewId(i) << " projection matrix from file '" << fileNameP << "'.");
 
@@ -240,7 +245,7 @@ MultiViewParams::MultiViewParams(const sfmData::SfMData& sfmData,
 
 void MultiViewParams::loadMatricesFromTxtFile(int index, const std::string& fileNameP, const std::string& fileNameD)
 {
-    if (!fs::exists(fileNameP))
+    if (!utils::exists(fileNameP))
         throw std::runtime_error(std::string("mv_multiview_params: no such file: ") + fileNameP);
 
     std::ifstream in{fileNameP};
@@ -275,7 +280,7 @@ void MultiViewParams::loadMatricesFromTxtFile(int index, const std::string& file
     iRArr[index] = RArr[index].inverse();
     iCamArr[index] = iRArr[index] * iKArr[index];
 
-    if (fs::exists(fileNameD))
+    if (utils::exists(fileNameD))
     {
         std::ifstream inD{fileNameD};
         inD >> FocK1K2Arr[index].x >> FocK1K2Arr[index].y >> FocK1K2Arr[index].z;

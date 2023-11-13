@@ -26,14 +26,12 @@ Sgm::Sgm(const mvsUtils::MultiViewParams& mp,
          const SgmParams& sgmParams,
          bool computeDepthSimMap,
          bool computeNormalMap
-//         void* device
          )
     : _mp(mp)
     , _tileParams(tileParams)
     , _sgmParams(sgmParams)
     , _computeDepthSimMap(computeDepthSimMap || sgmParams.exportIntermediateDepthSimMaps)
     , _computeNormalMap(computeNormalMap || sgmParams.exportIntermediateNormalMaps)
-//    , _device(device)
 {
     // get tile maximum dimensions
     const int downscale = _sgmParams.scale * _sgmParams.stepXY;
@@ -41,33 +39,41 @@ Sgm::Sgm(const mvsUtils::MultiViewParams& mp,
     const int maxTileHeight = divideRoundUp(tileParams.bufferHeight, downscale);
 
     // compute map maximum dimensions
-    const CudaSize<2> mapDim(maxTileWidth, maxTileHeight);
+//    const CudaSize<2> mapDim(maxTileWidth, maxTileHeight);
+    MTLSize mapDim = MTLSizeMake(maxTileWidth, maxTileHeight, 1);
 
     // allocate depth list in device memory
     {
-        const CudaSize<2> depthsDim(_sgmParams.maxDepths, 1);
+//        const CudaSize<2> depthsDim(_sgmParams.maxDepths, 1);
+        MTLSize depthsDim = MTLSizeMake(_sgmParams.maxDepths, 1, 1);
 
-        _depths_hmh.allocate(depthsDim);
-        _depths_dmp.allocate(depthsDim);
+//        _depths_hmh.allocate(depthsDim);
+//        _depths_dmp.allocate(depthsDim);
+        [_depths_dmp allocate:depthsDim elemSizeInBytes:sizeof(float)];
     }
 
     // allocate depth thickness map in device memory
-    _depthThicknessMap_dmp.allocate(mapDim);
+//    _depthThicknessMap_dmp.allocate(mapDim);
+    [_depthThicknessMap_dmp allocate:mapDim elemSizeInBytes:sizeof(simd_float2)];
 
     // allocate depth/sim map in device memory
     if(_computeDepthSimMap)
-        _depthSimMap_dmp.allocate(mapDim);
+        [_depthSimMap_dmp allocate:mapDim elemSizeInBytes:sizeof(simd_float2)];
+//        _depthSimMap_dmp.allocate(mapDim);
 
     // allocate normal map in device memory
     if(_computeNormalMap)
-        _normalMap_dmp.allocate(mapDim);
+        [_normalMap_dmp allocate:mapDim elemSizeInBytes:sizeof(simd_float3)];
+//        _normalMap_dmp.allocate(mapDim);
 
     // allocate similarity volumes in device memory
     {
-        const CudaSize<3> volDim(maxTileWidth, maxTileHeight, _sgmParams.maxDepths);
+        MTLSize volDim = MTLSizeMake(maxTileWidth, maxTileHeight, _sgmParams.maxDepths);
 
-        _volumeBestSim_dmp.allocate(volDim);
-        _volumeSecBestSim_dmp.allocate(volDim);
+        [_volumeBestSim_dmp allocate:volDim elemSizeInBytes:sizeof(uint8_t)];
+        [_volumeSecBestSim_dmp allocate:volDim elemSizeInBytes:sizeof(uint8_t)];
+//        _volumeBestSim_dmp.allocate(volDim);
+//        _volumeSecBestSim_dmp.allocate(volDim);
     }
 
     // allocate similarity volume optimization buffers
@@ -75,9 +81,13 @@ Sgm::Sgm(const mvsUtils::MultiViewParams& mp,
     {
         const size_t maxTileSide = std::max(maxTileWidth, maxTileHeight);
 
-        _volumeSliceAccA_dmp.allocate(CudaSize<2>(maxTileSide, _sgmParams.maxDepths));
-        _volumeSliceAccB_dmp.allocate(CudaSize<2>(maxTileSide, _sgmParams.maxDepths));
-        _volumeAxisAcc_dmp.allocate(CudaSize<2>(maxTileSide, 1));
+        MTLSize sliceAccSz = MTLSizeMake(maxTileSide, _sgmParams.maxDepths, 1);
+        [_volumeSliceAccA_dmp allocate:sliceAccSz elemSizeInBytes:sizeof(unsigned)];
+        [_volumeSliceAccB_dmp allocate:sliceAccSz elemSizeInBytes:sizeof(unsigned)];
+//        _volumeSliceAccA_dmp.allocate(CudaSize<2>(maxTileSide, _sgmParams.maxDepths));
+//        _volumeSliceAccB_dmp.allocate(CudaSize<2>(maxTileSide, _sgmParams.maxDepths));
+        MTLSize axisAccSz = MTLSizeMake(maxTileSide, 1, 1);
+        [_volumeAxisAcc_dmp allocate:axisAccSz elemSizeInBytes:sizeof(unsigned)];
     }
 }
 
@@ -85,35 +95,35 @@ double Sgm::getDeviceMemoryConsumption() const
 {
     size_t bytes = 0;
 
-    bytes += _depths_dmp.getBytesPadded();
-    bytes += _depthThicknessMap_dmp.getBytesPadded();
-    bytes += _depthSimMap_dmp.getBytesPadded();
-    bytes += _normalMap_dmp.getBytesPadded();
-    bytes += _volumeBestSim_dmp.getBytesPadded();
-    bytes += _volumeSecBestSim_dmp.getBytesPadded();
-    bytes += _volumeSliceAccA_dmp.getBytesPadded();
-    bytes += _volumeSliceAccB_dmp.getBytesPadded();
-    bytes += _volumeAxisAcc_dmp.getBytesPadded();
+    bytes += [_depths_dmp getBufferLength];
+    bytes += [_depthThicknessMap_dmp getBufferLength];
+    bytes += [_depthSimMap_dmp getBufferLength];
+    bytes += [_normalMap_dmp getBufferLength];
+    bytes += [_volumeBestSim_dmp getBufferLength];
+    bytes += [_volumeSecBestSim_dmp getBufferLength];
+    bytes += [_volumeSliceAccA_dmp getBufferLength];
+    bytes += [_volumeSliceAccB_dmp getBufferLength];
+    bytes += [_volumeAxisAcc_dmp getBufferLength];
 
     return (double(bytes) / (1024.0 * 1024.0));
 }
 
-double Sgm::getDeviceMemoryConsumptionUnpadded() const
-{
-    size_t bytes = 0;
-
-    bytes += _depths_dmp.getBytesUnpadded();
-    bytes += _depthThicknessMap_dmp.getBytesUnpadded();
-    bytes += _depthSimMap_dmp.getBytesUnpadded();
-    bytes += _normalMap_dmp.getBytesUnpadded();
-    bytes += _volumeBestSim_dmp.getBytesUnpadded();
-    bytes += _volumeSecBestSim_dmp.getBytesUnpadded();
-    bytes += _volumeSliceAccA_dmp.getBytesUnpadded();
-    bytes += _volumeSliceAccB_dmp.getBytesUnpadded();
-    bytes += _volumeAxisAcc_dmp.getBytesUnpadded();
-
-    return (double(bytes) / (1024.0 * 1024.0));
-}
+//double Sgm::getDeviceMemoryConsumptionUnpadded() const
+//{
+//    size_t bytes = 0;
+//
+//    bytes += _depths_dmp.getBytesUnpadded();
+//    bytes += _depthThicknessMap_dmp.getBytesUnpadded();
+//    bytes += _depthSimMap_dmp.getBytesUnpadded();
+//    bytes += _normalMap_dmp.getBytesUnpadded();
+//    bytes += _volumeBestSim_dmp.getBytesUnpadded();
+//    bytes += _volumeSecBestSim_dmp.getBytesUnpadded();
+//    bytes += _volumeSliceAccA_dmp.getBytesUnpadded();
+//    bytes += _volumeSliceAccB_dmp.getBytesUnpadded();
+//    bytes += _volumeAxisAcc_dmp.getBytesUnpadded();
+//
+//    return (double(bytes) / (1024.0 * 1024.0));
+//}
 
 void Sgm::sgmRc(const Tile& tile, const SgmDepthList& tileDepthList)
 {
@@ -127,10 +137,11 @@ void Sgm::sgmRc(const Tile& tile, const SgmDepthList& tileDepthList)
     
     // copy rc depth data in page-locked host memory
     for(int i = 0; i < tileDepthList.getDepths().size(); ++i)
-        _depths_hmh(i, 0) = tileDepthList.getDepths()[i];
+        [_depths_dmp setVec1f:tileDepthList.getDepths()[i] x:i y:0];
+//        _depths_hmh(i, 0) = tileDepthList.getDepths()[i];
 
     // copy rc depth data in device memory
-    _depths_dmp.copyFrom(_depths_hmh, _device);
+//    _depths_dmp.copyFrom(_depths_hmh, _device);
 
     // compute best sim and second best sim volumes
     computeSimilarityVolumes(tile, tileDepthList);
@@ -174,7 +185,7 @@ void Sgm::sgmRc(const Tile& tile, const SgmDepthList& tileDepthList)
         const int rcDeviceCameraParamsId = deviceCache.requestCameraParamsId(tile.rc, _sgmParams.scale, _mp);
 
         LOG_X(tile << "SGM compute normal map of view id: " << viewId << ", rc: " << tile.rc << " (" << (tile.rc + 1) << " / " << _mp.ncams << ").");
-        cuda_depthSimMapComputeNormal(_normalMap_dmp, _depthSimMap_dmp, rcDeviceCameraParamsId, _sgmParams.stepXY, downscaledRoi, _device);
+        cuda_depthSimMapComputeNormal(_normalMap_dmp, _depthSimMap_dmp, rcDeviceCameraParamsId, _sgmParams.stepXY, downscaledRoi);
 
         // export intermediate normal map (if requested by user)
         if(_sgmParams.exportIntermediateNormalMaps)

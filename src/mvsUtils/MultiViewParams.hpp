@@ -109,6 +109,8 @@ public:
     float simThr;
     int g_border = 2;
     bool verbose;
+    
+    std::vector<std::vector<uint8_t>> imageBuffersCache;
 
 //    boost::property_tree::ptree userParams;
 

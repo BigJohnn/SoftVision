@@ -14,6 +14,7 @@
 
 namespace depthMap {
 
+//Last Recently Used - LRU
 /* The LRUCache template takes a type T.
  * T must be copyable and offer operator<, operator==, as well as operator=(int)
  * and constructors T(), T(const T&) and T(int).

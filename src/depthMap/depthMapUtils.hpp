@@ -6,12 +6,14 @@
 
 #pragma once
 
+#import <depthMap/gpu/host/memory.hpp>
+
 #include <image/Image.hpp>
 #include <mvsData/ROI.hpp>
 #include <mvsUtils/MultiViewParams.hpp>
 #include <mvsUtils/TileParams.hpp>
 #include <depthMap/Tile.hpp>
-#include <depthMap/gpu/host/memory.hpp>
+
 
 #include <vector>
 #include <string>
@@ -153,7 +155,7 @@ void writeDepthSimMapFromTileList(int rc,
  * @param[in] depth the depth reset value
  * @param[in] sim the sim reset value
  */
-void resetDepthSimMap(CudaHostMemoryHeap<float2, 2>& inout_depthSimMap_hmh, float depth = -1.f, float sim = 1.f);
+void resetDepthSimMap(DeviceBuffer* inout_depthSimMap_hmh, float depth = -1.f, float sim = 1.f);
 
 /**
  * @brief Merge normal map tiles on disk.
