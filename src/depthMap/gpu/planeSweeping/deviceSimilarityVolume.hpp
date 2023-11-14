@@ -5,11 +5,11 @@
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #pragma once
+#import <depthMap/gpu/host/memory.hpp>
 
 #include <mvsData/ROI.hpp>
 #include <depthMap/SgmParams.hpp>
 #include <depthMap/RefineParams.hpp>
-#include <depthMap/gpu/host/memory.hpp>
 #include <depthMap/gpu/host/DeviceMipmapImage.hpp>
 #include <depthMap/gpu/planeSweeping/similarity.hpp>
 
@@ -22,7 +22,7 @@ namespace depthMap {
  * @param[in] value the value to initalize with
  * @param[in] stream the stream for gpu execution
  */
-extern void cuda_volumeInitialize(CudaDeviceMemoryPitched<TSim, 3>& inout_volume_dmp, TSim value);
+extern void cuda_volumeInitialize(DeviceBuffer* inout_volume_dmp, TSim value);
 
 /**
  * @brief Initialize all the given similarity volume in device memory to the given value.
@@ -30,7 +30,7 @@ extern void cuda_volumeInitialize(CudaDeviceMemoryPitched<TSim, 3>& inout_volume
  * @param[in] value the value to initalize with
  * @param[in] stream the stream for gpu execution
  */
-extern void cuda_volumeInitialize(CudaDeviceMemoryPitched<TSimRefine, 3>& inout_volume_dmp, TSimRefine value);
+extern void cuda_volumeInitialize(DeviceBuffer* inout_volume_dmp, TSimRefine value);
 
 /**
  * @brief Add similarity values from a given volume to another given volume.
@@ -61,9 +61,9 @@ extern void cuda_volumeUpdateUninitializedSimilarity(const CudaDeviceMemoryPitch
  * @param[in] depthRange the volume depth range to compute
  * @param[in] roi the 2d region of interest
  */
-extern void cuda_volumeComputeSimilarity(CudaDeviceMemoryPitched<TSim, 3>& out_volBestSim_dmp, 
-                                         CudaDeviceMemoryPitched<TSim, 3>& out_volSecBestSim_dmp,
-                                         const CudaDeviceMemoryPitched<float, 2>& in_depths_dmp,
+extern void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
+                                         DeviceBuffer* out_volSecBestSim_dmp,
+                                         const DeviceBuffer* in_depths_dmp,
                                          const int rcDeviceCameraParamsId,
                                          const int tcDeviceCameraParamsId,
                                          const DeviceMipmapImage& rcDeviceMipmapImage,

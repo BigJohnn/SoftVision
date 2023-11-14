@@ -65,5 +65,18 @@
     return nBytes;
 }
 
+-(int) getBytesUpToDim:(int)dim
+{
+    int prod = nBytesPerRow;
+    if(dim > 0) {
+        prod *= sz.height;
+        if(dim > 1) {
+            prod *= sz.depth;
+        }
+    }
+    return prod;
+}
+
+
 
 @end

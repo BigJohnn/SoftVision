@@ -6,11 +6,11 @@
 
 
 #include <mvsData/ROI_d.hpp>
-#include <depthMap/gpu/device/matrix.cuh>
-#include <depthMap/gpu/device/Patch.cuh>
+//#include "ROI_d.hpp"
+//#include <depthMap/gpu/device/matrix.metal>
+//#include <depthMap/gpu/device/Patch.metal>
 #include <depthMap/gpu/planeSweeping/similarity.hpp>
 #include <depahMap/gpu/device/DeviceCameraParams.metal>
-//#include "DeviceCameraParams.metal"
 
 namespace depthMap {
 
@@ -106,32 +106,36 @@ kernel void volume_updateUninitialized_kernel(TSim* inout_volume2nd_d, int inout
     }
 }
 
-kernel void volume_computeSimilarity_kernel(TSim* out_volume1st_d, int out_volume1st_s, int out_volume1st_p,
-                                                TSim* out_volume2nd_d, int out_volume2nd_s, int out_volume2nd_p,
-                                                const float* in_depths_d, const int in_depths_p,
-                                                const int rcDeviceCameraParamsId,
-                                                const int tcDeviceCameraParamsId,
-                                                const cudaTextureObject_t rcMipmapImage_tex,
-                                                const cudaTextureObject_t tcMipmapImage_tex,
-                                                const unsigned int rcSgmLevelWidth,
-                                                const unsigned int rcSgmLevelHeight,
-                                                const unsigned int tcSgmLevelWidth,
-                                                const unsigned int tcSgmLevelHeight,
-                                                const float rcMipmapLevel,
-                                                const int stepXY,
-                                                const int wsh,
-                                                const float invGammaC,
-                                                const float invGammaP,
-                                                const bool useConsistentScale,
-                                                const bool useCustomPatchPattern,
-                                                const Range depthRange,
-                                                const ROI roi)
+kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, device int* out_volume1st_s, device int* out_volume1st_p,
+                                            device TSim* out_volume2nd_d, device int out_volume2nd_s, device int out_volume2nd_p,
+                                            device const float* in_depths_d, device const int* in_depths_p,
+                                            device const int* rcDeviceCameraParamsId,
+                                            device const int* tcDeviceCameraParamsId,
+//                                            device const cudaTextureObject_t rcMipmapImage_tex,
+//                                            device const cudaTextureObject_t tcMipmapImage_tex,
+                                            device const unsigned int* rcSgmLevelWidth,
+                                            device const unsigned int* rcSgmLevelHeight,
+                                            device const unsigned int* tcSgmLevelWidth,
+                                            device const unsigned int* tcSgmLevelHeight,
+                                            device const float* rcMipmapLevel,
+                                            device const int* stepXY,
+                                            device const int* wsh,
+                                            device const float* invGammaC,
+                                            device const float* invGammaP,
+                                            device const bool* useConsistentScale,
+                                            device const bool* useCustomPatchPattern,
+                                            device const Range_d* depthRange,
+                                            device const ROI_d* roi,
+                                            uint3 index [[thread_position_in_grid]])
 {
-    const unsigned int roiX = blockIdx.x * blockDim.x + threadIdx.x;
-    const unsigned int roiY = blockIdx.y * blockDim.y + threadIdx.y;
-    const unsigned int roiZ = blockIdx.z;
+    const unsigned int roiX = index.x;
+    const unsigned int roiY = index.y;
+    const unsigned int roiZ = index.z;
 
-    if(roiX >= roi.width() || roiY >= roi.height()) // no need to check roiZ
+//    roi->lt.
+    unsigned int roiWidth = roi->rb.x - roi->lt.x;
+    unsigned int roiHeight = roi->rb.y - roi->lt.y;
+    if(roiX >= roiWidth || roiY >= roiHeight) // no need to check roiZ
         return;
 
     // R and T camera parameters
@@ -258,7 +262,7 @@ kernel void volume_refineSimilarity_kernel(TSimRefine* inout_volSim_d, int inout
     const unsigned int roiY = blockIdx.y * blockDim.y + threadIdx.y;
     const unsigned int roiZ = blockIdx.z;
 
-    if(roiX >= roi.width() || roiY >= roi.height()) // no need to check roiZ
+    if(roiX >= roiWidth || roiY >= roiHeight) // no need to check roiZ
         return;
 
     // R and T camera parameters
@@ -405,7 +409,7 @@ kernel void volume_retrieveBestDepth_kernel(float2* out_sgmDepthThicknessMap_d, 
     const unsigned int vx = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned int vy = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if(vx >= roi.width() || vy >= roi.height())
+    if(vx >= roiWidth || vy >= roiHeight)
         return;
 
     // R camera parameters
@@ -525,7 +529,7 @@ kernel void volume_refineBestDepth_kernel(float2* out_refineDepthSimMap_d, int o
     const unsigned int vx = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned int vy = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if(vx >= roi.width() || vy >= roi.height())
+    if(vx >= roiWidth || vy >= roiHeight)
         return;
 
     // corresponding input sgm depth/pixSize (middle depth)

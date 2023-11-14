@@ -309,8 +309,8 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
 
     // compute number of batches
     const int nbBatches = divideRoundUp(int(tiles.size()), nbTilesPerBatch);
-    const int minMipmapDownscale = std::min(_refineParams.scale, _sgmParams.scale);
-    const int maxMipmapDownscale = std::max(_refineParams.scale, _sgmParams.scale) * std::pow(2,6); // we add 6 downscale levels
+    const int minMipmapDownscale = std::min(_refineParams.scale, _sgmParams.scale); //1
+    const int maxMipmapDownscale = std::max(_refineParams.scale, _sgmParams.scale) * std::pow(2,6); // we add 6 downscale levels //2^7
 
     // compute each batch of R cameras
     for(int b = 0; b < nbBatches; ++b)

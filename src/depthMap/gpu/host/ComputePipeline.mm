@@ -58,7 +58,28 @@
     for(int i=0;i<args.count; ++i) {
         id elem = args[i];
         
-        if([elem isKindOfClass:[NSNumber class]] || [elem isKindOfClass:[NSData class]]) {
+        if([elem isKindOfClass:[NSNumber class]]) {
+            if ( strcmp([elem objCType], @encode(float)) == 0 ) {
+                auto k = [elem floatValue];
+                [computeEncoder setBytes:&k length:sizeof(k) atIndex:i];
+            }
+            else if ( strcmp([elem objCType], @encode(int)) == 0 ) {
+                auto k = [elem intValue];
+                [computeEncoder setBytes:&k length:sizeof(k) atIndex:i];
+            }
+            else if ( strcmp([elem objCType], @encode(long long)) == 0 ) {
+                auto k = [elem unsignedIntValue];
+                [computeEncoder setBytes:&k length:sizeof(k) atIndex:i];
+            }
+            else if ( strcmp([elem objCType], @encode(bool)) == 0 ) {
+                auto k = [elem boolValue];
+                [computeEncoder setBytes:&k length:sizeof(k) atIndex:i];
+            }
+            else {
+                NSLog(@"==TODO: impl: elem encode is %s==",[elem objCType]);
+            }
+        }
+        else if([elem isKindOfClass:[NSData class]]) {
             [computeEncoder setBytes:&elem length:sizeof(elem) atIndex:i];
         }
         else if([elem isKindOfClass:[NSObject class]]) { // TODO: check 如何判断这个NSOBject是MTLBuffer 或者MTLTexture

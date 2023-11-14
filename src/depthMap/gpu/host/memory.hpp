@@ -16,6 +16,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 -(void) setVec1f:(float)val x:(int)x y:(int)y;
 
+-(int) getBytesUpToDim:(int)dim;
+
 @end
 
 NS_ASSUME_NONNULL_END

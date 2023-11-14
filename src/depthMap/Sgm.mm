@@ -256,7 +256,7 @@ void Sgm::computeSimilarityVolumes(const Tile& tile, const SgmDepthList& tileDep
                                    << "\t- tile range x: [" << downscaledRoi.x.begin << " - " << downscaledRoi.x.end << "]" << std::endl
                                    << "\t- tile range y: [" << downscaledRoi.y.begin << " - " << downscaledRoi.y.end << "]" << std::endl);
 
-        cuda_volumeComputeSimilarity(_volumeBestSim_dmp, 
+        volumeComputeSimilarity(_volumeBestSim_dmp, 
                                      _volumeSecBestSim_dmp, 
                                      _depths_dmp, 
                                      rcDeviceCameraParamsId,

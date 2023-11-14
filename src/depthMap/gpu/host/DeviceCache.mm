@@ -131,6 +131,8 @@ void fillCameraParameters(void* cameraParameters, int camId, int downscale, cons
 
     cameraParameters_h.ZVect = M3x3mulV3(cameraParameters_h.iR, simd_make_float3(0.f, 0.f, 1.f));
     normalize(cameraParameters_h.ZVect);
+    
+    constantCameraParametersArray_d[camId] = cameraParameters_h;
 }
 
 
@@ -351,35 +353,39 @@ void DeviceCache::addMipmapImage(int camId,
     LOG_X("Add mipmap image on device cache (id: " << camId << ", view id: " << viewId << ").");
 
     // get image buffer
-    mvsUtils::ImagesCache<image::Image<image::RGBAfColor>>::ImgSharedPtr img = imageCache.getImg_sync(camId);
+//    mvsUtils::ImagesCache<image::Image<image::RGBAfColor>>::ImgSharedPtr img = imageCache.getImg_sync(camId);
 
+//    mp.getWidth(<#int index#>)
     // allocate the full size host-sided image buffer
-    CudaSize<2> imgSize(img->Width(), img->Height());
-    CudaHostMemoryHeap<CudaRGBA, 2> img_hmh(imgSize);
+    MTLSize imgSize = MTLSizeMake(mp.getWidth(camId) * 4, mp.getHeight(camId), 1);
+    DeviceBuffer* img_hmh = [DeviceBuffer new];
+    [img_hmh allocate:imgSize elemSizeInBytes:sizeof(float)];
+//    (imgSize);
 
     // copy image from imageCache to CUDA host-side image buffer
-#pragma omp parallel for
-    for(int y = 0; y < imgSize.y(); ++y)
-    {
-        for(int x = 0; x < imgSize.x(); ++x)
-        {
-            const image::RGBAfColor& floatRGBA = (*img)(y, x);
-            CudaRGBA& cudaRGBA = img_hmh(x, y);
-
-#ifdef ALICEVISION_DEPTHMAP_TEXTURE_USE_HALF
-            // explicit float to half conversion
-            cudaRGBA.x = half(floatRGBA.r() * 255.0f);
-            cudaRGBA.y = half(floatRGBA.g() * 255.0f);
-            cudaRGBA.z = half(floatRGBA.b() * 255.0f);
-            cudaRGBA.w = half(floatRGBA.a() * 255.0f);
-#else
-            cudaRGBA.x = floatRGBA.r() * 255.0f;
-            cudaRGBA.y = floatRGBA.g() * 255.0f;
-            cudaRGBA.z = floatRGBA.b() * 255.0f;
-            cudaRGBA.w = floatRGBA.a() * 255.0f;
-#endif
-        }
-    }
+    //TODO: cpu => gpu
+//#pragma omp parallel for
+//    for(int y = 0; y < imgSize.y(); ++y)
+//    {
+//        for(int x = 0; x < imgSize.x(); ++x)
+//        {
+//            const image::RGBAfColor& floatRGBA = (*img)(y, x);
+//            CudaRGBA& cudaRGBA = img_hmh(x, y);
+//
+//#ifdef ALICEVISION_DEPTHMAP_TEXTURE_USE_HALF
+//            // explicit float to half conversion
+//            cudaRGBA.x = half(floatRGBA.r() * 255.0f);
+//            cudaRGBA.y = half(floatRGBA.g() * 255.0f);
+//            cudaRGBA.z = half(floatRGBA.b() * 255.0f);
+//            cudaRGBA.w = half(floatRGBA.a() * 255.0f);
+//#else
+//            cudaRGBA.x = floatRGBA.r() * 255.0f;
+//            cudaRGBA.y = floatRGBA.g() * 255.0f;
+//            cudaRGBA.z = floatRGBA.b() * 255.0f;
+//            cudaRGBA.w = floatRGBA.a() * 255.0f;
+//#endif
+//        }
+//    }
 
     DeviceMipmapImage& deviceMipmapImage = *(currentDeviceCache.mipmaps.at(deviceMipmapId));
     deviceMipmapImage.fill(img_hmh, minDownscale, maxDownscale); //TODO: USE MTLMipmap ?

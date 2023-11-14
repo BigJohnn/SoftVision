@@ -3,11 +3,13 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License,
 // v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
+#import <depthMap/gpu/host/ComputePipeline.hpp>
 
 #include "deviceSimilarityVolume.hpp"
 #include "deviceSimilarityVolumeKernels.cuh"
 
-#include <depthMap/gpu/host/divUp.hpp>
+#include <mvsData/ROI_d.hpp>
+//#include <depthMap/gpu/host/divUp.hpp>
 
 #include <map>
 
@@ -61,43 +63,74 @@ void cuda_volumeInitialize(DeviceBuffer* inout_volume_dmp, TSim value)
 
     // kernel launch parameters
     MTLSize block = MTLSizeMake(32, 4, 1);
-    MTLSize grid = MTLSizeMake(divUp(volDim.width, block.width), divUp(volDim.height, block.height), volDim.depth);
+    MTLSize grid = MTLSizeMake(volDim.width, volDim.height, volDim.depth);
 //    const dim3 block(32, 4, 1);
 //    const dim3 grid(divUp(volDim.x(), block.x), divUp(volDim.y(), block.y), volDim.z());
 
     // kernel execution
-    volume_init_kernel<TSim><<<grid, block, 0, stream>>>(
-        inout_volume_dmp.getBuffer(),
-        inout_volume_dmp.getBytesPaddedUpToDim(1),
-        inout_volume_dmp.getBytesPaddedUpToDim(0), 
-        (unsigned int)(volDim.x()),
-        (unsigned int)(volDim.y()),
-        value);
-
-    // check cuda last error
-    CHECK_CUDA_ERROR();
+    
+//    [inout_volume_dmp allocate:volDim elemSizeInBytes:sizeof(float)];
+    NSArray* args = @[
+        [inout_volume_dmp getBuffer],
+        [NSNumber numberWithInt:[inout_volume_dmp getBytesUpToDim:1]], //1024*256
+        [NSNumber numberWithInt:[inout_volume_dmp getBytesUpToDim:0]], // 1024
+        [NSNumber numberWithUnsignedInt:(unsigned)volDim.width],
+        [NSNumber numberWithUnsignedInt:(unsigned)volDim.height],
+        @255.f
+    ];
+    
+    [ComputePipeline Exec:grid ThreadgroupSize:block KernelFuncName:@"volume_init_kernel" Args:args];
+    
+//    volume_init_kernel<TSim><<<grid, block, 0, stream>>>(
+//        inout_volume_dmp.getBuffer(),
+//        inout_volume_dmp.getBytesPaddedUpToDim(1),
+//        inout_volume_dmp.getBytesPaddedUpToDim(0),
+//        (unsigned int)(volDim.x()),
+//        (unsigned int)(volDim.y()),
+//        value);
+//
+//    // check cuda last error
+//    CHECK_CUDA_ERROR();
 }
 
-void cuda_volumeInitialize(CudaDeviceMemoryPitched<TSimRefine, 3>& inout_volume_dmp, TSimRefine value)
+void cuda_volumeInitialize(DeviceBuffer* inout_volume_dmp, TSimRefine value)
 {
     // get input/output volume dimensions
-    const CudaSize<3>& volDim = inout_volume_dmp.getSize();
+//    const CudaSize<3>& volDim = inout_volume_dmp.getSize();
+//
+//    // kernel launch parameters
+//    const dim3 block(32, 4, 1);
+//    const dim3 grid(divUp(volDim.x(), block.x), divUp(volDim.y(), block.y), volDim.z());
+    
+    // get input/output volume dimensions
+    MTLSize volDim = [inout_volume_dmp getSize];
 
     // kernel launch parameters
-    const dim3 block(32, 4, 1);
-    const dim3 grid(divUp(volDim.x(), block.x), divUp(volDim.y(), block.y), volDim.z());
+    MTLSize block = MTLSizeMake(32, 4, 1);
+    MTLSize grid = MTLSizeMake(volDim.width, volDim.height, volDim.depth);
 
     // kernel execution
-    volume_init_kernel<TSimRefine><<<grid, block, 0, stream>>>(
-        inout_volume_dmp.getBuffer(),
-        inout_volume_dmp.getBytesPaddedUpToDim(1),
-        inout_volume_dmp.getBytesPaddedUpToDim(0), 
-        (unsigned int)(volDim.x()),
-        (unsigned int)(volDim.y()),
-        value);
-
-    // check cuda last error
-    CHECK_CUDA_ERROR();
+    NSArray* args = @[
+        [inout_volume_dmp getBuffer], //TODO: check: TSimRefine是否使用half
+        [NSNumber numberWithInt:[inout_volume_dmp getBytesUpToDim:1]], //1024*256
+        [NSNumber numberWithInt:[inout_volume_dmp getBytesUpToDim:0]], // 1024
+        [NSNumber numberWithUnsignedInt:(unsigned)volDim.width],
+        [NSNumber numberWithUnsignedInt:(unsigned)volDim.height],
+        @255.f
+    ];
+    
+    [ComputePipeline Exec:grid ThreadgroupSize:block KernelFuncName:@"volume_init_kernel" Args:args];
+    
+//    volume_init_kernel<TSimRefine><<<grid, block, 0, stream>>>(
+//        inout_volume_dmp.getBuffer(),
+//        inout_volume_dmp.getBytesPaddedUpToDim(1),
+//        inout_volume_dmp.getBytesPaddedUpToDim(0),
+//        (unsigned int)(volDim.x()),
+//        (unsigned int)(volDim.y()),
+//        value);
+//
+//    // check cuda last error
+//    CHECK_CUDA_ERROR();
 }
 
 void cuda_volumeAdd(CudaDeviceMemoryPitched<TSimRefine, 3>& inout_volume_dmp,
@@ -154,56 +187,96 @@ void cuda_volumeUpdateUninitializedSimilarity(const CudaDeviceMemoryPitched<TSim
     CHECK_CUDA_ERROR();
 }
 
-void cuda_volumeComputeSimilarity(CudaDeviceMemoryPitched<TSim, 3>& out_volBestSim_dmp,
-                                           CudaDeviceMemoryPitched<TSim, 3>& out_volSecBestSim_dmp,
-                                           const CudaDeviceMemoryPitched<float, 2>& in_depths_dmp,
-                                           const int rcDeviceCameraParamsId,
-                                           const int tcDeviceCameraParamsId,
-                                           const DeviceMipmapImage& rcDeviceMipmapImage,
-                                           const DeviceMipmapImage& tcDeviceMipmapImage,
-                                           const SgmParams& sgmParams,
-                                           const Range& depthRange,
-                                           const ROI& roi)
+void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
+                              DeviceBuffer* out_volSecBestSim_dmp,
+                               const DeviceBuffer* in_depths_dmp,
+                               const int rcDeviceCameraParamsId,
+                               const int tcDeviceCameraParamsId,
+                               const DeviceMipmapImage& rcDeviceMipmapImage,
+                               const DeviceMipmapImage& tcDeviceMipmapImage,
+                               const SgmParams& sgmParams,
+                               const Range& depthRange,
+                               const ROI& roi)
 {
     // get mipmap images level and dimensions
     const float rcMipmapLevel = rcDeviceMipmapImage.getLevel(sgmParams.scale);
-    const CudaSize<2> rcLevelDim = rcDeviceMipmapImage.getDimensions(sgmParams.scale);
-    const CudaSize<2> tcLevelDim = tcDeviceMipmapImage.getDimensions(sgmParams.scale);
+    MTLSize rcLevelDim = rcDeviceMipmapImage.getDimensions(sgmParams.scale);
+    MTLSize tcLevelDim = tcDeviceMipmapImage.getDimensions(sgmParams.scale);
 
     // kernel launch parameters
-    const dim3 block = getMaxPotentialBlockSize(volume_computeSimilarity_kernel);
-    const dim3 grid(divUp(roi.width(), block.x), divUp(roi.height(), block.y), depthRange.size());
+//    const dim3 block = getMaxPotentialBlockSize(volume_computeSimilarity_kernel);
+//    const dim3 grid(divUp(roi.width(), block.x), divUp(roi.height(), block.y), depthRange.size());
+    
+    MTLSize block = MTLSizeMake(32, 4, 1); // TODO: check!
+    MTLSize grid = MTLSizeMake(roi.width(), roi.height(), depthRange.size());
 
     // kernel execution
-    volume_computeSimilarity_kernel<<<grid, block, 0, stream>>>(
-        out_volBestSim_dmp.getBuffer(),
-        out_volBestSim_dmp.getBytesPaddedUpToDim(1),
-        out_volBestSim_dmp.getBytesPaddedUpToDim(0),
-        out_volSecBestSim_dmp.getBuffer(),
-        out_volSecBestSim_dmp.getBytesPaddedUpToDim(1),
-        out_volSecBestSim_dmp.getBytesPaddedUpToDim(0),
-        in_depths_dmp.getBuffer(),
-        in_depths_dmp.getBytesPaddedUpToDim(0),
-        rcDeviceCameraParamsId,
-        tcDeviceCameraParamsId,
-        rcDeviceMipmapImage.getTextureObject(),
-        tcDeviceMipmapImage.getTextureObject(),
-        (unsigned int)(rcLevelDim.x()),
-        (unsigned int)(rcLevelDim.y()),
-        (unsigned int)(tcLevelDim.x()),
-        (unsigned int)(tcLevelDim.y()),
-        rcMipmapLevel,
-        sgmParams.stepXY,
-        sgmParams.wsh,
-        (1.f / float(sgmParams.gammaC)), // inverted gammaC
-        (1.f / float(sgmParams.gammaP)), // inverted gammaP
-        sgmParams.useConsistentScale,
-        sgmParams.useCustomPatchPattern,
-        depthRange,
-        roi);
+    
+//    [inout_volume_dmp allocate:volDim elemSizeInBytes:sizeof(float)];
+    Range_d depthRange_d(depthRange.begin, depthRange.end);
+    ROI_d roi_d(roi.x.begin, roi.y.begin, roi.x.end, roi.y.end);
+    NSArray* args = @[
+        [out_volBestSim_dmp getBuffer],
+        [NSNumber numberWithInt:[out_volBestSim_dmp getBytesUpToDim:1]], //1024*256
+        [NSNumber numberWithInt:[out_volBestSim_dmp getBytesUpToDim:0]], // 1024
+        [out_volSecBestSim_dmp getBuffer],
+        [NSNumber numberWithInt:[out_volSecBestSim_dmp getBytesUpToDim:1]], //1024*256
+        [NSNumber numberWithInt:[out_volSecBestSim_dmp getBytesUpToDim:0]], // 1024
+        [in_depths_dmp getBuffer],
+        [NSNumber numberWithInt:[in_depths_dmp getBytesUpToDim:0]], // 1024
+        [NSNumber numberWithInt:rcDeviceCameraParamsId],
+        [NSNumber numberWithInt:tcDeviceCameraParamsId],
+//        rcTexture
+//        tcTexture
+        [NSNumber numberWithUnsignedInt:(unsigned)rcLevelDim.width],
+        [NSNumber numberWithUnsignedInt:(unsigned)rcLevelDim.height],
+        [NSNumber numberWithUnsignedInt:(unsigned)tcLevelDim.width],
+        [NSNumber numberWithUnsignedInt:(unsigned)tcLevelDim.height],
+        [NSNumber numberWithInt:rcMipmapLevel],
+        [NSNumber numberWithInt:sgmParams.stepXY],
+        [NSNumber numberWithInt:sgmParams.wsh],
+        
+        [NSNumber numberWithFloat:1.f / float(sgmParams.gammaC)],
+        [NSNumber numberWithInt:1.f / float(sgmParams.gammaP)],
+        
+        [NSNumber numberWithBool:sgmParams.useConsistentScale],
+        [NSNumber numberWithBool:sgmParams.useCustomPatchPattern],
+        depthRange_d,
+        roi_d
+    ];
+    
+    [ComputePipeline Exec:grid ThreadgroupSize:block KernelFuncName:@"volume_computeSimilarity_kernel" Args:args];
 
-    // check cuda last error
-    CHECK_CUDA_ERROR();
+    // kernel execution
+//    volume_computeSimilarity_kernel<<<grid, block, 0, stream>>>(
+//        out_volBestSim_dmp.getBuffer(),
+//        out_volBestSim_dmp.getBytesPaddedUpToDim(1),
+//        out_volBestSim_dmp.getBytesPaddedUpToDim(0),
+//        out_volSecBestSim_dmp.getBuffer(),
+//        out_volSecBestSim_dmp.getBytesPaddedUpToDim(1),
+//        out_volSecBestSim_dmp.getBytesPaddedUpToDim(0),
+//        in_depths_dmp.getBuffer(),
+//        in_depths_dmp.getBytesPaddedUpToDim(0),
+//        rcDeviceCameraParamsId,
+//        tcDeviceCameraParamsId,
+//        rcDeviceMipmapImage.getTextureObject(),
+//        tcDeviceMipmapImage.getTextureObject(),
+//        (unsigned int)(rcLevelDim.x()),
+//        (unsigned int)(rcLevelDim.y()),
+//        (unsigned int)(tcLevelDim.x()),
+//        (unsigned int)(tcLevelDim.y()),
+//        rcMipmapLevel,
+//        sgmParams.stepXY,
+//        sgmParams.wsh,
+//        (1.f / float(sgmParams.gammaC)), // inverted gammaC
+//        (1.f / float(sgmParams.gammaP)), // inverted gammaP
+//        sgmParams.useConsistentScale,
+//        sgmParams.useCustomPatchPattern,
+//        depthRange,
+//        roi);
+//
+//    // check cuda last error
+//    CHECK_CUDA_ERROR();
 }
 
 extern void cuda_volumeRefineSimilarity(CudaDeviceMemoryPitched<TSimRefine, 3>& inout_volSim_dmp, 
