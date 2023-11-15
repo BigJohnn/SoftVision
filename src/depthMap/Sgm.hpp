@@ -54,13 +54,13 @@ public:
     ~Sgm() = default;
 
     // final depth/thickness map getter
-    inline const CudaDeviceMemoryPitched<float2, 2>& getDeviceDepthThicknessMap() const { return _depthThicknessMap_dmp; }
+    inline DeviceBuffer* getDeviceDepthThicknessMap() const { return _depthThicknessMap_dmp; }
 
     // final depth/similarity map getter (optional: could be empty)
-    inline const CudaDeviceMemoryPitched<float2, 2>& getDeviceDepthSimMap() const { return _depthSimMap_dmp; }
+    inline DeviceBuffer* getDeviceDepthSimMap() const { return _depthSimMap_dmp; }
 
     // final normal map getter (optional: could be empty)
-    inline const CudaDeviceMemoryPitched<float3, 2>& getDeviceNormalMap() const { return _normalMap_dmp; }
+    inline DeviceBuffer* getDeviceNormalMap() const { return _normalMap_dmp; }
 
     /**
      * @brief Get memory consumpyion in device memory.
@@ -126,7 +126,7 @@ private:
      */
     void exportVolumeInformation(const Tile& tile,
                                  const SgmDepthList& tileDepthList,
-                                 const CudaDeviceMemoryPitched<TSim, 3>& in_volume_dmp,
+                                 DeviceBuffer* in_volume_dmp,
                                  const std::string& name) const;
 
 

@@ -27,7 +27,7 @@ namespace depthMap {
  * @param[in] in_img_dmp the image in device memory
  * @param[in] path the path of the output image on disk
  */
-void writeDeviceImage(const CudaDeviceMemoryPitched<CudaRGBA, 2>& in_img_dmp, const std::string& path);
+void writeDeviceImage(DeviceBuffer* in_img_dmp, const std::string& path);
 
 /**
  * @brief Write a normal map (depth map estimation) on disk from device memory.
@@ -44,7 +44,7 @@ void writeNormalMap(int rc,
                     const mvsUtils::MultiViewParams& mp,
                     const mvsUtils::TileParams& tileParams,
                     const ROI& roi,
-                    const CudaDeviceMemoryPitched<float3, 2>& in_normalMap_dmp,
+                    DeviceBuffer* in_normalMap_dmp,
                     int scale,
                     int step,
                     const std::string& name = "");
@@ -64,7 +64,7 @@ void writeNormalMapFiltered(int rc,
                             const mvsUtils::MultiViewParams& mp,
                             const mvsUtils::TileParams& tileParams,
                             const ROI& roi,
-                            const CudaDeviceMemoryPitched<float3, 2>& in_normalMap_dmp,
+                            DeviceBuffer* in_normalMap_dmp,
                             int scale = 1,
                             int step = 1,
                             const std::string& name = "");
@@ -84,7 +84,7 @@ void writeDepthThicknessMap(int rc,
                            const mvsUtils::MultiViewParams& mp,
                            const mvsUtils::TileParams& tileParams,
                            const ROI& roi,
-                           const CudaDeviceMemoryPitched<float2, 2>& in_depthThicknessMap_dmp,
+                           DeviceBuffer* in_depthThicknessMap_dmp,
                            int scale,
                            int step,
                            const std::string& name = "");
@@ -104,7 +104,7 @@ void writeDepthPixSizeMap(int rc,
                           const mvsUtils::MultiViewParams& mp,
                           const mvsUtils::TileParams& tileParams,
                           const ROI& roi,
-                          const CudaDeviceMemoryPitched<float2, 2>& in_depthPixSize_dmp,
+                          DeviceBuffer* in_depthPixSize_dmp,
                           int scale,
                           int step,
                           const std::string& name = "");
@@ -124,7 +124,7 @@ void writeDepthSimMap(int rc,
                       const mvsUtils::MultiViewParams& mp,
                       const mvsUtils::TileParams& tileParams,
                       const ROI& roi, 
-                      const CudaDeviceMemoryPitched<float2, 2>& in_depthSimMap_dmp,
+                      DeviceBuffer* in_depthSimMap_dmp,
                       int scale,
                       int step,
                       const std::string& name = "");

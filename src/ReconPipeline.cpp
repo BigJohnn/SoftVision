@@ -1055,7 +1055,7 @@ int ReconPipeline::PrepareDenseScene()
                 metadata.push_back(oiio::ParamValue("SoftVision:P", oiio::TypeDesc(oiio::TypeDesc::DOUBLE, oiio::TypeDesc::MATRIX44), 1, vP.data()));
                 metadata.push_back(oiio::ParamValue("SoftVision:K", oiio::TypeDesc(oiio::TypeDesc::DOUBLE, oiio::TypeDesc::MATRIX33), 1, vK.data()));
                 metadata.push_back(oiio::ParamValue("SoftVision:R", oiio::TypeDesc(oiio::TypeDesc::DOUBLE, oiio::TypeDesc::MATRIX33), 1, vR.data()));
-                metadata.push_back(oiio::ParamValue("AliceVision:t", oiio::TypeDesc(oiio::TypeDesc::DOUBLE, oiio::TypeDesc::VEC3), 1, t.data()));
+                metadata.push_back(oiio::ParamValue("SoftVision:t", oiio::TypeDesc(oiio::TypeDesc::DOUBLE, oiio::TypeDesc::VEC3), 1, t.data()));
             }
         }
 
@@ -1155,7 +1155,7 @@ int ReconPipeline::DepthMapEstimation()
 {
     LOG_INFO("Dense Reconstruction.\n"
              "This program estimate a depth map for each input calibrated camera using Plane Sweeping, a multi-view stereo algorithm notable for its efficiency on modern graphics hardware (GPU).\n"
-             "AliceVision depthMapEstimation");
+             "SoftVision depthMapEstimation");
     
     // program range
     int rangeStart = -1;

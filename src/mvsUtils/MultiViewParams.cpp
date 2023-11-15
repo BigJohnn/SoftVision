@@ -135,8 +135,8 @@ MultiViewParams::MultiViewParams(const sfmData::SfMData& sfmData,
         if(fileExists)
         {
 //            metadata = image::readImageMetadata(imgParams.path);
-            scaleIt = metadata.find("AliceVision:downscale");
-            pIt = metadata.find("AliceVision:P");
+            scaleIt = metadata.find("SoftVision:downscale");
+            pIt = metadata.find("SoftVision:P");
         }
 
         // find image scale information
@@ -711,8 +711,8 @@ StaticVector<int> MultiViewParams::findCamsWhichIntersectsHexahedron(const Point
     {
         const auto metadata = image::readImageMetadata(getImagePath(rc));
 
-        const float minDepth = metadata.get_float("AliceVision:minDepth", -1);
-        const float maxDepth = metadata.get_float("AliceVision:maxDepth", -1);
+        const float minDepth = metadata.get_float("SoftVision:minDepth", -1);
+        const float maxDepth = metadata.get_float("SoftVision:maxDepth", -1);
 
         if(minDepth == -1 && maxDepth == -1)
         {

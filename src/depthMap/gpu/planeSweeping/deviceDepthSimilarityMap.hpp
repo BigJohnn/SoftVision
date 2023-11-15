@@ -6,10 +6,12 @@
 
 #pragma once
 
+#import <depthMap/gpu/host/memory.hpp>
+
 #include <mvsData/ROI.hpp>
 #include <depthMap/SgmParams.hpp>
 #include <depthMap/RefineParams.hpp>
-#include <depthMap/gpu/host/memory.hpp>
+
 #include <depthMap/gpu/host/DeviceMipmapImage.hpp>
 
 
@@ -22,10 +24,9 @@ namespace depthMap {
  * @param[in] defaultSim the default similarity value to copy
  * @param[in] stream the stream for gpu execution
  */
-extern void depthSimMapCopyDepthOnly(CudaDeviceMemoryPitched<float2, 2>& out_depthSimMap_dmp,
-                                          const CudaDeviceMemoryPitched<float2, 2>& in_depthSimMap_dmp,
-                                          float defaultSim,
-                                          cudaStream_t stream);
+extern void depthSimMapCopyDepthOnly(DeviceBuffer* out_depthSimMap_dmp,
+                                          DeviceBuffer* in_depthSimMap_dmp,
+                                          float defaultSim);
 
 /**
  * @brief Upscale the given normal map.
@@ -34,8 +35,8 @@ extern void depthSimMapCopyDepthOnly(CudaDeviceMemoryPitched<float2, 2>& out_dep
  * @param[in] roi the 2d region of interest
  * @param[in] stream the stream for gpu execution
  */
-extern void cuda_normalMapUpscale(CudaDeviceMemoryPitched<float3, 2>& out_upscaledMap_dmp,
-                                  const CudaDeviceMemoryPitched<float3, 2>& in_map_dmp,
+extern void cuda_normalMapUpscale(DeviceBuffer* out_upscaledMap_dmp,
+                                  DeviceBuffer* in_map_dmp,
                                   const ROI& roi);
 
 /**
@@ -46,7 +47,7 @@ extern void cuda_normalMapUpscale(CudaDeviceMemoryPitched<float3, 2>& out_upscal
  * @param[in] roi the 2d region of interest
  * @param[in] stream the stream for gpu execution
  */
-extern void depthThicknessSmoothThickness(CudaDeviceMemoryPitched<float2, 2>& inout_depthThicknessMap_dmp,
+extern void depthThicknessSmoothThickness(DeviceBuffer* inout_depthThicknessMap_dmp,
                                              const SgmParams& sgmParams,
                                              const RefineParams& refineParams,
                                              const ROI& roi);
@@ -61,8 +62,8 @@ extern void depthThicknessSmoothThickness(CudaDeviceMemoryPitched<float2, 2>& in
  * @param[in] roi the 2d region of interest
  * @param[in] stream the stream for gpu execution
  */
-extern void computeSgmUpscaledDepthPixSizeMap(CudaDeviceMemoryPitched<float2, 2>& out_upscaledDepthPixSizeMap_dmp,
-                                                   const CudaDeviceMemoryPitched<float2, 2>& in_sgmDepthThicknessMap_dmp,
+extern void computeSgmUpscaledDepthPixSizeMap(DeviceBuffer* out_upscaledDepthPixSizeMap_dmp,
+                                                   DeviceBuffer* in_sgmDepthThicknessMap_dmp,
                                                    const int rcDeviceCameraParamsId,
                                                    const DeviceMipmapImage& rcDeviceMipmapImage,
                                                    const RefineParams& refineParams,
@@ -76,8 +77,8 @@ extern void computeSgmUpscaledDepthPixSizeMap(CudaDeviceMemoryPitched<float2, 2>
  * @param[in] stepXY the input depth/sim map stepXY factor
  * @param[in] roi the 2d region of interest
  */
-extern void cuda_depthSimMapComputeNormal(CudaDeviceMemoryPitched<float3, 2>& out_normalMap_dmp,
-                                          const CudaDeviceMemoryPitched<float2, 2>& in_depthSimMap_dmp,
+extern void cuda_depthSimMapComputeNormal(DeviceBuffer* out_normalMap_dmp,
+                                          DeviceBuffer* in_depthSimMap_dmp,
                                           const int rcDeviceCameraParamsId,
                                           const int stepXY,
                                           const ROI& roi);
@@ -95,16 +96,15 @@ extern void cuda_depthSimMapComputeNormal(CudaDeviceMemoryPitched<float3, 2>& ou
  * @param[in] roi the 2d region of interest
  * @param[in] stream the stream for gpu execution
  */
-extern void cuda_depthSimMapOptimizeGradientDescent(CudaDeviceMemoryPitched<float2, 2>& out_optimizeDepthSimMap_dmp,
-                                                    CudaDeviceMemoryPitched<float, 2>& inout_imgVariance_dmp,
-                                                    CudaDeviceMemoryPitched<float, 2>& inout_tmpOptDepthMap_dmp,
-                                                    const CudaDeviceMemoryPitched<float2, 2>& in_sgmDepthPixSizeMap_dmp,
-                                                    const CudaDeviceMemoryPitched<float2, 2>& in_refineDepthSimMap_dmp,
+extern void cuda_depthSimMapOptimizeGradientDescent(DeviceBuffer* out_optimizeDepthSimMap_dmp,
+                                                    DeviceBuffer* inout_imgVariance_dmp,
+                                                    DeviceBuffer* inout_tmpOptDepthMap_dmp,
+                                                    DeviceBuffer* in_sgmDepthPixSizeMap_dmp,
+                                                    DeviceBuffer* in_refineDepthSimMap_dmp,
                                                     const int rcDeviceCameraParamsId,
                                                     const DeviceMipmapImage& rcDeviceMipmapImage,
                                                     const RefineParams& refineParams,
-                                                    const ROI& roi,
-                                                    cudaStream_t stream);
+                                                    const ROI& roi);
 
 } // namespace depthMap
 

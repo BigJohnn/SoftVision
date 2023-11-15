@@ -96,7 +96,7 @@ double Refine::getDeviceMemoryConsumptionUnpadded() const
     return (double(bytes) / (1024.0 * 1024.0));
 }
 
-void Refine::refineRc(const Tile& tile, const CudaDeviceMemoryPitched<float2, 2>& in_sgmDepthThicknessMap_dmp, const CudaDeviceMemoryPitched<float3, 2>& in_sgmNormalMap_dmp)
+void Refine::refineRc(const Tile& tile, DeviceBuffer* in_sgmDepthThicknessMap_dmp, DeviceBuffer* in_sgmNormalMap_dmp)
 {
     const IndexT viewId = _mp.getViewId(tile.rc);
 
@@ -278,7 +278,7 @@ void Refine::optimizeDepthSimMap(const Tile& tile)
     LOG_X(tile << "Color optimize depth/sim map done.");
 }
 
-void Refine::computeAndWriteNormalMap(const Tile& tile, const CudaDeviceMemoryPitched<float2, 2>& in_depthSimMap_dmp, const std::string& name)
+void Refine::computeAndWriteNormalMap(const Tile& tile, DeviceBuffer* in_depthSimMap_dmp, const std::string& name)
 {
     // downscale the region of interest
     const ROI downscaledRoi = downscaleROI(tile.roi, _refineParams.scale * _refineParams.stepXY);
