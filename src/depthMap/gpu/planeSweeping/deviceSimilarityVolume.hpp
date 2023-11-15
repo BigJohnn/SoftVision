@@ -63,7 +63,7 @@ extern void cuda_volumeUpdateUninitializedSimilarity(const CudaDeviceMemoryPitch
  */
 extern void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
                                          DeviceBuffer* out_volSecBestSim_dmp,
-                                         const DeviceBuffer* in_depths_dmp,
+                                         DeviceBuffer* in_depths_dmp,
                                          const int rcDeviceCameraParamsId,
                                          const int tcDeviceCameraParamsId,
                                          const DeviceMipmapImage& rcDeviceMipmapImage,

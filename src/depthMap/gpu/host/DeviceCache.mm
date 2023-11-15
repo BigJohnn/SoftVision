@@ -5,6 +5,7 @@
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 #import <Metal/Metal.h>
 #import <depthMap/gpu/host/memory.hpp>
+#import <depthMap/gpu/host/DeviceTexture.hpp>
 
 #include "DeviceCache.hpp"
 
@@ -132,7 +133,7 @@ void fillCameraParameters(void* cameraParameters, int camId, int downscale, cons
     cameraParameters_h.ZVect = M3x3mulV3(cameraParameters_h.iR, simd_make_float3(0.f, 0.f, 1.f));
     normalize(cameraParameters_h.ZVect);
     
-    constantCameraParametersArray_d[camId] = cameraParameters_h;
+    
 }
 
 
@@ -354,14 +355,16 @@ void DeviceCache::addMipmapImage(int camId,
 
     // get image buffer
 //    mvsUtils::ImagesCache<image::Image<image::RGBAfColor>>::ImgSharedPtr img = imageCache.getImg_sync(camId);
-
-//    mp.getWidth(<#int index#>)
     // allocate the full size host-sided image buffer
     MTLSize imgSize = MTLSizeMake(mp.getWidth(camId) * 4, mp.getHeight(camId), 1);
+    
+//    DeviceTexture* imgTexture = [DeviceTexture new];
+//    [_vCamTexturesCache insertObject:[imgTexture initWithSize:imgSize] atIndex:camId];
+    
     DeviceBuffer* img_hmh = [DeviceBuffer new];
-    [img_hmh allocate:imgSize elemSizeInBytes:sizeof(float)];
-//    (imgSize);
-
+    [img_hmh initWithBytes:mp.imageBuffersCache[camId].data() size:imgSize elemSizeInBytes:sizeof(uint8_t)];
+    
+    
     // copy image from imageCache to CUDA host-side image buffer
     //TODO: cpu => gpu
 //#pragma omp parallel for
@@ -416,7 +419,7 @@ void DeviceCache::addCameraParams(int camId, int downscale, const mvsUtils::Mult
     // build host-side device camera parameters struct
 //    DeviceCameraParams* cameraParameters_h = nullptr;
 
-    //TODO: check
+    //TODO: check AAA
     {
         id<MTLDevice> device = MTLCreateSystemDefaultDevice();
         id<MTLBuffer> _cameraParametersBuffer = [device newBufferWithLength:sizeof(DeviceCameraParams)
@@ -425,6 +428,8 @@ void DeviceCache::addCameraParams(int camId, int downscale, const mvsUtils::Mult
         _cameraParametersBuffer.label = @"CameraParametersBuffer";
 
         fillCameraParameters(_cameraParametersBuffer.contents,camId, downscale, mp);
+        
+        [_vCamParamsBuffer insertObject:_cameraParametersBuffer atIndex:camId];
     }
     
     // fill the host-side camera parameters from multi-view parameters.
@@ -486,6 +491,11 @@ const int DeviceCache::requestCameraParamsId(int camId, int downscale, const mvs
 
     // return the cached camera parameters id
     return deviceCameraParamsId;
+}
+
+id<MTLBuffer> DeviceCache::requestCameraParamsBuffer(int camId, int downscale, const mvsUtils::MultiViewParams& mp)
+{
+    return _vCamParamsBuffer[requestCameraParamsId(camId, downscale, mp)];
 }
 
 } // namespace depthMap

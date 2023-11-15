@@ -226,6 +226,7 @@ void Sgm::computeSimilarityVolumes(const Tile& tile, const SgmDepthList& tileDep
 
     // get R device camera parameters id from cache
     const int rcDeviceCameraParamsId = deviceCache.requestCameraParamsId(tile.rc, _sgmParams.scale, _mp);
+    id<MTLBuffer> rcDeviceCameraParams = deviceCache.requestCameraParamsBuffer(tile.rc, _sgmParams.scale, _mp);
 
     // get R device mipmap image from cache
     const DeviceMipmapImage& rcDeviceMipmapImage = deviceCache.requestMipmapImage(tile.rc, _mp);
@@ -242,6 +243,7 @@ void Sgm::computeSimilarityVolumes(const Tile& tile, const SgmDepthList& tileDep
 
         // get T device camera parameters id from cache
         const int tcDeviceCameraParamsId = deviceCache.requestCameraParamsId(tc, _sgmParams.scale, _mp);
+        id<MTLBuffer> tcDeviceCameraParams = deviceCache.requestCameraParamsBuffer(tc, _sgmParams.scale, _mp);
 
         // get T device mipmap image from cache
         const DeviceMipmapImage& tcDeviceMipmapImage = deviceCache.requestMipmapImage(tc, _mp);
@@ -259,8 +261,8 @@ void Sgm::computeSimilarityVolumes(const Tile& tile, const SgmDepthList& tileDep
         volumeComputeSimilarity(_volumeBestSim_dmp, 
                                      _volumeSecBestSim_dmp, 
                                      _depths_dmp, 
-                                     rcDeviceCameraParamsId,
-                                     tcDeviceCameraParamsId,
+                                     rcDeviceCameraParams,
+                                     tcDeviceCameraParams,
                                      rcDeviceMipmapImage,
                                      tcDeviceMipmapImage,
                                      _sgmParams, 

@@ -189,9 +189,9 @@ void cuda_volumeUpdateUninitializedSimilarity(const CudaDeviceMemoryPitched<TSim
 
 void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
                               DeviceBuffer* out_volSecBestSim_dmp,
-                               const DeviceBuffer* in_depths_dmp,
-                               const int rcDeviceCameraParamsId,
-                               const int tcDeviceCameraParamsId,
+                               DeviceBuffer* in_depths_dmp,
+                               DeviceBuffer* rcDeviceCameraParams,
+                               DeviceBuffer* tcDeviceCameraParams,
                                const DeviceMipmapImage& rcDeviceMipmapImage,
                                const DeviceMipmapImage& tcDeviceMipmapImage,
                                const SgmParams& sgmParams,
@@ -224,10 +224,10 @@ void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
         [NSNumber numberWithInt:[out_volSecBestSim_dmp getBytesUpToDim:0]], // 1024
         [in_depths_dmp getBuffer],
         [NSNumber numberWithInt:[in_depths_dmp getBytesUpToDim:0]], // 1024
-        [NSNumber numberWithInt:rcDeviceCameraParamsId],
-        [NSNumber numberWithInt:tcDeviceCameraParamsId],
-//        rcTexture
-//        tcTexture
+        rcDeviceCameraParams,
+        tcDeviceCameraParams,
+        rcDeviceMipmapImage.getTextureObject(),
+        tcDeviceMipmapImage.getTextureObject(),
         [NSNumber numberWithUnsignedInt:(unsigned)rcLevelDim.width],
         [NSNumber numberWithUnsignedInt:(unsigned)rcLevelDim.height],
         [NSNumber numberWithUnsignedInt:(unsigned)tcLevelDim.width],

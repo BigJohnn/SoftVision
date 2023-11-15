@@ -6,6 +6,9 @@
 
 #pragma once
 
+#import <Foundation/Foundation.h>
+#import <Metal/Metal.h>
+
 #include <memory>
 
 #include <mvsUtils/MultiViewParams.hpp>
@@ -87,6 +90,8 @@ public:
      * @return Device camera parameters id in CUDA constant memory array
      */
     const int requestCameraParamsId(int camId, int downscale, const mvsUtils::MultiViewParams& mp);
+    
+    id<MTLBuffer> requestCameraParamsBuffer(int camId, int downscale, const mvsUtils::MultiViewParams& mp);
 
 private:
 
@@ -109,6 +114,8 @@ private:
     };
     std::map <int, std::unique_ptr<SingleDeviceCache>> _cachePerDevice; // <cudaDeviceId, SingleDeviceCachePtr>
 
+    NSMutableArray* _vCamParamsBuffer;
+    NSMutableArray* _vCamTexturesCache;
     // private methods
 
     // Singleton, private default constructor

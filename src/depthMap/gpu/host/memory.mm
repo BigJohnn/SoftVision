@@ -31,9 +31,27 @@
     
     buffer = [device newBufferWithLength:nBytes
                                          options:MTLResourceStorageModeShared];
+    
     sz = size;
     
     elemSizeInBytes = nBytes;
+    return buffer;
+}
+
+-(id<MTLBuffer>) initWithBytes:(nonnull const void*)bytes size:(MTLSize)size elemSizeInBytes:(int)nBytes
+{
+    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+
+    nBytesPerRow = static_cast<int>(size.width) * nBytes;
+
+    nBytes = nBytesPerRow * size.height * size.depth;
+    
+    buffer = [device newBufferWithBytes:bytes length:nBytes options:MTLResourceStorageModeShared];
+    
+    sz = size;
+
+    elemSizeInBytes = nBytes;
+    
     return buffer;
 }
 

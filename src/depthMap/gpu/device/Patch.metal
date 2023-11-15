@@ -1,12 +1,12 @@
 #pragma once
 
-#include "buffer.metal"
-#include "color.metal"
-#include "matrix.metal"
-#include "SimStat.metal"
+#include "depthMap/gpu/device/buffer.metal"
+#include "depthMap/gpu/device/color.metal"
+#include "depthMap/gpu/device/matrix.metal"
+#include "depthMap/gpu/device/SimStat.metal"
 
-#include "DeviceCameraParams.hpp"
-#include "DevicePatchPattern.hpp"
+#include "depthMap/gpu/device/DeviceCameraParams.hpp"
+#include "depthMap/gpu/device/DevicePatchPattern.hpp"
 
 
 namespace depthMap {
@@ -591,8 +591,8 @@ inline float compNCCby3DptsYK(device const DeviceCameraParams& rcDeviceCamParams
 template<bool TInvertAndFilter>
 inline float compNCCby3DptsYK_customPatchPattern(device const DeviceCameraParams& rcDeviceCamParams,
                                                  device            const DeviceCameraParams& tcDeviceCamParams,
-                                                 device            const cudaTextureObject_t rcMipmapImage_tex,
-                                                 device            const cudaTextureObject_t tcMipmapImage_tex,
+                                                 texture2d<half, access::read> rcMipmapImage_tex,
+                                                 texture2d<half, access::read> tcMipmapImage_tex,
                                                  device            const unsigned int rcLevelWidth,
                                                  device            const unsigned int rcLevelHeight,
                                                  device            const unsigned int tcLevelWidth,

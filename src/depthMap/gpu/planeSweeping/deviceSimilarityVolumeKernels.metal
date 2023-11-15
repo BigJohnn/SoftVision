@@ -6,9 +6,8 @@
 
 
 #include <mvsData/ROI_d.hpp>
-//#include "ROI_d.hpp"
-//#include <depthMap/gpu/device/matrix.metal>
-//#include <depthMap/gpu/device/Patch.metal>
+#include <depthMap/gpu/device/matrix.metal>
+#include <depthMap/gpu/device/Patch.metal>
 #include <depthMap/gpu/planeSweeping/similarity.hpp>
 #include <depahMap/gpu/device/DeviceCameraParams.metal>
 
@@ -109,10 +108,10 @@ kernel void volume_updateUninitialized_kernel(TSim* inout_volume2nd_d, int inout
 kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, device int* out_volume1st_s, device int* out_volume1st_p,
                                             device TSim* out_volume2nd_d, device int out_volume2nd_s, device int out_volume2nd_p,
                                             device const float* in_depths_d, device const int* in_depths_p,
-                                            device const int* rcDeviceCameraParamsId,
-                                            device const int* tcDeviceCameraParamsId,
-//                                            device const cudaTextureObject_t rcMipmapImage_tex,
-//                                            device const cudaTextureObject_t tcMipmapImage_tex,
+                                            device const DeviceCameraParam* rcDeviceCameraParams,
+                                            device const DeviceCameraParam* tcDeviceCameraParams,
+                                            texture2d<half, access::read>  rcMipmapImage_tex  [[texture(0)]],
+                                            texture2d<half, access::read>  tcMipmapImage_tex  [[texture(1)]],
                                             device const unsigned int* rcSgmLevelWidth,
                                             device const unsigned int* rcSgmLevelHeight,
                                             device const unsigned int* tcSgmLevelWidth,
@@ -139,8 +138,8 @@ kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, device
         return;
 
     // R and T camera parameters
-    const DeviceCameraParams& rcDeviceCamParams = constantCameraParametersArray_d[rcDeviceCameraParamsId];
-    const DeviceCameraParams& tcDeviceCamParams = constantCameraParametersArray_d[tcDeviceCameraParamsId];
+//    const DeviceCameraParams& rcDeviceCamParams = constantCameraParametersArray_d[rcDeviceCameraParamsId];
+//    const DeviceCameraParams& tcDeviceCamParams = constantCameraParametersArray_d[tcDeviceCameraParamsId];
 
     // corresponding volume coordinates
     const unsigned int vx = roiX;
@@ -148,26 +147,26 @@ kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, device
     const unsigned int vz = depthRange.begin + roiZ;
 
     // corresponding image coordinates
-    const float x = float(roi.x.begin + vx) * float(stepXY);
-    const float y = float(roi.y.begin + vy) * float(stepXY);
+    const float x = float(roi->lt.x + vx) * float(*stepXY);
+    const float y = float(roi->lt.y + vy) * float(*stepXY);
 
     // corresponding depth plane
-    const float depthPlane = *get2DBufferAt(in_depths_d, in_depths_p, size_t(vz), 0);
+    const float depthPlane = *get2DBufferAt(in_depths_d, in_depths_p, vz, 0);
 
     // compute patch
     Patch patch;
-    volume_computePatch(patch, rcDeviceCamParams, tcDeviceCamParams, depthPlane, make_float2(x, y));
+    volume_computePatch(patch, *rcDeviceCamParams, *tcDeviceCamParams, depthPlane, float2(x, y));
 
     // we do not need positive and filtered similarity values
-    constexpr bool invertAndFilter = false;
+    bool invertAndFilter = false;
 
-    float fsim = CUDART_INF_F;
+    float fsim;
 
     // compute patch similarity
     if(useCustomPatchPattern)
     {
-        fsim = compNCCby3DptsYK_customPatchPattern<invertAndFilter>(rcDeviceCamParams,
-                                                                    tcDeviceCamParams,
+        fsim = compNCCby3DptsYK_customPatchPattern<invertAndFilter>(*rcDeviceCamParams,
+                                                                    *tcDeviceCamParams,
                                                                     rcMipmapImage_tex,
                                                                     tcMipmapImage_tex,
                                                                     rcSgmLevelWidth,
@@ -275,8 +274,8 @@ kernel void volume_refineSimilarity_kernel(TSimRefine* inout_volSim_d, int inout
     const unsigned int vz = depthRange.begin + roiZ;
 
     // corresponding image coordinates
-    const float x = float(roi.x.begin + vx) * float(stepXY);
-    const float y = float(roi.y.begin + vy) * float(stepXY);
+    const float x = float(roi->lt.x + vx) * float(stepXY);
+    const float y = float(roi->lt.y + vy) * float(stepXY);
 
     // corresponding input sgm depth/pixSize (middle depth)
     const float2 in_sgmDepthPixSize = *get2DBufferAt(in_sgmDepthPixSizeMap_d, in_sgmDepthPixSizeMap_p, vx, vy);
@@ -416,7 +415,7 @@ kernel void volume_retrieveBestDepth_kernel(float2* out_sgmDepthThicknessMap_d, 
     const DeviceCameraParams& rcDeviceCamParams = constantCameraParametersArray_d[rcDeviceCameraParamsId];
 
     // corresponding image coordinates
-    const float2 pix{float((roi.x.begin + vx) * scaleStep), float((roi.y.begin + vy) * scaleStep)};
+    const float2 pix{float((roi->lt.x + vx) * scaleStep), float((roi->lt.y + vy) * scaleStep)};
 
     // corresponding output depth/thickness pointer
     float2* out_bestDepthThicknessPtr = get2DBufferAt(out_sgmDepthThicknessMap_d, out_sgmDepthThicknessMap_p, vx, vy);
@@ -689,8 +688,8 @@ kernel void volume_agregateCostVolumeAtXinSlices_kernel(const cudaTextureObject_
         return;
 
     // find texture offset
-    const int beginX = (axisT.x == 0) ? roi.x.begin : roi.y.begin;
-    const int beginY = (axisT.x == 0) ? roi.y.begin : roi.x.begin;
+    const int beginX = (axisT.x == 0) ? roi->lt.x : roi->lt.y;
+    const int beginY = (axisT.x == 0) ? roi->lt.y : roi->lt.x;
 
     TSimAcc* sim_xz = get2DBufferAt(xzSliceForY_d, xzSliceForY_p, x, z);
     float pathCost = 255.0f;

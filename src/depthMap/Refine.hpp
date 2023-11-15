@@ -48,7 +48,7 @@ public:
     ~Refine() = default;
 
     // final depth/similarity map getter
-    inline const DeviceBuffer* getDeviceDepthSimMap() const { return _optimizedDepthSimMap_dmp; }
+    inline DeviceBuffer* getDeviceDepthSimMap() const { return _optimizedDepthSimMap_dmp; }
 
     /**
      * @brief Get memory consumpyion in device memory.

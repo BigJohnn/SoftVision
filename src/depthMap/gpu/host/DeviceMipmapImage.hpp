@@ -7,7 +7,10 @@
 #pragma once
 
 #import <Metal/Metal.h>
+#import <depthMap/gpu/host/DeviceTexture.hpp>
+
 #include <depthMap/gpu/host/memory.hpp>
+
 
 
 namespace depthMap {
@@ -38,7 +41,7 @@ public:
      * @param[in] minDownscale the first downscale level of the mipmap image (level 0)
      * @param[in] maxDownscale the last downscale level of the mipmap image
      */
-    void fill(const DeviceBuffer* in_img_hmh, int minDownscale, int maxDownscale);
+    void fill(DeviceBuffer* in_img_hmh, int minDownscale, int maxDownscale);
 
     /**
      * @brief Get the corresponding mipmap image level of the given downscale
@@ -71,14 +74,14 @@ public:
      * @note Normalized coordinates: texture coordinates (x,y) in [0, 1]
      * @return CUDA mipmapped array texture object with normalized coordinates
      */
-//    inline id<MTLTexture> getTextureObject() const { return _textureObject; }
+    inline id<MTLTexture> getTextureObject() const { return _texture; }
 
 private:
 
     // private members
     
 //    cudaMipmappedArray_t _mipmappedArray = nullptr;    //< mipmapped array in device memory
-//    id<MTLTexture> _textureObject;            //< mipmapped array texture object with normalized coordinates
+    id<MTLTexture> _texture;            //< mipmapped array texture object with normalized coordinates
     unsigned int _minDownscale = 0;                    //< the min downscale factor (must be power of two), first downscale level
     unsigned int _maxDownscale = 0;                    //< the max downscale factor (must be power of two), last downscale level
     unsigned int _levels = 0;                          //< the number of downscale levels in the mipmapped array

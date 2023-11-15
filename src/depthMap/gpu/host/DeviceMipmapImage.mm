@@ -23,7 +23,7 @@ DeviceMipmapImage::~DeviceMipmapImage()
 //      CHECK_CUDA_RETURN_ERROR_NOEXCEPT(cudaFreeMipmappedArray(_mipmappedArray));
 }
 
-void DeviceMipmapImage::fill(const DeviceBuffer* in_img_hmh, int minDownscale, int maxDownscale)
+void DeviceMipmapImage::fill(DeviceBuffer* in_img_hmh, int minDownscale, int maxDownscale)
 {
     // update private members
     _minDownscale = minDownscale;
@@ -32,7 +32,9 @@ void DeviceMipmapImage::fill(const DeviceBuffer* in_img_hmh, int minDownscale, i
     _height  = [in_img_hmh getSize].height;
     _levels = log2(maxDownscale / minDownscale) + 1;
 
-    return;
+    DeviceTexture* texture = [DeviceTexture new];
+    _texture = [texture initWithBuffer:in_img_hmh];
+    
     // destroy previous texture object
 //    if(_textureObject != 0)
 //      CHECK_CUDA_RETURN_ERROR(cudaDestroyTextureObject(_textureObject));
