@@ -1,10 +1,11 @@
-#pragma once
+//#pragma once
 
+//#include "depthMap"
 #include <mvsData/ROI_d.hpp>
-#include <depthMap/gpu/device/buffer.cuh>
-#include <depthMap/gpu/device/matrix.cuh>
-#include <depthMap/gpu/device/Patch.cuh>
-#include <depthMap/gpu/device/eig33.cuh>
+#include <depthMap/gpu/device/buffer.metal>
+#include <depthMap/gpu/device/matrix.metal>
+#include <depthMap/gpu/device/Patch.metal>
+#include <depthMap/gpu/device/eig33.metal>
 #include <depthMap/gpu/device/DeviceCameraParams.hpp>
 
 // compute per pixel pixSize instead of using Sgm depth thickness

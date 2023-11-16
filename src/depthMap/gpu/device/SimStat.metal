@@ -1,4 +1,4 @@
-#pragma once
+//#pragma once
 
 #include <metal_stdlib>
 using namespace metal;

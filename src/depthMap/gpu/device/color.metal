@@ -72,8 +72,8 @@ inline float3 rgb2xyz(const float3 c)
  */
 inline float3 rgb2hsl(const device float3& c)
 {
-    const float cmin = fminf(c.x, fminf(c.y, c.z));
-    const float cmax = fmaxf(c.x, fmaxf(c.y, c.z));
+    const float cmin = min(c.x, min(c.y, c.z));
+    const float cmax = max(c.x, max(c.y, c.z));
 
     float h = 0.0f;
     if(cmin == cmax)
@@ -189,7 +189,7 @@ inline float CostYKfromLab(const int dx,
 
     // euclidean distance in Lab, assuming linear RGB
     float deltaC = euclideanDist3(c1, c2);
-    // const float deltaC = fmaxf(fabs(c1.x-c2.x),fmaxf(fabs(c1.y-c2.y),fabs(c1.z-c2.z)));
+    // const float deltaC = max(fabs(c1.x-c2.x),max(fabs(c1.y-c2.y),fabs(c1.z-c2.z)));
 
     deltaC *= invGammaC;
 

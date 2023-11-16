@@ -1,10 +1,13 @@
-#pragma once
+//#pragma once
 
-//#include <depthMap/gpu/device/BufPtr.metal>
-#include "BufPtr.metal"
-#include <math.h>
+
+#include <depthMap/gpu/device/BufPtr.metal>
+#include <depthMap/gpu/device/DeviceCameraParams.hpp>
 #include <metal_stdlib>
+
 using namespace metal;
+
+//#include "depthMap/gpu/device/DeviceCameraParams.hpp"
 
 namespace depthMap {
 
@@ -57,12 +60,12 @@ inline const device T* get3DBufferAt(const device T* ptr, size_t spitch, size_t 
 
 inline float multi_fminf(float a, float b, float c)
 {
-  return fminf(fminf(a, b), c);
+  return min(min(a, b), c);
 }
 
 inline float multi_fminf(float a, float b, float c, float d)
 {
-  return fminf(fminf(fminf(a, b), c), d);
+  return min(min(min(a, b), c), d);
 }
 
 

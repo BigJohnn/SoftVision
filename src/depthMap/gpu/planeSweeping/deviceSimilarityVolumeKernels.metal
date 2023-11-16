@@ -4,11 +4,14 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
-
-#include <mvsData/ROI_d.hpp>
+//#include "dep"
+//#include
+//#include "devi.metal"
+//#include <dep
+#include "mvsData/ROI_d.hpp"
+#include <depthMap/gpu/planeSweeping/similarity.hpp>
 #include <depthMap/gpu/device/matrix.metal>
 #include <depthMap/gpu/device/Patch.metal>
-#include <depthMap/gpu/planeSweeping/similarity.hpp>
 #include <depahMap/gpu/device/DeviceCameraParams.metal>
 
 namespace depthMap {

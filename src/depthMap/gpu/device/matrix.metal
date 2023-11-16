@@ -1,5 +1,3 @@
-#pragma once
-
 #include <metal_stdlib>
 using namespace metal;
 
@@ -8,15 +6,15 @@ using namespace metal;
 
 namespace depthMap {
 
-inline uchar4 float4_to_uchar4(const device float4& a)
-{
-    return uchar4((unsigned char)a.x, (unsigned char)a.y, (unsigned char)a.z, (unsigned char)a.w);
-}
-
-inline float4 uchar4_to_float4(const device uchar4& a)
-{
-    return float4((float)a.x, (float)a.y, (float)a.z, (float)a.w);
-}
+//inline uchar4 float4_to_uchar4(const device float4& a)
+//{
+//    return uchar4((unsigned char)a.x, (unsigned char)a.y, (unsigned char)a.z, (unsigned char)a.w);
+//}
+//
+//inline float4 uchar4_to_float4(const device uchar4& a)
+//{
+//    return float4((float)a.x, (float)a.y, (float)a.z, (float)a.w);
+//}
 
 //inline float dot(const device float3& a, const device float3& b)
 //{
@@ -28,83 +26,57 @@ inline float4 uchar4_to_float4(const device uchar4& a)
 //    return a.x * b.x + a.y * b.y;
 //}
 
-inline float size(const device float3& a)
-{
-    return sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
-}
+//inline float size(const device float3& a)
+//{
+//    return sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
+//}
+//
+//inline float size(const device float2& a)
+//{
+//    return sqrt(a.x * a.x + a.y * a.y);
+//}
+//
+//inline float dist(const device float3& a, const device float3& b)
+//{
+//    return size(a - b);
+//}
+//
+//inline float dist(const device float2& a, const device float2& b)
+//{
+//    return size(a - b);
+//}
 
-inline float size(const device float2& a)
-{
-    return sqrt(a.x * a.x + a.y * a.y);
-}
+//inline float3 cross(const device float3& a, const device float3& b)
+//{
+//    return float3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+//}
 
-inline float dist(const device float3& a, const device float3& b)
-{
-    return size(a - b);
-}
+//inline float3 M3x3mulV3( const device float* M3x3, const device float3& V)
+//{
+//    return float3(M3x3[0] * V.x + M3x3[3] * V.y + M3x3[6] * V.z,
+//                       M3x3[1] * V.x + M3x3[4] * V.y + M3x3[7] * V.z,
+//                       M3x3[2] * V.x + M3x3[5] * V.y + M3x3[8] * V.z);
+//}
 
-inline float dist(const device float2& a, const device float2& b)
-{
-    return size(a - b);
-}
+//inline float3 M3x3mulV2( const device float* M3x3, const device float2& V)
+//{
+//    return float3(M3x3[0] * V.x + M3x3[3] * V.y + M3x3[6],
+//                       M3x3[1] * V.x + M3x3[4] * V.y + M3x3[7],
+//                       M3x3[2] * V.x + M3x3[5] * V.y + M3x3[8]);
+//}
 
-inline float3 cross(const device float3& a, const device float3& b)
-{
-    return float3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
-}
+//inline float3 M3x4mulV3(const device float* M3x4, const device float3& V)
+//{
+//    return float3(M3x4[0] * V.x + M3x4[3] * V.y + M3x4[6] * V.z + M3x4[9],
+//                       M3x4[1] * V.x + M3x4[4] * V.y + M3x4[7] * V.z + M3x4[10],
+//                       M3x4[2] * V.x + M3x4[5] * V.y + M3x4[8] * V.z + M3x4[11]);
+//}
 
-inline void normalize(device float3& a)
-{
-    // without optimization
-    // float d = sqrt(dot(a, a));
-    // a.x /= d;
-    // a.y /= d;
-    // a.z /= d;
-
-    const float dInv = divide(1.0f, sqrt(dot(a, a)));
-    a.x *= dInv;
-    a.y *= dInv;
-    a.z *= dInv;
-}
-
-inline void normalize(device float2& a)
-{
-    // without optimization
-    // float d = sqrt(dot(a, a));
-    // a.x /= d;
-    // a.y /= d;
-
-    const float dInv = divide(1.0f, sqrt(dot(a, a)));
-    a.x *= dInv;
-    a.y *= dInv;
-}
-
-inline float3 M3x3mulV3( const device float* M3x3, const device float3& V)
-{
-    return float3(M3x3[0] * V.x + M3x3[3] * V.y + M3x3[6] * V.z,
-                       M3x3[1] * V.x + M3x3[4] * V.y + M3x3[7] * V.z,
-                       M3x3[2] * V.x + M3x3[5] * V.y + M3x3[8] * V.z);
-}
-
-inline float3 M3x3mulV2( const device float* M3x3, const device float2& V)
-{
-    return float3(M3x3[0] * V.x + M3x3[3] * V.y + M3x3[6],
-                       M3x3[1] * V.x + M3x3[4] * V.y + M3x3[7],
-                       M3x3[2] * V.x + M3x3[5] * V.y + M3x3[8]);
-}
-
-inline float3 M3x4mulV3(const device float* M3x4, const device float3& V)
-{
-    return float3(M3x4[0] * V.x + M3x4[3] * V.y + M3x4[6] * V.z + M3x4[9],
-                       M3x4[1] * V.x + M3x4[4] * V.y + M3x4[7] * V.z + M3x4[10],
-                       M3x4[2] * V.x + M3x4[5] * V.y + M3x4[8] * V.z + M3x4[11]);
-}
-
-inline float2 V2M3x3mulV2(device float* M3x3, device float2& V)
-{
-    const float d = M3x3[2] * V.x + M3x3[5] * V.y + M3x3[8];
-    return float2((M3x3[0] * V.x + M3x3[3] * V.y + M3x3[6]) / d, (M3x3[1] * V.x + M3x3[4] * V.y + M3x3[7]) / d);
-}
+//inline float2 V2M3x3mulV2(device float* M3x3, device float2& V)
+//{
+//    const float d = M3x3[2] * V.x + M3x3[5] * V.y + M3x3[8];
+//    return float2((M3x3[0] * V.x + M3x3[3] * V.y + M3x3[6]) / d, (M3x3[1] * V.x + M3x3[4] * V.y + M3x3[7]) / d);
+//}
 
 
 inline float2 project3DPoint(const device float* M3x4, const device float3& V)
@@ -159,7 +131,7 @@ inline void M3x3transpose(device float* O3x3, const device float* A3x3)
     O3x3[8] = A3x3[8];
 }
 
-inline void outerMultiply(device float* O3x3, const device float3& a, const device float3& b)
+inline void outerMultiply(device float3x3& O3x3, const device float3& a, const device float3& b)
 {
     O3x3[0] = a.x * b.x;
     O3x3[3] = a.x * b.y;
@@ -193,7 +165,7 @@ inline float3 closestPointToLine3D(const device float3& point, const device floa
 
 inline float pointLineDistance3D(const device float3& point, const device float3& linePoint, const device float3& lineVectNormalized)
 {
-    return size(cross(lineVectNormalized, linePoint - point));
+    return length(cross(lineVectNormalized, linePoint - point));
 }
 
 // v1,v2 dot not have to be normalized

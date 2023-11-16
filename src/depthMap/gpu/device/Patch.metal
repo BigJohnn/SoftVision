@@ -1,13 +1,10 @@
-#pragma once
+#include <depthMap/gpu/device/buffer.metal>
+#include <depthMap/gpu/device/color.metal>
+#include <depthMap/gpu/device/matrix.metal>
+#include <depthMap/gpu/device/SimStat.metal>
 
-#include "depthMap/gpu/device/buffer.metal"
-#include "depthMap/gpu/device/color.metal"
-#include "depthMap/gpu/device/matrix.metal"
-#include "depthMap/gpu/device/SimStat.metal"
-
-#include "depthMap/gpu/device/DeviceCameraParams.hpp"
-#include "depthMap/gpu/device/DevicePatchPattern.hpp"
-
+#include <depthMap/gpu/device/DeviceCameraParams.hpp>
+#include <depthMap/gpu/device/DevicePatchPattern.hpp>
 
 namespace depthMap {
 
@@ -42,8 +39,8 @@ inline void rotPointAroundVect(device float3& out, device float3& X, device floa
     wx = w * x;
     wy = w * y;
     wz = w * z;
-    sa = sin((float)angle * (M_PI / 180.0f));
-    ca = cos((float)angle * (M_PI / 180.0f));
+    sa = sin((float)angle * (M_PI_F / 180.0f));
+    ca = cos((float)angle * (M_PI_F / 180.0f));
     x = u * (ux + vy + wz) + (x * (v * v + w * w) - u * (vy + wz)) * ca + (-wy + vz) * sa;
     y = v * (ux + vy + wz) + (y * (u * u + w * w) - v * (ux + wz)) * ca + (wx - uz) * sa;
     z = w * (ux + vy + wz) + (z * (u * u + v * v) - w * (ux + vy)) * ca + (-vx + uy) * sa;
@@ -131,9 +128,10 @@ inline float computePixSize(const device DeviceCameraParams& deviceCamParams, de
 {
     const float2 rp = project3DPoint(deviceCamParams.P, p);
     const float2 rp1 = rp + float2(1.0f, 0.0f);
-
-    float3 refvect = M3x3mulV2(deviceCamParams.iP, rp1);
-    normalize(refvect);
+    
+//    float3 refvect = M3x3mulV2(deviceCamParams.iP, rp1);
+    float3 refvect = deviceCamParams.iP * float3(rp1, 1.0f);
+    refvect = normalize(refvect);
     return pointLineDistance3D(p, deviceCamParams.C, refvect);
 }
 
@@ -150,15 +148,15 @@ inline void getPixelFor3DPoint(device float2& out, device const DeviceCameraPara
 inline float3 get3DPointForPixelAndFrontoParellePlaneRC(device const DeviceCameraParams& deviceCamParams, device const float2& pix, float fpPlaneDepth)
 {
     const float3 planep = deviceCamParams.C + deviceCamParams.ZVect * fpPlaneDepth;
-    float3 v = M3x3mulV2(deviceCamParams.iP, pix);
-    normalize(v);
+    float3 v = deviceCamParams.iP * float3(pix, 1.0f);
+    v = normalize(v);
     return linePlaneIntersect(deviceCamParams.C, v, planep, deviceCamParams.ZVect);
 }
 
 inline float3 get3DPointForPixelAndDepthFromRC(device const DeviceCameraParams& deviceCamParams, device const float2& pix, float depth)
 {
-    float3 rpv = M3x3mulV2(deviceCamParams.iP, pix);
-    normalize(rpv);
+    float3 rpv = deviceCamParams.iP * float3(pix, 1.0f);
+    rpv = normalize(rpv);
     return deviceCamParams.C + rpv * depth;
 }
 
@@ -167,12 +165,12 @@ inline float3 triangulateMatchRef(device const DeviceCameraParams& rcDeviceCamPa
                                   device            const float2& refpix,
                                   device            const float2& tarpix)
 {
-    float3 refvect = M3x3mulV2(rcDeviceCamParams.iP, refpix);
-    normalize(refvect);
+    float3 refvect = rcDeviceCamParams.iP * float3(refpix, 1.0f);
+    refvect = normalize(refvect);
     const float3 refpoint = refvect + rcDeviceCamParams.C;
 
-    float3 tarvect = M3x3mulV2(tcDeviceCamParams.iP, tarpix);
-    normalize(tarvect);
+    float3 tarvect = tcDeviceCamParams.iP * float3(tarpix, 1.0f);
+    tarvect = normalize(tarvect);
     const float3 tarpoint = tarvect + tcDeviceCamParams.C;
 
     float k, l;
@@ -262,13 +260,13 @@ inline void computeRcTcMipmapLevels(device float& out_rcMipmapLevel,
     const float2 tp1 = tp0 + float2(1.f, 0.f);
 
     // get rp1 3d point
-    float3 rpv = M3x3mulV2(rcDeviceCamParams.iP, rp1);
-    normalize(rpv);
+    float3 rpv = (rcDeviceCamParams.iP * float3(rp1, 1.0f));
+    rpv = normalize(rpv);
     const float3 prp1 = rcDeviceCamParams.C + rpv * rcDepth;
 
     // get tp1 3d point
-    float3 tpv = M3x3mulV2(tcDeviceCamParams.iP, tp1);
-    normalize(tpv);
+    float3 tpv = (tcDeviceCamParams.iP * float3(tp1, 1.0f));
+    tpv = normalize(tpv);
     const float3 ptp1 = tcDeviceCamParams.C + tpv * tcDepth;
 
     // compute 3d distance between p0 and rp1 3d point
@@ -352,45 +350,51 @@ inline float getPatchPixSize(Patch &ptch)
 }
 */
 
-inline void computeHomography(device float* out_H,
-                              device            const DeviceCameraParams& rcDeviceCamParams,
-                              device            const DeviceCameraParams& tcDeviceCamParams,
-                              device            const float3& in_p,
-                              device            const float3& in_n)
-{
-    // hartley zisserman second edition p.327 (13.2)
-    const float3 _tl = float3(0.0, 0.0, 0.0) - M3x3mulV3(rcDeviceCamParams.R, rcDeviceCamParams.C);
-    const float3 _tr = float3(0.0, 0.0, 0.0) - M3x3mulV3(tcDeviceCamParams.R, tcDeviceCamParams.C);
-
-    const float3 p = M3x3mulV3(rcDeviceCamParams.R, (in_p - rcDeviceCamParams.C));
-    float3 n = M3x3mulV3(rcDeviceCamParams.R, in_n);
-    normalize(n);
-    const float d = -dot(n, p);
-
-    float RrT[9];
-    M3x3transpose(RrT, rcDeviceCamParams.R);
-
-    float tmpRr[9];
-    M3x3mulM3x3(tmpRr, tcDeviceCamParams.R, RrT);
-    const float3 tr = _tr - M3x3mulV3(tmpRr, _tl);
-
-    float tmp[9];
-    float tmp1[9];
-    outerMultiply(tmp, tr, n / d);
-    M3x3minusM3x3(tmp, tmpRr, tmp);
-    M3x3mulM3x3(tmp1, tcDeviceCamParams.K, tmp);
-    M3x3mulM3x3(tmp, tmp1, rcDeviceCamParams.iK);
-
-    out_H[0] = tmp[0];
-    out_H[1] = tmp[1];
-    out_H[2] = tmp[2];
-    out_H[3] = tmp[3];
-    out_H[4] = tmp[4];
-    out_H[5] = tmp[5];
-    out_H[6] = tmp[6];
-    out_H[7] = tmp[7];
-    out_H[8] = tmp[8];
-}
+//inline void computeHomography(device float* out_H,
+//                              device            const DeviceCameraParams& rcDeviceCamParams,
+//                              device            const DeviceCameraParams& tcDeviceCamParams,
+//                              device            const float3& in_p,
+//                              device            const float3& in_n)
+//{
+//    // hartley zisserman second edition p.327 (13.2)
+//    const float3 _tl = float3(0.0, 0.0, 0.0) - (rcDeviceCamParams.R * rcDeviceCamParams.C);
+//    const float3 _tr = float3(0.0, 0.0, 0.0) - (tcDeviceCamParams.R * tcDeviceCamParams.C);
+//
+//    const float3 p = (rcDeviceCamParams.R * (in_p - rcDeviceCamParams.C));
+//    float3 n = (rcDeviceCamParams.R * in_n);
+//    n = normalize(n);
+//    const float d = -dot(n, p);
+//
+////    float RrT[9];
+////    M3x3transpose(RrT, rcDeviceCamParams.R);
+//    float3x3 RrT = transpose(rcDeviceCamParams.R);
+//
+////    float tmpRr[9];
+////    M3x3mulM3x3(tmpRr, tcDeviceCamParams.R, RrT);
+//    float3x3 tmpRr = tcDeviceCamParams.R * RrT;
+//
+//    const float3 tr = _tr - (tmpRr * _tl);
+//
+//    float3x3 tmp;
+//    float3x3 tmp1;
+//    outerMultiply(tmp, tr, n / d);
+//    tmp = tmpRr - tmp;
+////    M3x3minusM3x3(tmp, tmpRr, tmp);
+//    tmp1 = tcDeviceCamParams.K * tmp;
+//    tmp = tmp1 * rcDeviceCamParams.iK;
+////    M3x3mulM3x3(tmp1, tcDeviceCamParams.K, tmp);
+////    M3x3mulM3x3(tmp, tmp1, rcDeviceCamParams.iK);
+//
+//    out_H[0] = tmp[0];
+//    out_H[1] = tmp[1];
+//    out_H[2] = tmp[2];
+//    out_H[3] = tmp[3];
+//    out_H[4] = tmp[4];
+//    out_H[5] = tmp[5];
+//    out_H[6] = tmp[6];
+//    out_H[7] = tmp[7];
+//    out_H[8] = tmp[8];
+//}
 
 /*
 static float compNCCbyH(const DeviceCameraParams& rcDeviceCamParams,

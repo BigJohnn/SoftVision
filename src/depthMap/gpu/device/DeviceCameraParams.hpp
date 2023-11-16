@@ -9,12 +9,21 @@ namespace depthMap {
  */
 typedef struct DeviceCameraParams
 {
-    float P[12];
-    float iP[9];
-    float R[9];
-    float iR[9];
-    float K[9];
-    float iK[9];
+//    float P[12];
+//    float iP[9];
+//
+//    float R[9];
+//    float iR[9];
+//    float K[9];
+//    float iK[9];
+    
+    matrix_float3x4 P;
+    matrix_float3x3 iP;
+    matrix_float3x3 R;
+    matrix_float3x3 iR;
+    matrix_float3x3 K;
+    matrix_float3x3 iK;
+    
     vector_float3 C;
     vector_float3 XVect;
     vector_float3 YVect;
@@ -25,6 +34,6 @@ typedef struct DeviceCameraParams
 
 #define ALICEVISION_DEVICE_MAX_CONSTANT_CAMERA_PARAM_SETS 50 // CUDA constant memory is limited to 65K(100) TODO: check this, we use metal 32k(50)
 
-extern DeviceCameraParams constantCameraParametersArray_d[ALICEVISION_DEVICE_MAX_CONSTANT_CAMERA_PARAM_SETS];
+//extern DeviceCameraParams constantCameraParametersArray_d[ALICEVISION_DEVICE_MAX_CONSTANT_CAMERA_PARAM_SETS];
 
 } // namespace depthMap

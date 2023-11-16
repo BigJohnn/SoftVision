@@ -58,7 +58,7 @@ Pod::Spec.new do |spec|
   #  the deployment target. You can optionally include the target after the platform.
   #
 
-   spec.ios.deployment_target = "12.0"
+  spec.ios.deployment_target = "12.0"
   spec.source       = { :git => "https://github.com/BigJohnn/SoftVision.git", :tag => "#{spec.version}"}
 
 
@@ -71,7 +71,7 @@ Pod::Spec.new do |spec|
   #  Not including the public_header_files will make all headers public.
   #
 
-  spec.source_files  = "src/*.{h,hpp,cpp}"
+  spec.source_files  = "src/*.{h,hpp,cpp,metal}"
                         
 #  spec.source_files  = "Classes", "Classes/**/*.{h,cpp}"
 #  spec.exclude_files = "src/*test.{h,hpp,cpp}"
@@ -250,7 +250,7 @@ Pod::Spec.new do |spec|
   spec.header_mappings_dir = 'src'
 #   spec.xcconfig = { "HEADER_SEARCH_PATHS" => "$(SDKROOT)/usr/include/libxml2" }
   spec.xcconfig = { #'CLANG_CXX_LIBRARY' => 'libstdc++',
-  'HEADER_SEARCH_PATHS' => '${PROJECT_DIR}/../deps/eigen3 ${PROJECT_DIR}/../deps/OpenImageIO/include', # To make angled quotes recursive.
+  'HEADER_SEARCH_PATHS' => '${PROJECT_DIR}/../deps/eigen3 ${PROJECT_DIR}/../deps/OpenImageIO/include $(PROJECT_DIR)/Headers/Public/SoftVision', # To make angled quotes recursive.
   }
   
 #  spec.compiler_flags = '-DEIGEN_MAX_STATIC_ALIGN_BYTES=0 -DEIGEN_MAX_ALIGN_BYTES=0'
@@ -269,8 +269,10 @@ Pod::Spec.new do |spec|
   spec.dependency "cJSON"
   
   
+  spec.public_header_files = 'src/depthMap/gpu/**/*.metal'
+  
   spec.libraries             = 'stdc++'
   
-  spec.ios.resource_bundle = { 'vocabulary' => 'voc' }
+  spec.ios.resource_bundle = { 'vocabulary' => 'voc', 'metalshaders' => 'src/depthMap/gpu/device'  }
 
 end
