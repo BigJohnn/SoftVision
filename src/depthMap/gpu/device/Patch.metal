@@ -1,6 +1,6 @@
 //#include <depthMap/gpu/device/buffer.metal>
 //#include <depthMap/gpu/device/color.metal>
-//#include <depthMap/gpu/device/matrix.metal>
+#include <depthMap/gpu/device/matrix.metal>
 //#include <depthMap/gpu/device/SimStat.metal>
 
 #include <depthMap/gpu/device/DeviceCameraParams.hpp>
@@ -140,12 +140,12 @@ inline void computeRotCSEpip(thread Patch& ptch,
     ptch.x = normalize(ptch.x);
 }
 
-inline float pointLineDistance3D(const thread float3& point, const thread float3& linePoint, const thread float3& lineVectNormalized)
+inline float pointLineDistance3D(const thread float3& point, const device float3& linePoint, const thread float3& lineVectNormalized)
 {
     return length(cross(lineVectNormalized, linePoint - point));
 }
     
-inline float computePixSize(const thread DeviceCameraParams& deviceCamParams, thread const float3& p)
+inline float computePixSize(const device DeviceCameraParams& deviceCamParams, thread const float3& p)
 {
     const float2 rp = project3DPoint(deviceCamParams.P, p);
     const float2 rp1 = rp + float2(1.0f, 0.0f);
@@ -581,18 +581,18 @@ static float compNCCbyH(const DeviceCameraParams& rcDeviceCamParams,
 template<bool TInvertAndFilter>
 inline float compNCCby3DptsYK(device const DeviceCameraParams& rcDeviceCamParams,
                               device           const DeviceCameraParams& tcDeviceCamParams,
-                              device           const cudaTextureObject_t rcMipmapImage_tex,
-                              device           const cudaTextureObject_t tcMipmapImage_tex,
-                              device           const unsigned int rcLevelWidth,
-                              device           const unsigned int rcLevelHeight,
-                              device           const unsigned int tcLevelWidth,
-                              device           const unsigned int tcLevelHeight,
-                              device           const float mipmapLevel,
-                              device           const int wsh,
-                              device           const float invGammaC,
-                              device           const float invGammaP,
-                              device           const bool useConsistentScale,
-                              device           const Patch& patch)
+                              texture2d<half, access::read> rcMipmapImage_tex,
+                              texture2d<half, access::read> tcMipmapImage_tex,
+                              device           const unsigned int& rcLevelWidth,
+                              device           const unsigned int& rcLevelHeight,
+                              device           const unsigned int& tcLevelWidth,
+                              device           const unsigned int& tcLevelHeight,
+                              device           const float& mipmapLevel,
+                              device           const int& wsh,
+                              device           const float& invGammaC,
+                              device           const float& invGammaP,
+                              device           const bool& useConsistentScale,
+                              thread           const Patch& patch)
 {
     // get R and T image 2d coordinates from patch center 3d point
     const float2 rp = project3DPoint(rcDeviceCamParams.P, patch.p);
@@ -723,7 +723,7 @@ inline float compNCCby3DptsYK_customPatchPattern(device const DeviceCameraParams
                                                  device            const float invGammaC,
                                                  device            const float invGammaP,
                                                  device            const bool useConsistentScale,
-                                                 device            const Patch& patch)
+                                                 thread            const Patch& patch)
 {
     // get R and T image 2d coordinates from patch center 3d point
     const float2 rp = project3DPoint(rcDeviceCamParams.P, patch.p);
