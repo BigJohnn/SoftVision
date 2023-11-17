@@ -1,10 +1,15 @@
-#include <depthMap/gpu/device/buffer.metal>
-#include <depthMap/gpu/device/color.metal>
-#include <depthMap/gpu/device/matrix.metal>
-#include <depthMap/gpu/device/SimStat.metal>
+//#include <depthMap/gpu/device/buffer.metal>
+//#include <depthMap/gpu/device/color.metal>
+//#include <depthMap/gpu/device/matrix.metal>
+//#include <depthMap/gpu/device/SimStat.metal>
 
 #include <depthMap/gpu/device/DeviceCameraParams.hpp>
 #include <depthMap/gpu/device/DevicePatchPattern.hpp>
+
+#include <metal_stdlib>
+using namespace metal;
+
+#define INF_F -2.0f
 
 namespace depthMap {
 
@@ -17,7 +22,18 @@ struct Patch
     float d;  //< pixel size
 };
 
-inline void rotPointAroundVect(device float3& out, device float3& X, device float3& vect, int angle)
+inline float2 project3DPoint(device const float4x3& M3x4, thread const float3& V)
+{
+    // without optimization
+    // const float3 p = M3x4mulV3(M3x4, V);
+    // return float2(p.x / p.z, p.y / p.z);
+
+    float3 p = (M3x4 * float4(V, 1.0f)).xyz;
+    const float pzInv =  divide(1.0f, p.z);
+    return float2(p.x * pzInv, p.y * pzInv);
+}
+    
+inline void rotPointAroundVect(thread float3& out, thread float3& X, thread float3& vect, int angle)
 {
     float ux, uy, uz, vx, vy, vz, wx, wy, wz, sa, ca, x, y, z, u, v, w;
 
@@ -55,7 +71,7 @@ inline void rotPointAroundVect(device float3& out, device float3& X, device floa
     out.z = z * sizeX;
 }
 
-inline void rotatePatch(device Patch& ptch, int rx, int ry)
+inline void rotatePatch(thread Patch& ptch, int rx, int ry)
 {
     float3 n, y, x;
 
@@ -72,7 +88,7 @@ inline void rotatePatch(device Patch& ptch, int rx, int ry)
     ptch.x = x;
 }
 
-inline void movePatch(device Patch& ptch, int pt)
+inline void movePatch(thread Patch& ptch, int pt)
 {
     // float3 v = ptch.p-rC;
     // normalize(v);
@@ -83,7 +99,7 @@ inline void movePatch(device Patch& ptch, int pt)
     ptch.p = p;
 }
 
-inline void computeRotCS(device float3& xax, device float3& yax, device float3& n)
+inline void computeRotCS(thread float3& xax, thread float3& yax, thread float3& n)
 {
     xax.x = -n.y + n.z; // get any cross product
     xax.y = +n.x + n.z;
@@ -94,37 +110,42 @@ inline void computeRotCS(device float3& xax, device float3& yax, device float3& 
         xax.y = +n.x - n.z;
         xax.z = +n.x + n.y;
     };
-    normalize(xax);
+    xax = normalize(xax);
     yax = cross(n, xax);
 }
 
-inline void computeRotCSEpip(device Patch& ptch,
-                             device const DeviceCameraParams& rcDeviceCamParams,
-                             device const DeviceCameraParams& tcDeviceCamParams)
+inline void computeRotCSEpip(thread Patch& ptch,
+                             thread const DeviceCameraParams& rcDeviceCamParams,
+                             thread const DeviceCameraParams& tcDeviceCamParams)
 {
     // Vector from the reference camera to the 3d point
     float3 v1 = rcDeviceCamParams.C - ptch.p;
     // Vector from the target camera to the 3d point
     float3 v2 = tcDeviceCamParams.C - ptch.p;
-    normalize(v1);
-    normalize(v2);
+    v1 = normalize(v1);
+    v2 = normalize(v2);
 
     // y has to be ortogonal to the epipolar plane
     // n has to be on the epipolar plane
     // x has to be on the epipolar plane
 
     ptch.y = cross(v1, v2);
-    normalize(ptch.y); // TODO: v1 & v2 are already normalized
+    ptch.y = normalize(ptch.y); // TODO: v1 & v2 are already normalized
 
     ptch.n = (v1 + v2) / 2.0f; // IMPORTANT !!!
-    normalize(ptch.n); // TODO: v1 & v2 are already normalized
+    ptch.n = normalize(ptch.n); // TODO: v1 & v2 are already normalized
     // ptch.n = sg_s_r.ZVect; //IMPORTANT !!!
 
     ptch.x = cross(ptch.y, ptch.n);
-    normalize(ptch.x);
+    ptch.x = normalize(ptch.x);
 }
 
-inline float computePixSize(const device DeviceCameraParams& deviceCamParams, device const float3& p)
+inline float pointLineDistance3D(const thread float3& point, const thread float3& linePoint, const thread float3& lineVectNormalized)
+{
+    return length(cross(lineVectNormalized, linePoint - point));
+}
+    
+inline float computePixSize(const thread DeviceCameraParams& deviceCamParams, thread const float3& p)
 {
     const float2 rp = project3DPoint(deviceCamParams.P, p);
     const float2 rp1 = rp + float2(1.0f, 0.0f);
@@ -135,9 +156,9 @@ inline float computePixSize(const device DeviceCameraParams& deviceCamParams, de
     return pointLineDistance3D(p, deviceCamParams.C, refvect);
 }
 
-inline void getPixelFor3DPoint(device float2& out, device const DeviceCameraParams& deviceCamParams, device const float3& X)
+inline void getPixelFor3DPoint(thread float2& out, thread const DeviceCameraParams& deviceCamParams, thread const float3& X)
 {
-    const float3 p = M3x4mulV3(deviceCamParams.P, X);
+    const float3 p = (deviceCamParams.P * float4(X, 1.0f)).xyz;
 
     if(p.z <= 0.0f)
         out = float2(-1.0f, -1.0f);
@@ -145,7 +166,7 @@ inline void getPixelFor3DPoint(device float2& out, device const DeviceCameraPara
         out = float2(p.x / p.z, p.y / p.z);
 }
 
-inline float3 get3DPointForPixelAndFrontoParellePlaneRC(device const DeviceCameraParams& deviceCamParams, device const float2& pix, float fpPlaneDepth)
+inline float3 get3DPointForPixelAndFrontoParellePlaneRC(thread const DeviceCameraParams& deviceCamParams, thread const float2& pix, float fpPlaneDepth)
 {
     const float3 planep = deviceCamParams.C + deviceCamParams.ZVect * fpPlaneDepth;
     float3 v = deviceCamParams.iP * float3(pix, 1.0f);
@@ -153,17 +174,114 @@ inline float3 get3DPointForPixelAndFrontoParellePlaneRC(device const DeviceCamer
     return linePlaneIntersect(deviceCamParams.C, v, planep, deviceCamParams.ZVect);
 }
 
-inline float3 get3DPointForPixelAndDepthFromRC(device const DeviceCameraParams& deviceCamParams, device const float2& pix, float depth)
+inline float3 get3DPointForPixelAndDepthFromRC(thread const DeviceCameraParams& deviceCamParams, thread const float2& pix, float depth)
 {
     float3 rpv = deviceCamParams.iP * float3(pix, 1.0f);
     rpv = normalize(rpv);
     return deviceCamParams.C + rpv * depth;
 }
 
-inline float3 triangulateMatchRef(device const DeviceCameraParams& rcDeviceCamParams,
-                                  device            const DeviceCameraParams& tcDeviceCamParams,
-                                  device            const float2& refpix,
-                                  device            const float2& tarpix)
+/**
+ * @brief Calculate the line segment PaPb that is the shortest route between two lines p1-p2 and p3-p4.
+ *        Calculate also the values of mua and mub where:
+ *          -> pa = p1 + mua (p2 - p1)
+ *          -> pb = p3 + mub (p4 - p3)
+ *
+ * @note This a simple conversion to MATLAB of the C code posted by Paul Bourke at:
+ *       http://astronomy.swin.edu.au/~pbourke/geometry/lineline3d/
+ *       The author of this all too imperfect translation is Cristian Dima (csd@cmu.edu).
+ *
+ * @see https://web.archive.org/web/20060422045048/http://astronomy.swin.edu.au/~pbourke/geometry/lineline3d/
+ */
+inline float3 lineLineIntersect(thread float* k,
+                                thread float* l,
+                                thread float3* lli1,
+                                thread float3* lli2,
+                                thread const float3& p1,
+                                thread const float3& p2,
+                                thread const float3& p3,
+                                thread const float3& p4)
+{
+    float d1343, d4321, d1321, d4343, d2121, denom, numer, p13[3], p43[3], p21[3], pa[3], pb[3], muab[2];
+
+    p13[0] = p1.x - p3.x;
+    p13[1] = p1.y - p3.y;
+    p13[2] = p1.z - p3.z;
+
+    p43[0] = p4.x - p3.x;
+    p43[1] = p4.y - p3.y;
+    p43[2] = p4.z - p3.z;
+
+    /*
+    if ((abs(p43[0])  < eps) & ...
+        (abs(p43[1])  < eps) & ...
+        (abs(p43[2])  < eps))
+      error('Could not compute LineLineIntersect!');
+    end
+    */
+
+    p21[0] = p2.x - p1.x;
+    p21[1] = p2.y - p1.y;
+    p21[2] = p2.z - p1.z;
+
+    /*
+    if ((abs(p21[0])  < eps) & ...
+        (abs(p21[1])  < eps) & ...
+        (abs(p21[2])  < eps))
+      error('Could not compute LineLineIntersect!');
+    end
+    */
+
+    d1343 = p13[0] * p43[0] + p13[1] * p43[1] + p13[2] * p43[2];
+    d4321 = p43[0] * p21[0] + p43[1] * p21[1] + p43[2] * p21[2];
+    d1321 = p13[0] * p21[0] + p13[1] * p21[1] + p13[2] * p21[2];
+    d4343 = p43[0] * p43[0] + p43[1] * p43[1] + p43[2] * p43[2];
+    d2121 = p21[0] * p21[0] + p21[1] * p21[1] + p21[2] * p21[2];
+
+    denom = d2121 * d4343 - d4321 * d4321;
+
+    /*
+    if (abs(denom) < eps)
+      error('Could not compute LineLineIntersect!');
+    end
+     */
+
+    numer = d1343 * d4321 - d1321 * d4343;
+
+    muab[0] = numer / denom;
+    muab[1] = (d1343 + d4321 * muab[0]) / d4343;
+
+    pa[0] = p1.x + muab[0] * p21[0];
+    pa[1] = p1.y + muab[0] * p21[1];
+    pa[2] = p1.z + muab[0] * p21[2];
+
+    pb[0] = p3.x + muab[1] * p43[0];
+    pb[1] = p3.y + muab[1] * p43[1];
+    pb[2] = p3.z + muab[1] * p43[2];
+
+    float3 S;
+    S.x = (pa[0] + pb[0]) / 2.0;
+    S.y = (pa[1] + pb[1]) / 2.0;
+    S.z = (pa[2] + pb[2]) / 2.0;
+
+    *k = muab[0];
+    *l = muab[1];
+
+    lli1->x = pa[0];
+    lli1->y = pa[1];
+    lli1->z = pa[2];
+
+    lli2->x = pb[0];
+    lli2->y = pb[1];
+    lli2->z = pb[2];
+
+    return S;
+}
+
+inline float3 triangulateMatchRef(thread const DeviceCameraParams& rcDeviceCamParams,
+                                  thread            const DeviceCameraParams& tcDeviceCamParams,
+                                  thread            const float2& refpix,
+                                  thread            const float2& tarpix)
 {
     float3 refvect = rcDeviceCamParams.iP * float3(refpix, 1.0f);
     refvect = normalize(refvect);
@@ -195,7 +313,7 @@ inline float3 triangulateMatchRef(device const DeviceCameraParams& rcDeviceCamPa
  *
  * @return refined depth value
  */
-inline float refineDepthSubPixel(device const float3& depths, device const float3& sims)
+inline float refineDepthSubPixel(thread const float3& depths, thread const float3& sims)
 {
     // TODO: get formula back from paper as it has been lost by encoding.
     // d is the discrete depth with the minimal cost, dA ? d A 1, and dB ? d B 1. The cost function is approximated as
@@ -248,10 +366,10 @@ inline void computeRcTcMipmapLevels(device float& out_rcMipmapLevel,
                                     device            const float3& p0)
 {
     // get p0 depth from the R camera
-    const float rcDepth = size(rcDeviceCamParams.C - p0);
+    const float rcDepth = length(rcDeviceCamParams.C - p0);
 
     // get p0 depth from the T camera
-    const float tcDepth = size(tcDeviceCamParams.C - p0);
+    const float tcDepth = length(tcDeviceCamParams.C - p0);
 
     // get R p0 corresponding pixel + 1x
     const float2 rp1 = rp0 + float2(1.f, 0.f);
@@ -270,10 +388,10 @@ inline void computeRcTcMipmapLevels(device float& out_rcMipmapLevel,
     const float3 ptp1 = tcDeviceCamParams.C + tpv * tcDepth;
 
     // compute 3d distance between p0 and rp1 3d point
-    const float rcDist = dist(p0, prp1);
+    const float rcDist = distance(p0, prp1);
 
     // compute 3d distance between p0 and tp1 3d point
-    const float tcDist = dist(p0, ptp1);
+    const float tcDist = distance(p0, ptp1);
 
     // compute Rc/Tc distance factor
     const float distFactor = rcDist / tcDist;
@@ -317,7 +435,7 @@ inline float getRefCamPixSize(Patch &ptch)
                 if (i==3) {pix.y -= 1.0f;};
                 float3 vect = M3x3mulV2(sg_s_r.iP,pix);
                 float3 lpi = linePlaneIntersect(sg_s_r.C, vect, ptch.p, ptch.n);
-                float step = dist(lpi,ptch.p);
+                float step = distance(lpi,ptch.p);
                 minstep = fminf(minstep,step);
         };
 
@@ -337,7 +455,7 @@ inline float getTarCamPixSize(Patch &ptch)
                 if (i==3) {pix.y -= 1.0f;};
                 float3 vect = M3x3mulV2(sg_s_t.iP,pix);
                 float3 lpi = linePlaneIntersect(sg_s_t.C, vect, ptch.p, ptch.n);
-                float step = dist(lpi,ptch.p);
+                float step = distance(lpi,ptch.p);
                 minstep = fminf(minstep,step);
         };
 
@@ -458,7 +576,7 @@ static float compNCCbyH(const DeviceCameraParams& rcDeviceCamParams,
  * @return similarity value in range (-1.f, 0.f) or (0.f, 1.f) if TinvertAndFilter enabled
  *         special cases:
  *          -> infinite similarity value: 1
- *          -> invalid/uninitialized/masked similarity: CUDART_INF_F
+ *          -> invalid/uninitialized/masked similarity: INF_F
  */
 template<bool TInvertAndFilter>
 inline float compNCCby3DptsYK(device const DeviceCameraParams& rcDeviceCamParams,
@@ -489,7 +607,7 @@ inline float compNCCby3DptsYK(device const DeviceCameraParams& rcDeviceCamParams
        (rp.y < dd) || (rp.y > float(rcLevelHeight - 1) - dd) ||
        (tp.y < dd) || (tp.y > float(tcLevelHeight - 1) - dd))
     {
-        return CUDART_INF_F; // uninitialized
+        return INF_F; // uninitialized
     }
 
     // compute inverse width / height
@@ -519,7 +637,7 @@ inline float compNCCby3DptsYK(device const DeviceCameraParams& rcDeviceCamParams
     // check the alpha values of the patch pixel center of the R and T cameras
     if(rcCenterColor.w < ALICEVISION_DEPTHMAP_RC_MIN_ALPHA || tcCenterColor.w < ALICEVISION_DEPTHMAP_TC_MIN_ALPHA)
     {
-        return CUDART_INF_F; // masked
+        return INF_F; // masked
     }
 
     // compute patch (wsh*2+1)x(wsh*2+1)
@@ -590,7 +708,7 @@ inline float compNCCby3DptsYK(device const DeviceCameraParams& rcDeviceCamParams
  * @return similarity value in range (-1.f, 0.f) or (0.f, 1.f) if TinvertAndFilter enabled
  *         special cases:
  *          -> infinite similarity value: 1
- *          -> invalid/uninitialized/masked similarity: CUDART_INF_F
+ *          -> invalid/uninitialized/masked similarity: INF_F
  */
 template<bool TInvertAndFilter>
 inline float compNCCby3DptsYK_customPatchPattern(device const DeviceCameraParams& rcDeviceCamParams,
@@ -620,7 +738,7 @@ inline float compNCCby3DptsYK_customPatchPattern(device const DeviceCameraParams
        (rp.y < dd) || (rp.y > float(rcLevelHeight - 1) - dd) ||
        (tp.y < dd) || (tp.y > float(tcLevelHeight - 1) - dd))
     {
-        return CUDART_INF_F; // uninitialized
+        return INF_F; // uninitialized
     }
 
     // compute inverse width / height
@@ -637,7 +755,7 @@ inline float compNCCby3DptsYK_customPatchPattern(device const DeviceCameraParams
     // check the alpha values of the patch pixel center of the R and T cameras
     if(rcAlpha < ALICEVISION_DEPTHMAP_RC_MIN_ALPHA || tcAlpha < ALICEVISION_DEPTHMAP_TC_MIN_ALPHA)
     {
-        return CUDART_INF_F; // masked
+        return INF_F; // masked
     }
 
     // initialize R and T mipmap image level at the given mipmap image level
@@ -756,7 +874,7 @@ inline float compNCCby3DptsYK_customPatchPattern(device const DeviceCameraParams
     // invalid patch similarity
     if(wsum == 0.f)
     {
-        return CUDART_INF_F;
+        return INF_F;
     }
 
     if(TInvertAndFilter)

@@ -4,11 +4,7 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
-//#include "dep"
-//#include
-//#include "devi.metal"
-//#include <dep
-#include "mvsData/ROI_d.hpp"
+#include <mvsData/ROI_d.hpp>
 #include <depthMap/gpu/planeSweeping/similarity.hpp>
 #include <depthMap/gpu/device/matrix.metal>
 #include <depthMap/gpu/device/Patch.metal>
@@ -21,15 +17,15 @@ void move3DPointByRcPixSize(device float3& p,
                                               const float rcPixSize)
 {
     float3 rpv = p - rcDeviceCamParams.C;
-    normalize(rpv);
+    rpv = normalize(rpv);
     p = p + rpv * rcPixSize;
 }
 
 void volume_computePatch(Patch& patch,
-                                           const DeviceCameraParams& rcDeviceCamParams,
-                                           const DeviceCameraParams& tcDeviceCamParams,
+                                           device const DeviceCameraParams& rcDeviceCamParams,
+                                           device const DeviceCameraParams& tcDeviceCamParams,
                                            const float fpPlaneDepth,
-                                           const float2& pix)
+                                           thread const float2& pix)
 {
     patch.p = get3DPointForPixelAndFrontoParellePlaneRC(rcDeviceCamParams, pix, fpPlaneDepth);
     patch.d = computePixSize(rcDeviceCamParams, patch.p);
@@ -41,10 +37,10 @@ float depthPlaneToDepth(const DeviceCameraParams& deviceCamParams,
                                           const float2& pix)
 {
     const float3 planep = deviceCamParams.C + deviceCamParams.ZVect * fpPlaneDepth;
-    float3 v = M3x3mulV2(deviceCamParams.iP, pix);
-    normalize(v);
+    float3 v = (deviceCamParams.iP * float3(pix, 1.0f));
+    v = normalize(v);
     float3 p = linePlaneIntersect(deviceCamParams.C, v, planep, deviceCamParams.ZVect);
-    return size(deviceCamParams.C - p);
+    return length(deviceCamParams.C - p);
 }
 
 template <typename T>
@@ -200,7 +196,7 @@ kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, device
                                                  patch);
     }
 
-    if(fsim == CUDART_INF_F) // invalid similarity
+    if(fsim == INF_F) // invalid similarity
     {
       fsim = 255.0f; // 255 is the invalid similarity value
     }
@@ -339,7 +335,7 @@ kernel void volume_refineSimilarity_kernel(TSimRefine* inout_volSim_d, int inout
     // we need positive and filtered similarity values
     constexpr bool invertAndFilter = true;
 
-    float fsimInvertedFiltered = CUDART_INF_F;
+    float fsimInvertedFiltered = INF_F;
 
     // compute similarity
     if(useCustomPatchPattern)
@@ -376,7 +372,7 @@ kernel void volume_refineSimilarity_kernel(TSimRefine* inout_volSim_d, int inout
                                                                  patch);
     }
 
-    if(fsimInvertedFiltered == CUDART_INF_F) // invalid similarity
+    if(fsimInvertedFiltered == INF_F) // invalid similarity
     {
         // do nothing
         return;

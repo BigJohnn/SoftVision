@@ -9,7 +9,7 @@
 #define TSIM_REFINE_USE_HALF
 
 #ifdef TSIM_REFINE_USE_HALF
-#include <half.h>
+//#include <half.h>
 //#define CUDA_NO_HALF
 //#include <cuda_fp16.h>
 #endif

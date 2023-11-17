@@ -17,7 +17,7 @@ typedef struct DeviceCameraParams
 //    float K[9];
 //    float iK[9];
     
-    matrix_float3x4 P;
+    matrix_float4x3 P;
     matrix_float3x3 iP;
     matrix_float3x3 R;
     matrix_float3x3 iR;
