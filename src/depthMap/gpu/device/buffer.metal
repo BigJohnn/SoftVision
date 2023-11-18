@@ -1,8 +1,10 @@
 //#pragma once
 
-
-#include <depthMap/gpu/device/BufPtr.metal>
 #include <depthMap/gpu/device/DeviceCameraParams.hpp>
+
+//#include <depthMap/gpu/device/BufPtr.metal>
+//#include <depthMap/BufPtr.hpp>
+
 #include <metal_stdlib>
 
 using namespace metal;
@@ -11,19 +13,7 @@ using namespace metal;
 
 namespace depthMap {
 
-/**
-* @brief
-* @param[int] ptr
-* @param[int] pitch raw length of a line in bytes
-* @param[int] x
-* @param[int] y
-* @return
-*/
-template <typename T>
-inline device T* get2DBufferAt(device T* ptr, int pitch, int x, int y)
-{
-    return &(BufPtr<T>(ptr,pitch).at(x,y));
-}
+
 
 /**
 * @brief
@@ -35,25 +25,25 @@ inline device T* get2DBufferAt(device T* ptr, int pitch, int x, int y)
 * @return
 */
 template <typename T>
-inline device T* get3DBufferAt(device T* ptr, size_t spitch, size_t pitch, size_t x, size_t y, size_t z)
+inline thread T* get3DBufferAt(device T* ptr, size_t spitch, size_t pitch, size_t x, size_t y, size_t z)
 {
     return ((device T*)(((device char*)ptr) + z * spitch + y * pitch)) + x;
 }
 
 template <typename T>
-inline const device T* get3DBufferAt(const device T* ptr, size_t spitch, size_t pitch, size_t x, size_t y, size_t z)
+inline const thread T* get3DBufferAt(const device T* ptr, size_t spitch, size_t pitch, size_t x, size_t y, size_t z)
 {
     return ((const device T*)(((const device char*)ptr) + z * spitch + y * pitch)) + x;
 }
 
 template <typename T>
-inline device T* get3DBufferAt(device T* ptr, size_t spitch, size_t pitch, const device int3& v)
+inline thread T* get3DBufferAt(device T* ptr, size_t spitch, size_t pitch, const device int3& v)
 {
     return get3DBufferAt(ptr, spitch, pitch, v.x, v.y, v.z);
 }
 
 template <typename T>
-inline const device T* get3DBufferAt(const device T* ptr, size_t spitch, size_t pitch, const device int3& v)
+inline const thread T* get3DBufferAt(const device T* ptr, size_t spitch, size_t pitch, const device int3& v)
 {
     return get3DBufferAt(ptr, spitch, pitch, v.x, v.y, v.z);
 }

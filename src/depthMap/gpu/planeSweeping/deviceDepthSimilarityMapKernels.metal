@@ -1,12 +1,13 @@
 //#pragma once
 
 //#include "depthMap"
+#include <depthMap/gpu/device/DeviceCameraParams.hpp>
 #include <mvsData/ROI_d.hpp>
-//#include <depthMap/gpu/device/buffer.metal>
-#include <depthMap/gpu/device/matrix.metal>
+#include <depthMap/gpu/device/BufPtr.metal>
+//#include <depthMap/gpu/device/matrix.metal>
 #include <depthMap/gpu/device/Patch.metal>
 #include <depthMap/gpu/device/eig33.metal>
-#include <depthMap/gpu/device/DeviceCameraParams.hpp>
+
 
 // compute per pixel pixSize instead of using Sgm depth thickness
 //#define ALICEVISION_DEPTHMAP_COMPUTE_PIXSIZEMAP
@@ -14,6 +15,8 @@
 
 namespace depthMap {
 
+
+    
 /**
  * @return (smoothStep, energy)
  */
@@ -143,10 +146,10 @@ kernel void mapUpscale_kernel(device T* out_upscaledMap_d, device int* out_upsca
 //    *get2DBufferAt(out_upscaledMap_d, out_upscaledMap_p, x, y) = *get2DBufferAt(in_map_d, in_map_p, xp, yp);
 }
 
-kernel void depthThicknessMapSmoothThickness_kernel(device float2* inout_depthThicknessMap_d, device int* inout_depthThicknessMap_p,
-                                                      constant float* minThicknessInflate,
-                                                    constant float* maxThicknessInflate,
-                                                    constant ROI_d* roi,
+kernel void depthThicknessMapSmoothThickness_kernel(device float2* inout_depthThicknessMap_d, device int& inout_depthThicknessMap_p,
+                                                      device float& minThicknessInflate,
+                                                    device float& maxThicknessInflate,
+                                                    device ROI_d& roi,
                                                     uint2 index [[thread_position_in_threadgroup]])
 {
 //    const unsigned int roiX = blockIdx.x * blockDim.x + threadIdx.x;
@@ -154,20 +157,20 @@ kernel void depthThicknessMapSmoothThickness_kernel(device float2* inout_depthTh
     const unsigned int roiX = index.x;
     const unsigned int roiY = index.y;
 
-    float roiWidth = roi->rb.x-roi->lt.x;
-    float roiHeight = roi->rb.y-roi->lt.y;
+    float roiWidth = roi.rb.x-roi.lt.x;
+    float roiHeight = roi.rb.y-roi.lt.y;
     if(roiX >= roiWidth || roiY >= roiHeight)
         return;
 
     // corresponding output depth/thickness (depth unchanged)
-    float2* inout_depthThickness = get2DBufferAt(inout_depthThicknessMap_d, inout_depthThicknessMap_p[0], roiX, roiY);
+    float2 inout_depthThickness = get2DBufferAt<float2>(inout_depthThicknessMap_d, inout_depthThicknessMap_p, roiX, roiY);
 
     // depth invalid or masked
-    if(inout_depthThickness->x <= 0.0f)
+    if(inout_depthThickness.x <= 0.0f)
         return;
 
-    const float minThickness = minThicknessInflate[0] * inout_depthThickness->y;
-    const float maxThickness = maxThicknessInflate[0] * inout_depthThickness->y;
+    const float minThickness = minThicknessInflate * inout_depthThickness.y;
+    const float maxThickness = maxThicknessInflate * inout_depthThickness.y;
 
     // compute average depth distance to the center pixel
     float sumCenterDepthDist = 0.f;
@@ -190,12 +193,12 @@ kernel void depthThicknessMapSmoothThickness_kernel(device float2* inout_depthTh
             }
 
             // corresponding path depth/thickness
-            const float2 in_depthThicknessPatch = *get2DBufferAt(inout_depthThicknessMap_d, *inout_depthThicknessMap_p, roiXp, roiYp);
+            const float2 in_depthThicknessPatch = get2DBufferAt<float2>(inout_depthThicknessMap_d, inout_depthThicknessMap_p, roiXp, roiYp);
 
             // patch depth valid
             if(in_depthThicknessPatch.x > 0.0f)
             {
-                const float depthDistance = abs(inout_depthThickness->x - in_depthThicknessPatch.x);
+                const float depthDistance = abs(inout_depthThickness.x - in_depthThicknessPatch.x);
                 sumCenterDepthDist += max(minThickness, min(maxThickness, depthDistance)); // clamp (minThickness, maxThickness)
                 ++nbValidPatchPixels;
             }
@@ -207,7 +210,7 @@ kernel void depthThicknessMapSmoothThickness_kernel(device float2* inout_depthTh
         return;
 
     // write output smooth thickness
-    inout_depthThickness->y = sumCenterDepthDist / nbValidPatchPixels;
+    inout_depthThickness.y = sumCenterDepthDist / nbValidPatchPixels;
 }
 kernel void computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel(device float2* out_upscaledDepthPixSizeMap_d, constant int* out_upscaledDepthPixSizeMap_p,
                                                                      constant float2* in_sgmDepthThicknessMap_d, constant int* in_sgmDepthThicknessMap_p,

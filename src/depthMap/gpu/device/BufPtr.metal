@@ -19,7 +19,7 @@ public:
 
     inline const device T* ptr() const { return (device const T*)(_ptr); }
     inline const device T* row(size_t y) const { return (device const T*)(_ptr + y * _pitch); }
-    inline const device T& at(size_t x, size_t y) const { return row(y)[x]; }
+    inline const thread T& at(size_t x, size_t y) const { return row(y)[x]; }
 
 private:
     BufPtr();
@@ -30,6 +30,20 @@ private:
     const size_t _pitch;
 };
 
+/**
+* @brief
+* @param[int] ptr
+* @param[int] pitch raw length of a line in bytes
+* @param[int] x
+* @param[int] y
+* @return
+*/
+template <typename T>
+inline T get2DBufferAt(device const T* ptr, device const int& pitch, int x, int y)
+{
+    return BufPtr<T>(ptr,pitch).at(x,y);
+}
+    
 template <typename T>
 static inline device T* get3DBufferAt_h(device T* ptr, size_t spitch, size_t pitch, size_t x, size_t y, size_t z)
 {
