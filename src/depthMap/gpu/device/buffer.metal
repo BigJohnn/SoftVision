@@ -20,7 +20,7 @@ namespace depthMap {
 * @return
 */
 template <typename T>
-inline device T* get2DBufferAt(device T* ptr, size_t pitch, size_t x, size_t y)
+inline device T* get2DBufferAt(device T* ptr, int pitch, int x, int y)
 {
     return &(BufPtr<T>(ptr,pitch).at(x,y));
 }

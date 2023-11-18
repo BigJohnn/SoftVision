@@ -1,7 +1,7 @@
 //#include <depthMap/gpu/device/buffer.metal>
-//#include <depthMap/gpu/device/color.metal>
+#include <depthMap/gpu/device/color.metal>
 #include <depthMap/gpu/device/matrix.metal>
-//#include <depthMap/gpu/device/SimStat.metal>
+#include <depthMap/gpu/device/SimStat.metal>
 
 #include <depthMap/gpu/device/DeviceCameraParams.hpp>
 #include <depthMap/gpu/device/DevicePatchPattern.hpp>
@@ -115,8 +115,8 @@ inline void computeRotCS(thread float3& xax, thread float3& yax, thread float3& 
 }
 
 inline void computeRotCSEpip(thread Patch& ptch,
-                             thread const DeviceCameraParams& rcDeviceCamParams,
-                             thread const DeviceCameraParams& tcDeviceCamParams)
+                             device const DeviceCameraParams& rcDeviceCamParams,
+                             device const DeviceCameraParams& tcDeviceCamParams)
 {
     // Vector from the reference camera to the 3d point
     float3 v1 = rcDeviceCamParams.C - ptch.p;
@@ -166,7 +166,7 @@ inline void getPixelFor3DPoint(thread float2& out, thread const DeviceCameraPara
         out = float2(p.x / p.z, p.y / p.z);
 }
 
-inline float3 get3DPointForPixelAndFrontoParellePlaneRC(thread const DeviceCameraParams& deviceCamParams, thread const float2& pix, float fpPlaneDepth)
+inline float3 get3DPointForPixelAndFrontoParellePlaneRC(device const DeviceCameraParams& deviceCamParams, thread const float2& pix, float fpPlaneDepth)
 {
     const float3 planep = deviceCamParams.C + deviceCamParams.ZVect * fpPlaneDepth;
     float3 v = deviceCamParams.iP * float3(pix, 1.0f);
@@ -356,14 +356,14 @@ inline float refineDepthSubPixel(thread const float3& depths, thread const float
     return interpDepth;
 }
 
-inline void computeRcTcMipmapLevels(device float& out_rcMipmapLevel,
-                                    device            float& out_tcMipmapLevel,
-                                    device            const float mipmapLevel,
+inline void computeRcTcMipmapLevels(thread float& out_rcMipmapLevel,
+                                    thread            float& out_tcMipmapLevel,
+                                    device            const float& mipmapLevel,
                                     device            const DeviceCameraParams& rcDeviceCamParams,
                                     device            const DeviceCameraParams& tcDeviceCamParams,
-                                    device            const float2& rp0,
-                                    device            const float2& tp0,
-                                    device            const float3& p0)
+                                    thread            const float2& rp0,
+                                    thread            const float2& tp0,
+                                    thread            const float3& p0)
 {
     // get p0 depth from the R camera
     const float rcDepth = length(rcDeviceCamParams.C - p0);
@@ -581,8 +581,8 @@ static float compNCCbyH(const DeviceCameraParams& rcDeviceCamParams,
 template<bool TInvertAndFilter>
 inline float compNCCby3DptsYK(device const DeviceCameraParams& rcDeviceCamParams,
                               device           const DeviceCameraParams& tcDeviceCamParams,
-                              texture2d<half, access::read> rcMipmapImage_tex,
-                              texture2d<half, access::read> tcMipmapImage_tex,
+                              texture2d<half> rcMipmapImage_tex,
+                              texture2d<half> tcMipmapImage_tex,
                               device           const unsigned int& rcLevelWidth,
                               device           const unsigned int& rcLevelHeight,
                               device           const unsigned int& tcLevelWidth,
@@ -631,8 +631,12 @@ inline float compNCCby3DptsYK(device const DeviceCameraParams& rcDeviceCamParams
     simStat sst;
 
     // compute patch center color (CIELAB) at R and T mipmap image level
-    const float4 rcCenterColor = tex2DLod<float4>(rcMipmapImage_tex, (rp.x + 0.5f) * rcInvLevelWidth, (rp.y + 0.5f) * rcInvLevelHeight, rcMipmapLevel);
-    const float4 tcCenterColor = tex2DLod<float4>(tcMipmapImage_tex, (tp.x + 0.5f) * tcInvLevelWidth, (tp.y + 0.5f) * tcInvLevelHeight, tcMipmapLevel);
+    constexpr sampler textureSampler (mag_filter::linear,
+                                      min_filter::linear);
+//    const float4 rcCenterColor = tex2DLod<float4>(rcMipmapImage_tex, (rp.x + 0.5f) * rcInvLevelWidth, (rp.y + 0.5f) * rcInvLevelHeight, rcMipmapLevel);
+//    const float4 tcCenterColor = tex2DLod<float4>(tcMipmapImage_tex, (tp.x + 0.5f) * tcInvLevelWidth, (tp.y + 0.5f) * tcInvLevelHeight, tcMipmapLevel);
+    const half4 rcCenterColor = rcMipmapImage_tex.sample(textureSampler, float2((rp.x + 0.5f) * rcInvLevelWidth, (rp.y + 0.5f) * rcInvLevelHeight), level(rcMipmapLevel));
+    const half4 tcCenterColor = tcMipmapImage_tex.sample(textureSampler, float2((tp.x + 0.5f) * tcInvLevelWidth, (tp.y + 0.5f) * tcInvLevelHeight), level(tcMipmapLevel));
 
     // check the alpha values of the patch pixel center of the R and T cameras
     if(rcCenterColor.w < ALICEVISION_DEPTHMAP_RC_MIN_ALPHA || tcCenterColor.w < ALICEVISION_DEPTHMAP_TC_MIN_ALPHA)
@@ -653,8 +657,10 @@ inline float compNCCby3DptsYK(device const DeviceCameraParams& rcDeviceCamParams
             const float2 tpc = project3DPoint(tcDeviceCamParams.P, p);
 
             // get R and T image color (CIELAB) from 2d coordinates
-            const float4 rcPatchCoordColor = tex2DLod<float4>(rcMipmapImage_tex, (rpc.x + 0.5f) * rcInvLevelWidth, (rpc.y + 0.5f) * rcInvLevelHeight, rcMipmapLevel);
-            const float4 tcPatchCoordColor = tex2DLod<float4>(tcMipmapImage_tex, (tpc.x + 0.5f) * tcInvLevelWidth, (tpc.y + 0.5f) * tcInvLevelHeight, tcMipmapLevel);
+//            const float4 rcPatchCoordColor = tex2DLod<float4>(rcMipmapImage_tex, (rpc.x + 0.5f) * rcInvLevelWidth, (rpc.y + 0.5f) * rcInvLevelHeight, rcMipmapLevel);
+//            const float4 tcPatchCoordColor = tex2DLod<float4>(tcMipmapImage_tex, (tpc.x + 0.5f) * tcInvLevelWidth, (tpc.y + 0.5f) * tcInvLevelHeight, tcMipmapLevel);
+            const half4 rcPatchCoordColor = rcMipmapImage_tex.sample(textureSampler, float2((rpc.x + 0.5f) * rcInvLevelWidth, (rpc.y + 0.5f) * rcInvLevelHeight), level(rcMipmapLevel));
+            const half4 tcPatchCoordColor = tcMipmapImage_tex.sample(textureSampler, float2((tpc.x + 0.5f) * tcInvLevelWidth, (tpc.y + 0.5f) * tcInvLevelHeight), level(tcMipmapLevel));
 
             // compute weighting based on:
             // - color difference to the center pixel of the patch:
@@ -663,7 +669,7 @@ inline float compNCCby3DptsYK(device const DeviceCameraParams& rcDeviceCamParams
             // - distance in image to the center pixel of the patch:
             //    - low value (close to 0) means that the pixel is close to the center of the patch
             //    - high value (close to 1) means that the pixel is far from the center of the patch
-            const float w = CostYKfromLab(xp, yp, rcCenterColor, rcPatchCoordColor, invGammaC, invGammaP) * CostYKfromLab(xp, yp, tcCenterColor, tcPatchCoordColor, invGammaC, invGammaP);
+            const float w = CostYKfromLab(xp, yp, float4(rcCenterColor), float4(rcPatchCoordColor), invGammaC, invGammaP) * CostYKfromLab(xp, yp, float4(tcCenterColor), float4(tcPatchCoordColor), invGammaC, invGammaP);
 
             // update simStat
             sst.update(rcPatchCoordColor.x, tcPatchCoordColor.x, w);
@@ -713,16 +719,16 @@ inline float compNCCby3DptsYK(device const DeviceCameraParams& rcDeviceCamParams
 template<bool TInvertAndFilter>
 inline float compNCCby3DptsYK_customPatchPattern(device const DeviceCameraParams& rcDeviceCamParams,
                                                  device            const DeviceCameraParams& tcDeviceCamParams,
-                                                 texture2d<half, access::read> rcMipmapImage_tex,
-                                                 texture2d<half, access::read> tcMipmapImage_tex,
-                                                 device            const unsigned int rcLevelWidth,
-                                                 device            const unsigned int rcLevelHeight,
-                                                 device            const unsigned int tcLevelWidth,
-                                                 device            const unsigned int tcLevelHeight,
-                                                 device            const float mipmapLevel,
-                                                 device            const float invGammaC,
-                                                 device            const float invGammaP,
-                                                 device            const bool useConsistentScale,
+                                                 texture2d<half> rcMipmapImage_tex,
+                                                 texture2d<half> tcMipmapImage_tex,
+                                                 device            const unsigned int &rcLevelWidth,
+                                                 device            const unsigned int &rcLevelHeight,
+                                                 device            const unsigned int &tcLevelWidth,
+                                                 device            const unsigned int &tcLevelHeight,
+                                                 device            const float &mipmapLevel,
+                                                 device            const float &invGammaC,
+                                                 device            const float &invGammaP,
+                                                 device            const bool &useConsistentScale,
                                                  thread            const Patch& patch)
 {
     // get R and T image 2d coordinates from patch center 3d point
@@ -749,8 +755,14 @@ inline float compNCCby3DptsYK_customPatchPattern(device const DeviceCameraParams
     const float tcInvLevelHeight = 1.f / float(tcLevelHeight);
 
     // get patch center pixel alpha at the given mipmap image level
-    const float rcAlpha = tex2DLod<float4>(rcMipmapImage_tex, (rp.x + 0.5f) * rcInvLevelWidth, (rp.y + 0.5f) * rcInvLevelHeight, mipmapLevel).w; // alpha only
-    const float tcAlpha = tex2DLod<float4>(tcMipmapImage_tex, (tp.x + 0.5f) * tcInvLevelWidth, (tp.y + 0.5f) * tcInvLevelHeight, mipmapLevel).w; // alpha only
+    constexpr sampler textureSampler (mag_filter::linear,
+                                      min_filter::linear);
+
+
+//    const float rcAlpha = tex2DLod<float4>(rcMipmapImage_tex, (rp.x + 0.5f) * rcInvLevelWidth, (rp.y + 0.5f) * rcInvLevelHeight, mipmapLevel).w; // alpha only
+//    const float tcAlpha = tex2DLod<float4>(tcMipmapImage_tex, (tp.x + 0.5f) * tcInvLevelWidth, (tp.y + 0.5f) * tcInvLevelHeight, mipmapLevel).w; // alpha only
+    const half rcAlpha = rcMipmapImage_tex.sample(textureSampler, float2((rp.x + 0.5f) * rcInvLevelWidth, (rp.y + 0.5f) * rcInvLevelHeight), level(mipmapLevel)).w;
+    const half tcAlpha = tcMipmapImage_tex.sample(textureSampler, float2((tp.x + 0.5f) * tcInvLevelWidth, (tp.y + 0.5f) * tcInvLevelHeight), level(mipmapLevel)).w;
 
     // check the alpha values of the patch pixel center of the R and T cameras
     if(rcAlpha < ALICEVISION_DEPTHMAP_RC_MIN_ALPHA || tcAlpha < ALICEVISION_DEPTHMAP_TC_MIN_ALPHA)
@@ -772,6 +784,7 @@ inline float compNCCby3DptsYK_customPatchPattern(device const DeviceCameraParams
     float fsim = 0.f;
     float wsum = 0.f;
 
+#if 0
     for(int s = 0; s < constantPatchPattern_d.nbSubparts; ++s)
     {
         // create and initialize patch subpart SimStat
@@ -885,6 +898,9 @@ inline float compNCCby3DptsYK_customPatchPattern(device const DeviceCameraParams
 
     // output average similarity
     return (fsim / wsum);
+#else
+    return 0.0f;
+#endif
 }
 
 } // namespace depthMap

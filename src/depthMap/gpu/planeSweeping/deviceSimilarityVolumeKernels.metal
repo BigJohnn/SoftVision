@@ -8,7 +8,7 @@
 #include <depthMap/gpu/planeSweeping/similarity.hpp>
 #include <depthMap/gpu/device/matrix.metal>
 #include <depthMap/gpu/device/Patch.metal>
-#include <depahMap/gpu/device/DeviceCameraParams.metal>
+//#include <depahMap/gpu/device/DeviceCameraParams.metal>
 
 namespace depthMap {
 
@@ -21,7 +21,7 @@ void move3DPointByRcPixSize(device float3& p,
     p = p + rpv * rcPixSize;
 }
 
-void volume_computePatch(Patch& patch,
+void volume_computePatch(thread Patch& patch,
                                            device const DeviceCameraParams& rcDeviceCamParams,
                                            device const DeviceCameraParams& tcDeviceCamParams,
                                            const float fpPlaneDepth,
@@ -32,9 +32,9 @@ void volume_computePatch(Patch& patch,
     computeRotCSEpip(patch, rcDeviceCamParams, tcDeviceCamParams);
 }
 
-float depthPlaneToDepth(const DeviceCameraParams& deviceCamParams,
+float depthPlaneToDepth(device const DeviceCameraParams& deviceCamParams,
                                           const float fpPlaneDepth,
-                                          const float2& pix)
+                                          thread const float2& pix)
 {
     const float3 planep = deviceCamParams.C + deviceCamParams.ZVect * fpPlaneDepth;
     float3 v = (deviceCamParams.iP * float3(pix, 1.0f));
@@ -49,66 +49,66 @@ kernel void volume_init_kernel(device T* inout_volume_d, device int* inout_volum
                                device const unsigned int* volDimY,
                                device const T* value)
 {
-    const unsigned int vx = blockIdx.x * blockDim.x + threadIdx.x;
-    const unsigned int vy = blockIdx.y * blockDim.y + threadIdx.y;
-    const unsigned int vz = blockIdx.z;
-
-    if(vx >= volDimX || vy >= volDimY)
-        return;
-
-    *get3DBufferAt(inout_volume_d, inout_volume_s, inout_volume_p, vx, vy, vz) = value;
+//    const unsigned int vx = blockIdx.x * blockDim.x + threadIdx.x;
+//    const unsigned int vy = blockIdx.y * blockDim.y + threadIdx.y;
+//    const unsigned int vz = blockIdx.z;
+//
+//    if(vx >= volDimX || vy >= volDimY)
+//        return;
+//
+//    *get3DBufferAt(inout_volume_d, inout_volume_s, inout_volume_p, vx, vy, vz) = value;
 }
 
-kernel void volume_add_kernel(TSimRefine* inout_volume_d, int inout_volume_s, int inout_volume_p,
-                                  const TSimRefine* in_volume_d, const int in_volume_s, const int in_volume_p,
-                                  const unsigned int volDimX,
-                                  const unsigned int volDimY)
+kernel void volume_add_kernel(device TSimRefine* inout_volume_d, device int* inout_volume_s, device int* inout_volume_p,
+                              device const TSimRefine* in_volume_d, device const int* in_volume_s, device const int* in_volume_p,
+                              device const unsigned int* volDimX,
+                              device const unsigned int* volDimY)
 {
-    const unsigned int vx = blockIdx.x * blockDim.x + threadIdx.x;
-    const unsigned int vy = blockIdx.y * blockDim.y + threadIdx.y;
-    const unsigned int vz = blockIdx.z;
-
-    if(vx >= volDimX || vy >= volDimY)
-        return;
-
-    TSimRefine* outSimPtr = get3DBufferAt(inout_volume_d, inout_volume_s, inout_volume_p, vx, vy, vz);
-
-#ifdef TSIM_REFINE_USE_HALF
-    // note: using built-in half addition can give bad results on some gpus
-    //*outSimPtr = __hadd(*outSimPtr, *get3DBufferAt(in_volume_d, in_volume_s, in_volume_p, vx, vy, vz));
-    *outSimPtr = __float2half(__half2float(*outSimPtr) + __half2float(*get3DBufferAt(in_volume_d, in_volume_s, in_volume_p, vx, vy, vz))); // perform the addition in float
-#else
-    *outSimPtr += *get3DBufferAt(in_volume_d, in_volume_s, in_volume_p, vx, vy, vz);
-#endif
+//    const unsigned int vx = blockIdx.x * blockDim.x + threadIdx.x;
+//    const unsigned int vy = blockIdx.y * blockDim.y + threadIdx.y;
+//    const unsigned int vz = blockIdx.z;
+//
+//    if(vx >= volDimX || vy >= volDimY)
+//        return;
+//
+//    TSimRefine* outSimPtr = get3DBufferAt(inout_volume_d, inout_volume_s, inout_volume_p, vx, vy, vz);
+//
+//#ifdef TSIM_REFINE_USE_HALF
+//    // note: using built-in half addition can give bad results on some gpus
+//    //*outSimPtr = __hadd(*outSimPtr, *get3DBufferAt(in_volume_d, in_volume_s, in_volume_p, vx, vy, vz));
+//    *outSimPtr = __float2half(__half2float(*outSimPtr) + __half2float(*get3DBufferAt(in_volume_d, in_volume_s, in_volume_p, vx, vy, vz))); // perform the addition in float
+//#else
+//    *outSimPtr += *get3DBufferAt(in_volume_d, in_volume_s, in_volume_p, vx, vy, vz);
+//#endif
 }
 
-kernel void volume_updateUninitialized_kernel(TSim* inout_volume2nd_d, int inout_volume2nd_s, int inout_volume2nd_p,
-                                                  const TSim* in_volume1st_d, const int in_volume1st_s, const int in_volume1st_p,
-                                                  const unsigned int volDimX,
-                                                  const unsigned int volDimY)
+kernel void volume_updateUninitialized_kernel(device TSim* inout_volume2nd_d, device int* inout_volume2nd_s, device int* inout_volume2nd_p,
+                                              device const TSim* in_volume1st_d, device const int* in_volume1st_s, device const int* in_volume1st_p,
+                                              device     const unsigned int* volDimX,
+                                              device const unsigned int* volDimY)
 {
-    const unsigned int vx = blockIdx.x * blockDim.x + threadIdx.x;
-    const unsigned int vy = blockIdx.y * blockDim.y + threadIdx.y;
-    const unsigned int vz = blockIdx.z;
-
-    if(vx >= volDimX || vy >= volDimY)
-        return;
-
-    // input/output second best similarity value
-    TSim* inout_simPtr = get3DBufferAt(inout_volume2nd_d, inout_volume2nd_s, inout_volume2nd_p, vx, vy, vz);
-
-    if(*inout_simPtr >= 255.f) // invalid or uninitialized similarity value
-    {
-        // update second best similarity value with first best similarity value
-        *inout_simPtr = *get3DBufferAt(in_volume1st_d, in_volume1st_s, in_volume1st_p, vx, vy, vz);
-    }
+//    const unsigned int vx = blockIdx.x * blockDim.x + threadIdx.x;
+//    const unsigned int vy = blockIdx.y * blockDim.y + threadIdx.y;
+//    const unsigned int vz = blockIdx.z;
+//
+//    if(vx >= volDimX || vy >= volDimY)
+//        return;
+//
+//    // input/output second best similarity value
+//    TSim* inout_simPtr = get3DBufferAt(inout_volume2nd_d, inout_volume2nd_s, inout_volume2nd_p, vx, vy, vz);
+//
+//    if(*inout_simPtr >= 255.f) // invalid or uninitialized similarity value
+//    {
+//        // update second best similarity value with first best similarity value
+//        *inout_simPtr = *get3DBufferAt(in_volume1st_d, in_volume1st_s, in_volume1st_p, vx, vy, vz);
+//    }
 }
 
 kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, device int* out_volume1st_s, device int* out_volume1st_p,
-                                            device TSim* out_volume2nd_d, device int out_volume2nd_s, device int out_volume2nd_p,
+                                            device TSim* out_volume2nd_d, device int* out_volume2nd_s, device int* out_volume2nd_p,
                                             device const float* in_depths_d, device const int* in_depths_p,
-                                            device const DeviceCameraParam* rcDeviceCameraParams,
-                                            device const DeviceCameraParam* tcDeviceCameraParams,
+                                            device const DeviceCameraParams* rcDeviceCameraParams,
+                                            device const DeviceCameraParams* tcDeviceCameraParams,
                                             texture2d<half, access::read>  rcMipmapImage_tex  [[texture(0)]],
                                             texture2d<half, access::read>  tcMipmapImage_tex  [[texture(1)]],
                                             device const unsigned int* rcSgmLevelWidth,
@@ -168,31 +168,31 @@ kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, device
                                                                     *tcDeviceCamParams,
                                                                     rcMipmapImage_tex,
                                                                     tcMipmapImage_tex,
-                                                                    rcSgmLevelWidth,
-                                                                    rcSgmLevelHeight,
-                                                                    tcSgmLevelWidth,
-                                                                    tcSgmLevelHeight,
-                                                                    rcMipmapLevel,
-                                                                    invGammaC,
-                                                                    invGammaP,
-                                                                    useConsistentScale,
+                                                                    *rcSgmLevelWidth,
+                                                                    *rcSgmLevelHeight,
+                                                                    *tcSgmLevelWidth,
+                                                                    *tcSgmLevelHeight,
+                                                                    *rcMipmapLevel,
+                                                                    *invGammaC,
+                                                                    *invGammaP,
+                                                                    *useConsistentScale,
                                                                     patch);
     }
     else
     {
-        fsim = compNCCby3DptsYK<invertAndFilter>(rcDeviceCamParams,
-                                                 tcDeviceCamParams,
+        fsim = compNCCby3DptsYK<invertAndFilter>(*rcDeviceCamParams,
+                                                 *tcDeviceCamParams,
                                                  rcMipmapImage_tex,
                                                  tcMipmapImage_tex,
-                                                 rcSgmLevelWidth,
-                                                 rcSgmLevelHeight,
-                                                 tcSgmLevelWidth,
-                                                 tcSgmLevelHeight,
-                                                 rcMipmapLevel,
-                                                 wsh,
-                                                 invGammaC,
-                                                 invGammaP,
-                                                 useConsistentScale,
+                                                 *rcSgmLevelWidth,
+                                                 *rcSgmLevelHeight,
+                                                 *tcSgmLevelWidth,
+                                                 *tcSgmLevelHeight,
+                                                 *rcMipmapLevel,
+                                                 *wsh,
+                                                 *invGammaC,
+                                                 *invGammaP,
+                                                 *useConsistentScale,
                                                  patch);
     }
 
@@ -675,74 +675,74 @@ kernel void volume_agregateCostVolumeAtXinSlices_kernel(const cudaTextureObject_
                                                             const int filteringIndex,
                                                             const ROI roi)
 {
-    const int x = blockIdx.x * blockDim.x + threadIdx.x;
-    const int z = blockIdx.y * blockDim.y + threadIdx.y;
-
-    int3 v;
-    (&v.x)[axisT.x] = x;
-    (&v.x)[axisT.y] = y;
-    (&v.x)[axisT.z] = z;
-
-    if (x >= (&volDim.x)[axisT.x] || z >= volDim.z)
-        return;
-
-    // find texture offset
-    const int beginX = (axisT.x == 0) ? roi->lt.x : roi->lt.y;
-    const int beginY = (axisT.x == 0) ? roi->lt.y : roi->lt.x;
-
-    TSimAcc* sim_xz = get2DBufferAt(xzSliceForY_d, xzSliceForY_p, x, z);
-    float pathCost = 255.0f;
-
-    if((z >= 1) && (z < volDim.z - 1))
-    {
-        float P2 = 0;
-
-        if(_P2 < 0)
-        {
-          // _P2 convention: use negative value to skip the use of deltaC.
-          P2 = std::abs(_P2);
-        }
-        else
-        {
-          const int imX0 = (beginX + v.x) * step; // current
-          const int imY0 = (beginY + v.y) * step;
-
-          const int imX1 = imX0 - ySign * step * (axisT.y == 0); // M1
-          const int imY1 = imY0 - ySign * step * (axisT.y == 1);
-
-          const float4 gcr0 = tex2DLod<float4>(rcMipmapImage_tex, (float(imX0) + 0.5f) / float(rcSgmLevelWidth), (float(imY0) + 0.5f) / float(rcSgmLevelHeight), rcMipmapLevel);
-          const float4 gcr1 = tex2DLod<float4>(rcMipmapImage_tex, (float(imX1) + 0.5f) / float(rcSgmLevelWidth), (float(imY1) + 0.5f) / float(rcSgmLevelHeight), rcMipmapLevel);
-          const float deltaC = euclideanDist3(gcr0, gcr1);
-
-          // sigmoid f(x) = i + (a - i) * (1 / ( 1 + e^(10 * (x - P2) / w)))
-          // see: https://www.desmos.com/calculator/1qvampwbyx
-          // best values found from tests: i = 80, a = 255, w = 80, P2 = 100
-          // historical values: i = 15, a = 255, w = 80, P2 = 20
-          P2 = sigmoid(80.f, 255.f, 80.f, _P2, deltaC);
-        }
-
-        const TSimAcc bestCostInColM1 = bestSimInYm1_d[x];
-        const TSimAcc pathCostMDM1 = *get2DBufferAt(xzSliceForYm1_d, xzSliceForYm1_p, x, z - 1); // M1: minus 1 over depths
-        const TSimAcc pathCostMD   = *get2DBufferAt(xzSliceForYm1_d, xzSliceForYm1_p, x, z);
-        const TSimAcc pathCostMDP1 = *get2DBufferAt(xzSliceForYm1_d, xzSliceForYm1_p, x, z + 1); // P1: plus 1 over depths
-        const float minCost = multi_fminf(pathCostMD, pathCostMDM1 + P1, pathCostMDP1 + P1, bestCostInColM1 + P2);
-
-        // if 'pathCostMD' is the minimal value of the depth
-        pathCost = (*sim_xz) + minCost - bestCostInColM1;
-    }
-
-    // fill the current slice with the new similarity score
-    *sim_xz = TSimAcc(pathCost);
-
-#ifndef TSIM_USE_FLOAT
-    // clamp if TSim = uchar (TSimAcc = unsigned int)
-    pathCost = fminf(255.0f, fmaxf(0.0f, pathCost));
-#endif
-
-    // aggregate into the final output
-    TSim* volume_xyz = get3DBufferAt(volAgr_d, volAgr_s, volAgr_p, v.x, v.y, v.z);
-    const float val = (float(*volume_xyz) * float(filteringIndex) + pathCost) / float(filteringIndex + 1);
-    *volume_xyz = TSim(val);
+//    const int x = blockIdx.x * blockDim.x + threadIdx.x;
+//    const int z = blockIdx.y * blockDim.y + threadIdx.y;
+//
+//    int3 v;
+//    (&v.x)[axisT.x] = x;
+//    (&v.x)[axisT.y] = y;
+//    (&v.x)[axisT.z] = z;
+//
+//    if (x >= (&volDim.x)[axisT.x] || z >= volDim.z)
+//        return;
+//
+//    // find texture offset
+//    const int beginX = (axisT.x == 0) ? roi->lt.x : roi->lt.y;
+//    const int beginY = (axisT.x == 0) ? roi->lt.y : roi->lt.x;
+//
+//    TSimAcc* sim_xz = get2DBufferAt(xzSliceForY_d, xzSliceForY_p, x, z);
+//    float pathCost = 255.0f;
+//
+//    if((z >= 1) && (z < volDim.z - 1))
+//    {
+//        float P2 = 0;
+//
+//        if(_P2 < 0)
+//        {
+//          // _P2 convention: use negative value to skip the use of deltaC.
+//          P2 = std::abs(_P2);
+//        }
+//        else
+//        {
+//          const int imX0 = (beginX + v.x) * step; // current
+//          const int imY0 = (beginY + v.y) * step;
+//
+//          const int imX1 = imX0 - ySign * step * (axisT.y == 0); // M1
+//          const int imY1 = imY0 - ySign * step * (axisT.y == 1);
+//
+//          const float4 gcr0 = tex2DLod<float4>(rcMipmapImage_tex, (float(imX0) + 0.5f) / float(rcSgmLevelWidth), (float(imY0) + 0.5f) / float(rcSgmLevelHeight), rcMipmapLevel);
+//          const float4 gcr1 = tex2DLod<float4>(rcMipmapImage_tex, (float(imX1) + 0.5f) / float(rcSgmLevelWidth), (float(imY1) + 0.5f) / float(rcSgmLevelHeight), rcMipmapLevel);
+//          const float deltaC = euclideanDist3(gcr0, gcr1);
+//
+//          // sigmoid f(x) = i + (a - i) * (1 / ( 1 + e^(10 * (x - P2) / w)))
+//          // see: https://www.desmos.com/calculator/1qvampwbyx
+//          // best values found from tests: i = 80, a = 255, w = 80, P2 = 100
+//          // historical values: i = 15, a = 255, w = 80, P2 = 20
+//          P2 = sigmoid(80.f, 255.f, 80.f, _P2, deltaC);
+//        }
+//
+//        const TSimAcc bestCostInColM1 = bestSimInYm1_d[x];
+//        const TSimAcc pathCostMDM1 = *get2DBufferAt(xzSliceForYm1_d, xzSliceForYm1_p, x, z - 1); // M1: minus 1 over depths
+//        const TSimAcc pathCostMD   = *get2DBufferAt(xzSliceForYm1_d, xzSliceForYm1_p, x, z);
+//        const TSimAcc pathCostMDP1 = *get2DBufferAt(xzSliceForYm1_d, xzSliceForYm1_p, x, z + 1); // P1: plus 1 over depths
+//        const float minCost = multi_fminf(pathCostMD, pathCostMDM1 + P1, pathCostMDP1 + P1, bestCostInColM1 + P2);
+//
+//        // if 'pathCostMD' is the minimal value of the depth
+//        pathCost = (*sim_xz) + minCost - bestCostInColM1;
+//    }
+//
+//    // fill the current slice with the new similarity score
+//    *sim_xz = TSimAcc(pathCost);
+//
+//#ifndef TSIM_USE_FLOAT
+//    // clamp if TSim = uchar (TSimAcc = unsigned int)
+//    pathCost = fminf(255.0f, fmaxf(0.0f, pathCost));
+//#endif
+//
+//    // aggregate into the final output
+//    TSim* volume_xyz = get3DBufferAt(volAgr_d, volAgr_s, volAgr_p, v.x, v.y, v.z);
+//    const float val = (float(*volume_xyz) * float(filteringIndex) + pathCost) / float(filteringIndex + 1);
+//    *volume_xyz = TSim(val);
 }
 
 } // namespace depthMap
