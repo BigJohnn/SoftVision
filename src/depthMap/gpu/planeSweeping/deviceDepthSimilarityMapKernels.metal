@@ -163,7 +163,7 @@ kernel void depthThicknessMapSmoothThickness_kernel(device float2* inout_depthTh
         return;
 
     // corresponding output depth/thickness (depth unchanged)
-    float2 inout_depthThickness = get2DBufferAt<float2>(inout_depthThicknessMap_d, inout_depthThicknessMap_p, roiX, roiY);
+    float2 inout_depthThickness = *get2DBufferAt<float2>(inout_depthThicknessMap_d, inout_depthThicknessMap_p, roiX, roiY);
 
     // depth invalid or masked
     if(inout_depthThickness.x <= 0.0f)
@@ -193,7 +193,7 @@ kernel void depthThicknessMapSmoothThickness_kernel(device float2* inout_depthTh
             }
 
             // corresponding path depth/thickness
-            const float2 in_depthThicknessPatch = get2DBufferAt<float2>(inout_depthThicknessMap_d, inout_depthThicknessMap_p, roiXp, roiYp);
+            const float2 in_depthThicknessPatch = *get2DBufferAt<float2>(inout_depthThicknessMap_d, inout_depthThicknessMap_p, roiXp, roiYp);
 
             // patch depth valid
             if(in_depthThicknessPatch.x > 0.0f)

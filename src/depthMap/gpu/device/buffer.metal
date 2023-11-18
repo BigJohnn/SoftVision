@@ -27,13 +27,13 @@ namespace depthMap {
 template <typename T>
 inline thread T* get3DBufferAt(device T* ptr, size_t spitch, size_t pitch, size_t x, size_t y, size_t z)
 {
-    return ((device T*)(((device char*)ptr) + z * spitch + y * pitch)) + x;
+    return ((thread T*)(((device char*)ptr) + z * spitch + y * pitch)) + x;
 }
 
 template <typename T>
 inline const thread T* get3DBufferAt(const device T* ptr, size_t spitch, size_t pitch, size_t x, size_t y, size_t z)
 {
-    return ((const device T*)(((const device char*)ptr) + z * spitch + y * pitch)) + x;
+    return ((const thread T*)(((const device char*)ptr) + z * spitch + y * pitch)) + x;
 }
 
 template <typename T>

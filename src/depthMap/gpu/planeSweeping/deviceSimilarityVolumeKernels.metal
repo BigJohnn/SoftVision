@@ -6,7 +6,7 @@
 
 #include <mvsData/ROI_d.hpp>
 #include <depthMap/gpu/planeSweeping/similarity.hpp>
-//#include <depthMap/gpu/device/matrix.metal>
+#include <depthMap/gpu/device/BufPtr.metal>
 #include <depthMap/gpu/device/Patch.metal>
 //#include <depahMap/gpu/device/DeviceCameraParams.metal>
 
@@ -109,8 +109,8 @@ kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, device
                                             device const float* in_depths_d, device const int& in_depths_p,
                                             device const DeviceCameraParams& rcDeviceCamParams,
                                             device const DeviceCameraParams& tcDeviceCamParams,
-                                            texture2d<half, access::read>  rcMipmapImage_tex  [[texture(0)]],
-                                            texture2d<half, access::read>  tcMipmapImage_tex  [[texture(1)]],
+                                            texture2d<half>  rcMipmapImage_tex  [[texture(0)]],
+                                            texture2d<half>  tcMipmapImage_tex  [[texture(1)]],
                                             device const unsigned int& rcSgmLevelWidth,
                                             device const unsigned int& rcSgmLevelHeight,
                                             device const unsigned int& tcSgmLevelWidth,
@@ -150,7 +150,7 @@ kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, device
     const float y = float(roi.lt.y + vy) * float(stepXY);
 
     // corresponding depth plane
-    const float depthPlane = get2DBufferAt<float>(in_depths_d, in_depths_p, vz, 0);
+    float depthPlane = *get2DBufferAt<float>(in_depths_d, in_depths_p, vz, 0);
 
     // compute patch
     Patch patch;
@@ -164,7 +164,7 @@ kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, device
     // compute patch similarity
     if(useCustomPatchPattern)
     {
-        fsim = compNCCby3DptsYK_customPatchPattern<invertAndFilter>(rcDeviceCamParams,
+        fsim = compNCCby3DptsYK_customPatchPattern(rcDeviceCamParams,
                                                                     tcDeviceCamParams,
                                                                     rcMipmapImage_tex,
                                                                     tcMipmapImage_tex,
@@ -176,11 +176,12 @@ kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, device
                                                                     invGammaC,
                                                                     invGammaP,
                                                                     useConsistentScale,
+                                                                    invertAndFilter,
                                                                     patch);
     }
     else
     {
-        fsim = compNCCby3DptsYK<invertAndFilter>(rcDeviceCamParams,
+        fsim = compNCCby3DptsYK(rcDeviceCamParams,
                                                  tcDeviceCamParams,
                                                  rcMipmapImage_tex,
                                                  tcMipmapImage_tex,
@@ -193,6 +194,7 @@ kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, device
                                                  invGammaC,
                                                  invGammaP,
                                                  useConsistentScale,
+                                                 invertAndFilter,
                                                  patch);
     }
 

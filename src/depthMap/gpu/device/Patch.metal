@@ -578,11 +578,11 @@ static float compNCCbyH(const DeviceCameraParams& rcDeviceCamParams,
  *          -> infinite similarity value: 1
  *          -> invalid/uninitialized/masked similarity: INF_F
  */
-template<bool TInvertAndFilter>
+//template<bool TInvertAndFilter>
 inline float compNCCby3DptsYK(device const DeviceCameraParams& rcDeviceCamParams,
                               device           const DeviceCameraParams& tcDeviceCamParams,
-                              texture2d<half> rcMipmapImage_tex,
-                              texture2d<half> tcMipmapImage_tex,
+                              texture2d<half> rcMipmapImage_tex[[texture(0)]],
+                              texture2d<half> tcMipmapImage_tex[[texture(1)]],
                               device           const unsigned int& rcLevelWidth,
                               device           const unsigned int& rcLevelHeight,
                               device           const unsigned int& tcLevelWidth,
@@ -592,6 +592,7 @@ inline float compNCCby3DptsYK(device const DeviceCameraParams& rcDeviceCamParams
                               device           const float& invGammaC,
                               device           const float& invGammaP,
                               device           const bool& useConsistentScale,
+                              thread bool TInvertAndFilter,
                               thread           const Patch& patch)
 {
     // get R and T image 2d coordinates from patch center 3d point
@@ -716,11 +717,11 @@ inline float compNCCby3DptsYK(device const DeviceCameraParams& rcDeviceCamParams
  *          -> infinite similarity value: 1
  *          -> invalid/uninitialized/masked similarity: INF_F
  */
-template<bool TInvertAndFilter>
+//template<bool TInvertAndFilter>
 inline float compNCCby3DptsYK_customPatchPattern(device const DeviceCameraParams& rcDeviceCamParams,
                                                  device            const DeviceCameraParams& tcDeviceCamParams,
-                                                 texture2d<half> rcMipmapImage_tex,
-                                                 texture2d<half> tcMipmapImage_tex,
+                                                 texture2d<half> rcMipmapImage_tex[[texture(0)]],
+                                                 texture2d<half> tcMipmapImage_tex[[texture(1)]],
                                                  device            const unsigned int &rcLevelWidth,
                                                  device            const unsigned int &rcLevelHeight,
                                                  device            const unsigned int &tcLevelWidth,
@@ -729,6 +730,7 @@ inline float compNCCby3DptsYK_customPatchPattern(device const DeviceCameraParams
                                                  device            const float &invGammaC,
                                                  device            const float &invGammaP,
                                                  device            const bool &useConsistentScale,
+                                                 thread bool TInvertAndFilter,
                                                  thread            const Patch& patch)
 {
     // get R and T image 2d coordinates from patch center 3d point

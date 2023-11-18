@@ -8,18 +8,18 @@ class BufPtr
 {
 public:
 
-    BufPtr(device T* ptr, size_t pitch)
+    BufPtr(device T* ptr, int pitch)
     : _ptr( (device unsigned char*)ptr )
     , _pitch( pitch )
     {}
 
     inline device T* ptr()  { return (device T*)(_ptr); }
-    inline device T* row(size_t y) { return (device T*)(_ptr + y * _pitch); }
-    inline device T& at(size_t x, size_t y) { return row(y)[x]; }
+    inline device T* row(int y) { return (device T*)(_ptr + y * _pitch); }
+    inline device T& at(int x, int y) { return row(y)[x]; }
 
     inline const device T* ptr() const { return (device const T*)(_ptr); }
-    inline const device T* row(size_t y) const { return (device const T*)(_ptr + y * _pitch); }
-    inline const thread T& at(size_t x, size_t y) const { return row(y)[x]; }
+    inline const device T* row(int y) const { return (device const T*)(_ptr + y * _pitch); }
+    inline const thread T& at(int x, int y) const { return row(y)[x]; }
 
 private:
     BufPtr();
@@ -27,7 +27,7 @@ private:
     device BufPtr& operator*=(const device BufPtr&);
 
     device unsigned char* const _ptr;
-    const size_t _pitch;
+    const int _pitch;
 };
 
 /**
@@ -39,22 +39,22 @@ private:
 * @return
 */
 template <typename T>
-inline T get2DBufferAt(device const T* ptr, device const int& pitch, int x, int y)
+inline device T* get2DBufferAt(device const T* ptr, int pitch, int x, int y)
 {
     return BufPtr<T>(ptr,pitch).at(x,y);
 }
     
-template <typename T>
-static inline device T* get3DBufferAt_h(device T* ptr, size_t spitch, size_t pitch, size_t x, size_t y, size_t z)
-{
-    return ((device T*)(((device char*)ptr) + z * spitch + y * pitch)) + x;
-}
-
-template <typename T>
-static inline const device T* get3DBufferAt_h(const device T* ptr, size_t spitch, size_t pitch, size_t x, size_t y, size_t z)
-{
-    return ((const device T*)(((const device char*)ptr) + z * spitch + y * pitch)) + x;
-}
+//template <typename T>
+//static inline device T* get3DBufferAt_h(device T* ptr, int spitch, int pitch, int x, int y, int z)
+//{
+//    return ((device T*)(((device char*)ptr) + z * spitch + y * pitch)) + x;
+//}
+//
+//template <typename T>
+//static inline const device T* get3DBufferAt_h(const device T* ptr, int spitch, int pitch, int x, int y, int z)
+//{
+//    return ((const device T*)(((const device char*)ptr) + z * spitch + y * pitch)) + x;
+//}
 
 } // namespace depthMap
 
