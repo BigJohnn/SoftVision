@@ -60,7 +60,7 @@ public:
      * @brief Get unpadded memory consumpyion in device memory.
      * @return unpadded device memory consumpyion (in MB)
      */
-    double getDeviceMemoryConsumptionUnpadded() const;
+//    double getDeviceMemoryConsumptionUnpadded() const;
 
     /**
      * @brief Refine for a single R camera the Semi-Global Matching depth/sim map.

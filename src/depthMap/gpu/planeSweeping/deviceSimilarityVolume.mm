@@ -276,11 +276,11 @@ void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
 //    CHECK_CUDA_ERROR();
 }
 
-extern void cuda_volumeRefineSimilarity(DeviceBuffer* inout_volSim_dmp,
+extern void volumeRefineSimilarity(DeviceBuffer* inout_volSim_dmp,
                                         DeviceBuffer* in_sgmDepthPixSizeMap_dmp,
                                         DeviceBuffer* in_sgmNormalMap_dmpPtr,
-                                        const int rcDeviceCameraParamsId,
-                                        const int tcDeviceCameraParamsId,
+                                   DeviceBuffer* rcDeviceCameraParams,
+                                   DeviceBuffer* tcDeviceCameraParams,
                                         const DeviceMipmapImage& rcDeviceMipmapImage,
                                         const DeviceMipmapImage& tcDeviceMipmapImage,
                                         const RefineParams& refineParams, 

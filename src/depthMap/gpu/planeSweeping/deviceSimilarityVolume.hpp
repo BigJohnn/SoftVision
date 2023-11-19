@@ -86,7 +86,7 @@ extern void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
  * @param[in] roi the 2d region of interest
  * @param[in] stream the stream for gpu execution
  */
-extern void cuda_volumeRefineSimilarity(DeviceBuffer* inout_volSim_dmp, 
+extern void volumeRefineSimilarity(DeviceBuffer* inout_volSim_dmp, 
                                         DeviceBuffer* in_sgmDepthPixSizeMap_dmp,
                                         DeviceBuffer* in_sgmNormalMap_dmpPtr,
                                         const int rcDeviceCameraParamsId,

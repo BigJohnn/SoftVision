@@ -236,7 +236,7 @@ void writeDepthSimMapFromTileList(int rc,
                                   const mvsUtils::MultiViewParams& mp,
                                   const mvsUtils::TileParams& tileParams,
                                   const std::vector<ROI>& tileRoiList,
-                                  const std::vector<CudaHostMemoryHeap<float2, 2>>& in_depthSimMapTiles_hmh,
+                                  DeviceBuffer* in_depthSimMapTiles_hmh,
                                   int scale,
                                   int step,
                                   const std::string& name)
