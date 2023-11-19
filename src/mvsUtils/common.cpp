@@ -17,6 +17,8 @@
 #include <random>
 #include <numeric>
 
+#include <float.h>
+
 
 namespace mvsUtils {
 

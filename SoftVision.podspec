@@ -258,6 +258,7 @@ Pod::Spec.new do |spec|
 #   spec.dependency "JSONKit", "~> 1.4"
 
   spec.dependency "Alembic"
+  spec.dependency "assimp"
   spec.dependency "glog"
 #  spec.dependency "coin"
   spec.dependency "Eigen"
