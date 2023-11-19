@@ -11,6 +11,9 @@
 #include <numeric/numeric.hpp>
 #include <image/io.hpp>
 
+#include <utils/strUtils.hpp>
+#include <utils/fileUtil.hpp>
+
 //#include <boost/filesystem.hpp>
 //#include <boost/regex.hpp>
 //
@@ -50,10 +53,10 @@ void getRoiFromMetadata(const std::string& mapTilePath, ROI& out_roi)
 {
     const oiio::ParamValueList metadata = image::readImageMetadata(mapTilePath);
 
-    const auto roiBeginXIt = metadata.find("AliceVision:roiBeginX");
-    const auto roiBeginYIt = metadata.find("AliceVision:roiBeginY");
-    const auto roiEndXIt   = metadata.find("AliceVision:roiEndX");
-    const auto roiEndYIt   = metadata.find("AliceVision:roiEndY");
+    const auto roiBeginXIt = metadata.find("SoftVision:roiBeginX");
+    const auto roiBeginYIt = metadata.find("SoftVision:roiBeginY");
+    const auto roiEndXIt   = metadata.find("SoftVision:roiEndX");
+    const auto roiEndYIt   = metadata.find("SoftVision:roiEndY");
 
     if(roiBeginXIt != metadata.end() && roiBeginXIt->type() == oiio::TypeDesc::INT)
         out_roi.x.begin = roiBeginXIt->get_int();
@@ -70,7 +73,7 @@ void getRoiFromMetadata(const std::string& mapTilePath, ROI& out_roi)
     // invalid or no roi metadata
     if((out_roi.x.begin < 0) || (out_roi.y.begin < 0) || (out_roi.x.end <= 0) || (out_roi.y.end <= 0))
     {
-        ALICEVISION_THROW_ERROR("Cannot find ROI information in file: " << fs::path(mapTilePath).filename().string());
+        ALICEVISION_THROW_ERROR("Cannot find ROI information in file: " << utils::GetFileName(mapTilePath));
     }
 }
 
@@ -83,9 +86,9 @@ void getTileParamsFromMetadata(const std::string& mapTilePath, TileParams& out_t
 {
     const oiio::ParamValueList metadata = image::readImageMetadata(mapTilePath);
 
-    const auto tileWidthIt   = metadata.find("AliceVision:tileBufferWidth");
-    const auto tileHeightIt  = metadata.find("AliceVision:tileBufferHeight");
-    const auto tilePaddingIt = metadata.find("AliceVision:tilePadding");
+    const auto tileWidthIt   = metadata.find("SoftVision:tileBufferWidth");
+    const auto tileHeightIt  = metadata.find("SoftVision:tileBufferHeight");
+    const auto tilePaddingIt = metadata.find("SoftVision:tilePadding");
 
     if(tileWidthIt != metadata.end() && tileWidthIt->type() == oiio::TypeDesc::INT)
         out_tileParams.bufferWidth = tileWidthIt->get_int();
@@ -99,7 +102,7 @@ void getTileParamsFromMetadata(const std::string& mapTilePath, TileParams& out_t
     // invalid or no tile metadata
     if((out_tileParams.bufferWidth <= 0) || (out_tileParams.bufferHeight <= 0) || (out_tileParams.padding < 0))
     {
-        ALICEVISION_THROW_ERROR("Cannot find tile parameters in file: " << fs::path(mapTilePath).filename().string());
+        ALICEVISION_THROW_ERROR("Cannot find tile parameters in file: " << utils::GetFileName(mapTilePath));
     }
 }
 
@@ -117,19 +120,21 @@ void getTilePathList(int rc,
                      const std::string& customSuffix,
                      std::vector<std::string>& out_mapTilePathList)
 {
-    const fs::path mapPath(getFileNameFromIndex(mp, rc, fileType, customSuffix));
-    const fs::path mapDirectory(mapPath.parent_path());
+    
+    const std::string mapPath(getFileNameFromIndex(mp, rc, fileType, customSuffix));
+    const std::string mapDirectory(utils::GetParentPath(mapPath));
 
-    if(!is_directory(mapDirectory))
+    if(!utils::is_directory(mapDirectory))
         ALICEVISION_THROW_ERROR("Cannot find " << getMapNameFromFileType(fileType) << " directory (rc: " << rc << ").");
 
-    const boost::regex mapPattern(mapPath.stem().string() + "_\\d+_\\d+" + mapPath.extension().string());
-
-    for(auto& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(mapDirectory), {}))
-    {
-        if(boost::regex_match(entry.path().filename().string(), mapPattern))
-            out_mapTilePathList.push_back(entry.path().string());
-    }
+    LOG_INFO("TODO: getTilePathList impl ....");
+//    const boost::regex mapPattern(mapPath.stem().string() + "_\\d+_\\d+" + mapPath.extension().string());
+//
+//    for(auto& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(mapDirectory), {}))
+//    {
+//        if(boost::regex_match(entry.path().filename().string(), mapPattern))
+//            out_mapTilePathList.push_back(entry.path().string());
+//    }
 }
 
 /**
@@ -312,7 +317,7 @@ void readMapFromFileOrTiles(int rc,
     const std::string mapPath = getFileNameFromIndex(mp, rc, fileType, customSuffix);
 
     // check single file fullsize map exists
-    if(fs::exists(mapPath))
+    if(utils::exists(mapPath))
     {
         // read single file fullsize map
         image::readImage(mapPath, out_map, image::EImageColorSpace::NO_CONVERSION);
@@ -372,7 +377,7 @@ void readMapFromFileOrTiles(int rc,
         }
         catch(const std::exception& e)
         {
-            ALICEVISION_LOG_WARNING("Cannot find map (rc: " << rc << "): " << fs::path(mapTilePath).filename().string());
+            LOG_X("Cannot find map (rc: " << rc << "): " << mapTilePath);
         }
     }
 }
@@ -430,27 +435,27 @@ void writeMapToFileOrTile(int rc,
     oiio::ParamValueList metadata = image::getMetadataFromMap(mp.getMetadata(rc));
 
     // downscale metadata
-    metadata.push_back(oiio::ParamValue("AliceVision:downscale", mp.getDownscaleFactor(rc) * scaleStep));
+    metadata.push_back(oiio::ParamValue("SoftVision:downscale", mp.getDownscaleFactor(rc) * scaleStep));
 
     // roi metadata
     {
-      metadata.push_back(oiio::ParamValue("AliceVision:roiBeginX", int(roi.x.begin)));
-      metadata.push_back(oiio::ParamValue("AliceVision:roiBeginY", int(roi.y.begin)));
-      metadata.push_back(oiio::ParamValue("AliceVision:roiEndX",   int(roi.x.end)));
-      metadata.push_back(oiio::ParamValue("AliceVision:roiEndY",   int(roi.y.end)));
+      metadata.push_back(oiio::ParamValue("SoftVision:roiBeginX", int(roi.x.begin)));
+      metadata.push_back(oiio::ParamValue("SoftVision:roiBeginY", int(roi.y.begin)));
+      metadata.push_back(oiio::ParamValue("SoftVision:roiEndX",   int(roi.x.end)));
+      metadata.push_back(oiio::ParamValue("SoftVision:roiEndY",   int(roi.y.end)));
     }
 
     // tile params metadata
     {
-        metadata.push_back(oiio::ParamValue("AliceVision:tileBufferWidth",  tileParams.bufferWidth));
-        metadata.push_back(oiio::ParamValue("AliceVision:tileBufferHeight", tileParams.bufferHeight));
-        metadata.push_back(oiio::ParamValue("AliceVision:tilePadding",      tileParams.padding));
+        metadata.push_back(oiio::ParamValue("SoftVision:tileBufferWidth",  tileParams.bufferWidth));
+        metadata.push_back(oiio::ParamValue("SoftVision:tileBufferHeight", tileParams.bufferHeight));
+        metadata.push_back(oiio::ParamValue("SoftVision:tilePadding",      tileParams.padding));
     }
 
     // projection matrix metadata
     {
         std::vector<double> matrixP = mp.getOriginalP(rc);
-        metadata.push_back(oiio::ParamValue("AliceVision:P", oiio::TypeDesc(oiio::TypeDesc::DOUBLE, oiio::TypeDesc::MATRIX44), 1, matrixP.data()));
+        metadata.push_back(oiio::ParamValue("SoftVision:P", oiio::TypeDesc(oiio::TypeDesc::DOUBLE, oiio::TypeDesc::MATRIX44), 1, matrixP.data()));
     }
 
     // CArr & iCamArr metadata
@@ -472,8 +477,8 @@ void writeMapToFileOrTile(int rc,
             iP = iR * iK; // replace iP
         }
 
-        metadata.push_back(oiio::ParamValue("AliceVision:CArr", oiio::TypeDesc(oiio::TypeDesc::DOUBLE, oiio::TypeDesc::VEC3), 1, C.m));
-        metadata.push_back(oiio::ParamValue("AliceVision:iCamArr", oiio::TypeDesc(oiio::TypeDesc::DOUBLE, oiio::TypeDesc::MATRIX33), 1, iP.m));
+        metadata.push_back(oiio::ParamValue("SoftVision:CArr", oiio::TypeDesc(oiio::TypeDesc::DOUBLE, oiio::TypeDesc::VEC3), 1, C.m));
+        metadata.push_back(oiio::ParamValue("SoftVision:iCamArr", oiio::TypeDesc(oiio::TypeDesc::DOUBLE, oiio::TypeDesc::MATRIX33), 1, iP.m));
     }
 
     // min/max/nb depth metadata (for depth map only)
@@ -494,9 +499,9 @@ void writeMapToFileOrTile(int rc,
             minDepth = std::min(minDepth, depth);
         }
 
-        metadata.push_back(oiio::ParamValue("AliceVision:nbDepthValues", nbDepthValues));
-        metadata.push_back(oiio::ParamValue("AliceVision:minDepth", minDepth));
-        metadata.push_back(oiio::ParamValue("AliceVision:maxDepth", maxDepth));
+        metadata.push_back(oiio::ParamValue("SoftVision:nbDepthValues", nbDepthValues));
+        metadata.push_back(oiio::ParamValue("SoftVision:minDepth", minDepth));
+        metadata.push_back(oiio::ParamValue("SoftVision:maxDepth", maxDepth));
     }
 
 
@@ -592,10 +597,10 @@ unsigned long getNbDepthValuesFromDepthMap(int rc,
     int nbDepthValues = -1;
 
     // get nbDepthValues from metadata
-    if (fs::exists(depthMapPath)) // untilled
+    if (utils::exists(depthMapPath)) // untilled
     {
         const oiio::ParamValueList metadata = image::readImageMetadata(depthMapPath);
-        nbDepthValues = metadata.get_int("AliceVision:nbDepthValues", -1);
+        nbDepthValues = metadata.get_int("SoftVision:nbDepthValues", -1);
     }
     else // tilled
     {
@@ -609,10 +614,10 @@ unsigned long getNbDepthValuesFromDepthMap(int rc,
         {
             const oiio::ParamValueList metadata = image::readImageMetadata(mapTilePath);
 
-            const int nbTileDepthValues = metadata.get_int("AliceVision:nbDepthValues", -1);
+            const int nbTileDepthValues = metadata.get_int("SoftVision:nbDepthValues", -1);
 
             if(nbTileDepthValues < 0)
-                ALICEVISION_THROW_ERROR("Cannot find or incorrect 'AliceVision:nbDepthValues' metadata in depth map tile (rc: " << rc << ")");
+                ALICEVISION_THROW_ERROR("Cannot find or incorrect 'SoftVision:nbDepthValues' metadata in depth map tile (rc: " << rc << ")");
 
             nbDepthValues += nbTileDepthValues;
         }
@@ -623,7 +628,7 @@ unsigned long getNbDepthValuesFromDepthMap(int rc,
     {
         image::Image<float> depthMap;
 
-        ALICEVISION_LOG_WARNING("Can't find or invalid 'nbDepthValues' metadata in depth map (rc: " << rc << "). Recompute the number of valid values.");
+        LOG_X("Can't find or invalid 'nbDepthValues' metadata in depth map (rc: " << rc << "). Recompute the number of valid values.");
 
         readMap(rc, mp, EFileType::depthMap, depthMap, scale, step, customSuffix);
 
@@ -646,17 +651,18 @@ void deleteMapTiles(int rc,
       ALICEVISION_LOG_INFO("Cannot find any " << getMapNameFromFileType(fileType) << " tile file to delete (rc: " << rc << ").");
 
     // delete map tile files
-    for(const std::string& mapTilePath : mapTilePathList)
-    {
-        try
-        {
-            fs::remove(mapTilePath);
-        }
-        catch (const std::exception& e)
-        {
-            ALICEVISION_LOG_WARNING("Cannot delete map tile file (rc: " << rc << "): " << fs::path(mapTilePath).filename().string());
-        }
-    }
+    LOG_INFO("TODO: delete map tile files");
+//    for(const std::string& mapTilePath : mapTilePathList)
+//    {
+//        try
+//        {
+//            fs::remove(mapTilePath);
+//        }
+//        catch (const std::exception& e)
+//        {
+//            LOG_X("Cannot delete map tile file (rc: " << rc << "): " << fs::path(mapTilePath).filename().string());
+//        }
+//    }
 }
 
 } // namespace mvsUtils

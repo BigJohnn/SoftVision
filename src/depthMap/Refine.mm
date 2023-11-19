@@ -6,7 +6,7 @@
 
 #include "Refine.hpp"
 
-#include <alicevision_omp.hpp>
+#include <softvision_omp.hpp>
 #include <SoftVisionLog.h>
 #include <mvsData/Point2d.hpp>
 #include <mvsData/Point3d.hpp>

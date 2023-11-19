@@ -20,7 +20,7 @@
 
 namespace depthMap {
 
-void copyFloat2Map(image::Image<float>& out_mapX, image::Image<float>& out_mapY, const CudaHostMemoryHeap<float2, 2>& in_map_hmh, const ROI& roi, int downscale)
+void copyFloat2Map(image::Image<float>& out_mapX, image::Image<float>& out_mapY, DeviceBuffer* in_map_hmh, const ROI& roi, int downscale)
 {
     const ROI downscaledROI = downscaleROI(roi, downscale);
     const int width  = int(downscaledROI.width());
@@ -55,7 +55,7 @@ void writeFloat2Map(int rc,
                     const mvsUtils::MultiViewParams& mp,
                     const mvsUtils::TileParams& tileParams,
                     const ROI& roi,
-                    const CudaHostMemoryHeap<float2, 2>& in_map_hmh,
+                    DeviceBuffer* in_map_hmh,
                     const mvsUtils::EFileType fileTypeX,
                     const mvsUtils::EFileType fileTypeY,
                     int scale,

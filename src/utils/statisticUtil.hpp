@@ -12,14 +12,14 @@ double quantile(std::vector<T>& distribute, double percentile, int cache_size = 
 {
     std::sort(distribute.begin(), distribute.end());
     
-    std::vector<double> dist;
+    std::vector<T> dist;
     
     if(cache_size < distribute.size()) {
         if(!right_tail) {
-            dist = std::vector<double>(distribute.begin(), distribute.begin() + cache_size);
+            dist = std::vector<T>(distribute.begin(), distribute.begin() + cache_size);
         }
         else {
-            dist = std::vector<double>(distribute.end() - cache_size, distribute.end());
+            dist = std::vector<T>(distribute.end() - cache_size, distribute.end());
         }
     }
     else {

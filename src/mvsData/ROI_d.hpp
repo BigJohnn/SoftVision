@@ -14,8 +14,8 @@ struct Range_d
 };
 struct ROI_d {
     ROI_d(float left, float top, float right, float bottom) {
-        lt = vector_float2(left, top);
-        rb = vector_float2(right, bottom);
+        lt = simd_float2(left, top);
+        rb = simd_float2(right, bottom);
     }
     vector_float2 lt;
     vector_float2 rb;

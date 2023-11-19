@@ -222,8 +222,8 @@ kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, device
       fsim *= 254.0f;
     }
 
-    thread TSim* fsim_1st = get3DBufferAt(out_volume1st_d, out_volume1st_s, out_volume1st_p, (vx), (vy), (vz));
-    thread TSim* fsim_2nd = get3DBufferAt(out_volume2nd_d, out_volume2nd_s, out_volume2nd_p, (vx), (vy), (vz));
+    device TSim* fsim_1st = get3DBufferAt(out_volume1st_d, out_volume1st_s, out_volume1st_p, (vx), (vy), (vz));
+    device TSim* fsim_2nd = get3DBufferAt(out_volume2nd_d, out_volume2nd_s, out_volume2nd_p, (vx), (vy), (vz));
 
     if(fsim < *fsim_1st)
     {

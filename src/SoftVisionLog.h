@@ -32,6 +32,7 @@
 
 #include <iostream>
 #define LOG_X(x) std::cout << x << std::endl
+#define ALICEVISION_LOG_TRACE(x) std::cout << x << std::endl
 
 #include <sstream>
 #define ALICEVISION_THROW(EXCEPTION, x) \
@@ -41,7 +42,7 @@
   throw EXCEPTION(s.str()); \
 }
 #define ALICEVISION_THROW_ERROR(x) ALICEVISION_THROW(std::runtime_error, x)
-
+#define ALICEVISION_LOG_WARNING(x) std::cout << x << std::endl
 // === auxiliar functions
 static inline char *timenow();
 

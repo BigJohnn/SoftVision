@@ -12,8 +12,8 @@
 #include <mvsUtils/common.hpp>
 #include <mvsUtils/MultiViewParams.hpp>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
+//#include <boost/filesystem/operations.hpp>
+//#include <boost/filesystem/path.hpp>
 
 
 namespace mvsUtils {
@@ -402,7 +402,7 @@ void loadImage(const std::string& path, const MultiViewParams& mp, int camId, Im
 
         const auto metadata = image::readImageMetadata(path);
 
-        float exposureCompensation = metadata.get_float("AliceVision:EVComp", -1);
+        float exposureCompensation = metadata.get_float("SoftVision:EVComp", -1);
 
         if(exposureCompensation == -1)
         {

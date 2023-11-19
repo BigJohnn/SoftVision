@@ -17,7 +17,7 @@
 #include <mvsUtils/fileIO.hpp>
 #include <sfmDataIO/sfmDataIO.hpp>
 #include <depthMap/BufPtr.hpp>
-
+#include <utils/strUtils.hpp>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -25,7 +25,7 @@
 
 namespace depthMap {
 
-void exportSimilaritySamplesCSV(const CudaHostMemoryHeap<TSim, 3>& in_volumeSim_hmh, 
+void exportSimilaritySamplesCSV(DeviceBuffer* in_volumeSim_hmh,
                                 const std::vector<float>& in_depths,
                                 const std::string& name, 
                                 const SgmParams& sgmParams,
@@ -34,8 +34,8 @@ void exportSimilaritySamplesCSV(const CudaHostMemoryHeap<TSim, 3>& in_volumeSim_
 {
     const ROI downscaledRoi = downscaleROI(roi, sgmParams.scale * sgmParams.stepXY);
 
-    const size_t spitch = in_volumeSim_hmh.getBytesPaddedUpToDim(1);
-    const size_t pitch = in_volumeSim_hmh.getBytesPaddedUpToDim(0);
+    const size_t spitch = [in_volumeSim_hmh getBytesUpToDim:1];
+    const size_t pitch = [in_volumeSim_hmh getBytesUpToDim:0];
 
     const int sampleSize = 3;
 
@@ -60,7 +60,7 @@ void exportSimilaritySamplesCSV(const CudaHostMemoryHeap<TSim, 3>& in_volumeSim_
 
             for(int iz = 0; iz < in_depths.size(); ++iz)
             {
-                const float simValue = float(*get3DBufferAt_h<TSim>(in_volumeSim_hmh.getBuffer(), spitch, pitch, x, y, iz));
+                const float simValue = float(*get3DBufferAt_h<TSim>((TSim*)[in_volumeSim_hmh getBufferPtr], spitch, pitch, x, y, iz));
                 pDepths.push_back(simValue);
             }
         }
@@ -85,7 +85,7 @@ void exportSimilaritySamplesCSV(const CudaHostMemoryHeap<TSim, 3>& in_volumeSim_
         file << ss.str();
 }
 
-void exportSimilaritySamplesCSV(const CudaHostMemoryHeap<TSimRefine, 3>& in_volumeSim_hmh,
+void exportSimilaritySamplesCSV(DeviceBuffer* in_volumeSim_hmh,
                                 const std::string& name, 
                                 const RefineParams& refineParams,
                                 const std::string& filepath,
@@ -93,9 +93,9 @@ void exportSimilaritySamplesCSV(const CudaHostMemoryHeap<TSimRefine, 3>& in_volu
 {
     const ROI downscaledRoi = downscaleROI(roi, refineParams.scale * refineParams.stepXY);
 
-    const size_t volDimZ = in_volumeSim_hmh.getSize().z();
-    const size_t spitch = in_volumeSim_hmh.getBytesPaddedUpToDim(1);
-    const size_t pitch = in_volumeSim_hmh.getBytesPaddedUpToDim(0);
+    const size_t volDimZ = [in_volumeSim_hmh getSize].depth;
+    const size_t spitch = [in_volumeSim_hmh getBytesUpToDim:1];
+    const size_t pitch = [in_volumeSim_hmh getBytesUpToDim:0];
 
     const int sampleSize = 3;
 
@@ -120,7 +120,7 @@ void exportSimilaritySamplesCSV(const CudaHostMemoryHeap<TSimRefine, 3>& in_volu
 
             for(int iz = 0; iz < volDimZ; ++iz)
             {
-                const float simValue = float(*get3DBufferAt_h<TSimRefine>(in_volumeSim_hmh.getBuffer(), spitch, pitch, x, y, iz));
+                const float simValue = float(*get3DBufferAt_h<TSimRefine>((TSimRefine*)[in_volumeSim_hmh getBufferPtr], spitch, pitch, x, y, iz));
                 pDepths.push_back(simValue);
             }
         }
@@ -145,7 +145,7 @@ void exportSimilaritySamplesCSV(const CudaHostMemoryHeap<TSimRefine, 3>& in_volu
         file << ss.str();
 }
 
-void exportSimilarityVolume(const CudaHostMemoryHeap<TSim, 3>& in_volumeSim_hmh, 
+void exportSimilarityVolume(DeviceBuffer* in_volumeSim_hmh,
                             const std::vector<float>& in_depths,
                             const mvsUtils::MultiViewParams& mp, 
                             int camIndex, 
@@ -157,14 +157,14 @@ void exportSimilarityVolume(const CudaHostMemoryHeap<TSim, 3>& in_volumeSim_hmh,
     const int xyStep = 10;
 
     IndexT landmarkId;
+    
+    MTLSize volDim = [in_volumeSim_hmh getSize];
+    const size_t spitch = [in_volumeSim_hmh getBytesUpToDim:1];
+    const size_t pitch = [in_volumeSim_hmh getBytesUpToDim:0];
 
-    const auto volDim = in_volumeSim_hmh.getSize();
-    const size_t spitch = in_volumeSim_hmh.getBytesPaddedUpToDim(1);
-    const size_t pitch = in_volumeSim_hmh.getBytesPaddedUpToDim(0);
-
-    for (int vy = 0; vy < volDim[1]; vy += xyStep)
+    for (int vy = 0; vy < volDim.height; vy += xyStep)
     {
-        for (int vx = 0; vx < volDim[0]; vx += xyStep)
+        for (int vx = 0; vx < volDim.width; vx += xyStep)
         {
             const double x = roi.x.begin + (vx * sgmParams.scale * sgmParams.stepXY);
             const double y = roi.y.begin + (vy * sgmParams.scale * sgmParams.stepXY);
@@ -178,7 +178,7 @@ void exportSimilarityVolume(const CudaHostMemoryHeap<TSim, 3>& in_volumeSim_hmh,
                 const Point3d p = linePlaneIntersect(mp.CArr[camIndex], v, planep, planen);
 
                 const float maxValue = 80.f;
-                float simValue = *get3DBufferAt_h<TSim>(in_volumeSim_hmh.getBuffer(), spitch, pitch, vx, vy, vz);
+                float simValue = *get3DBufferAt_h<TSim>((TSim*)[in_volumeSim_hmh getBufferPtr], spitch, pitch, vx, vy, vz);
                 if (simValue > maxValue)
                     continue;
                 const rgb c = getRGBFromJetColorMap(simValue / maxValue);
@@ -189,10 +189,11 @@ void exportSimilarityVolume(const CudaHostMemoryHeap<TSim, 3>& in_volumeSim_hmh,
         }
     }
 
-    sfmDataIO::Save(pointCloud, filepath, sfmDataIO::ESfMData::STRUCTURE);
+    
+    sfmDataIO::Save(pointCloud,utils::GetParentPath(filepath), utils::GetFileName(filepath), sfmDataIO::ESfMData::STRUCTURE);
 }
 
-void exportSimilarityVolumeCross(const CudaHostMemoryHeap<TSim, 3>& in_volumeSim_hmh, 
+void exportSimilarityVolumeCross(DeviceBuffer* in_volumeSim_hmh,
                                  const std::vector<float>& in_depths,
                                  const mvsUtils::MultiViewParams& mp, 
                                  int camIndex, 
@@ -204,17 +205,17 @@ void exportSimilarityVolumeCross(const CudaHostMemoryHeap<TSim, 3>& in_volumeSim
 
     IndexT landmarkId;
 
-    const auto volDim = in_volumeSim_hmh.getSize();
-    const size_t spitch = in_volumeSim_hmh.getBytesPaddedUpToDim(1);
-    const size_t pitch = in_volumeSim_hmh.getBytesPaddedUpToDim(0);
+    MTLSize volDim = [in_volumeSim_hmh getSize];
+    const size_t spitch = [in_volumeSim_hmh getBytesUpToDim:1];
+    const size_t pitch = [in_volumeSim_hmh getBytesUpToDim:0];
 
     for(int vz = 0; vz < in_depths.size(); ++vz)
     {
-        for(int vy = 0; vy < volDim[1]; ++vy)
+        for(int vy = 0; vy < volDim.height; ++vy)
         {
-            const bool vyCenter = (vy >= volDim[1]/2) && ((vy-1)< volDim[1]/2);
-            const int xIdxStart = (vyCenter ? 0 : (volDim[0] / 2));
-            const int xIdxStop = (vyCenter ? volDim[0] : (xIdxStart + 1));
+            const bool vyCenter = (vy >= volDim.height/2) && ((vy-1)< volDim.height/2);
+            const int xIdxStart = (vyCenter ? 0 : (volDim.width / 2));
+            const int xIdxStop = (vyCenter ? volDim.width : (xIdxStart + 1));
 
             for(int vx = xIdxStart; vx < xIdxStop; ++vx)
             {
@@ -227,7 +228,7 @@ void exportSimilarityVolumeCross(const CudaHostMemoryHeap<TSim, 3>& in_volumeSim
                 const Point3d p = linePlaneIntersect(mp.CArr[camIndex], v, planep, planen);
 
                 const float maxValue = 80.f;
-                float simValue = *get3DBufferAt_h<TSim>(in_volumeSim_hmh.getBuffer(), spitch, pitch, vx, vy, vz);
+                float simValue = *get3DBufferAt_h<TSim>((TSim*)[in_volumeSim_hmh getBufferPtr], spitch, pitch, vx, vy, vz);
 
                 if(simValue > maxValue)
                     continue;
@@ -240,11 +241,11 @@ void exportSimilarityVolumeCross(const CudaHostMemoryHeap<TSim, 3>& in_volumeSim
         }
     }
 
-    sfmDataIO::Save(pointCloud, filepath, sfmDataIO::ESfMData::STRUCTURE);
+    sfmDataIO::Save(pointCloud,utils::GetParentPath(filepath), utils::GetFileName(filepath), sfmDataIO::ESfMData::STRUCTURE);
 }
 
-void exportSimilarityVolumeCross(const CudaHostMemoryHeap<TSimRefine, 3>& in_volumeSim_hmh, 
-                                 const CudaHostMemoryHeap<float2, 2>& in_depthSimMapSgmUpscale_hmh,
+void exportSimilarityVolumeCross(DeviceBuffer* in_volumeSim_hmh,
+                                 DeviceBuffer* in_depthSimMapSgmUpscale_hmh,
                                  const mvsUtils::MultiViewParams& mp, 
                                  int camIndex, 
                                  const RefineParams& refineParams,
@@ -253,17 +254,17 @@ void exportSimilarityVolumeCross(const CudaHostMemoryHeap<TSimRefine, 3>& in_vol
 {
     sfmData::SfMData pointCloud;
 
-    const auto volDim = in_volumeSim_hmh.getSize();
-    const size_t spitch = in_volumeSim_hmh.getBytesPaddedUpToDim(1);
-    const size_t pitch = in_volumeSim_hmh.getBytesPaddedUpToDim(0);
+    MTLSize volDim = [in_volumeSim_hmh getSize];
+    const size_t spitch = [in_volumeSim_hmh getBytesUpToDim:1];
+    const size_t pitch = [in_volumeSim_hmh getBytesUpToDim:0];
 
     IndexT landmarkId = 0;
 
-    for(int vy = 0; vy < volDim[1]; ++vy)
+    for(int vy = 0; vy < volDim.height; ++vy)
     {
-        const bool vyCenter = ((vy*2) == volDim[1]);
-        const int xIdxStart = (vyCenter ? 0 : (volDim[0] / 2));
-        const int xIdxStop = (vyCenter ? volDim[0] : (xIdxStart + 1));
+        const bool vyCenter = ((vy*2) == volDim.height);
+        const int xIdxStart = (vyCenter ? 0 : (volDim.width / 2));
+        const int xIdxStop = (vyCenter ? volDim.width : (xIdxStart + 1));
 
         for(int vx = xIdxStart; vx < xIdxStop; ++vx)
         {
@@ -271,14 +272,14 @@ void exportSimilarityVolumeCross(const CudaHostMemoryHeap<TSimRefine, 3>& in_vol
             const int y = roi.y.begin + (double(vy) * refineParams.scale * refineParams.stepXY);
             const Point2d pix(x, y);
 
-            const float2 depthPixSizeMap = in_depthSimMapSgmUpscale_hmh(vx, vy);
+            const simd_float2 depthPixSizeMap = [in_depthSimMapSgmUpscale_hmh getVec2f:vx y:vy];
 
             if(depthPixSizeMap.x < 0.0f) // original depth invalid or masked
                 continue;
 
-            for(int vz = 0; vz < volDim[2]; ++vz)
+            for(int vz = 0; vz < volDim.depth; ++vz)
             {
-                const float simValue = float(*get3DBufferAt_h<TSimRefine>(in_volumeSim_hmh.getBuffer(), spitch, pitch, vx, vy, vz));
+                const float simValue = float(*get3DBufferAt_h<TSimRefine>((TSimRefine*)[in_volumeSim_hmh getBufferPtr], spitch, pitch, vx, vy, vz));
 
                 const float maxValue = 10.f; // sum of similarity between 0 and 1
                 if(simValue > maxValue)
@@ -297,10 +298,10 @@ void exportSimilarityVolumeCross(const CudaHostMemoryHeap<TSimRefine, 3>& in_vol
         }
     }
 
-    sfmDataIO::Save(pointCloud, filepath, sfmDataIO::ESfMData::STRUCTURE);
+    sfmDataIO::Save(pointCloud,utils::GetParentPath(filepath), utils::GetFileName(filepath), sfmDataIO::ESfMData::STRUCTURE);
 }
 
-void exportSimilarityVolumeTopographicCut(const CudaHostMemoryHeap<TSim,3>& in_volumeSim_hmh,
+void exportSimilarityVolumeTopographicCut(DeviceBuffer* in_volumeSim_hmh,
                                           const std::vector<float>& in_depths,
                                           const mvsUtils::MultiViewParams& mp,
                                           int camIndex,
@@ -310,10 +311,10 @@ void exportSimilarityVolumeTopographicCut(const CudaHostMemoryHeap<TSim,3>& in_v
 {
     sfmData::SfMData pointCloud;
 
-    const auto volDim = in_volumeSim_hmh.getSize();
-    const size_t spitch = in_volumeSim_hmh.getBytesPaddedUpToDim(1);
-    const size_t pitch = in_volumeSim_hmh.getBytesPaddedUpToDim(0);
-    const size_t vy = size_t(divideRoundUp(int(volDim.y()), 2)); // center only
+    MTLSize volDim = [in_volumeSim_hmh getSize];
+    const size_t spitch = [in_volumeSim_hmh getBytesUpToDim:1];
+    const size_t pitch = [in_volumeSim_hmh getBytesUpToDim:0];
+    const size_t vy = size_t(divideRoundUp(int(volDim.height), 2)); // center only
 
     const Point3d planen = (mp.iRArr[camIndex] * Point3d(0.0f, 0.0f, 1.0f)).normalize();
 
@@ -321,11 +322,11 @@ void exportSimilarityVolumeTopographicCut(const CudaHostMemoryHeap<TSim,3>& in_v
     float minSim = std::numeric_limits<float>::max();
     float maxSim = std::numeric_limits<float>::min();
 
-    for(size_t vx = 0; vx < volDim.x(); ++vx)
+    for(size_t vx = 0; vx < volDim.width; ++vx)
     {
-        for(size_t vz = 0; vz < volDim.z(); ++vz)
+        for(size_t vz = 0; vz < volDim.depth; ++vz)
         {
-            const float simValue = float(*get3DBufferAt_h<TSim>(in_volumeSim_hmh.getBuffer(), spitch, pitch, vx, vy, vz));
+            const float simValue = float(*get3DBufferAt_h<TSim>((TSim*)[in_volumeSim_hmh getBufferPtr], spitch, pitch, vx, vy, vz));
 
             if(simValue > 254.f) // invalid similarity
               continue;
@@ -340,7 +341,7 @@ void exportSimilarityVolumeTopographicCut(const CudaHostMemoryHeap<TSim,3>& in_v
     // compute each point color and position
     IndexT landmarkId = 0;
 
-    for(size_t vx = 0; vx < volDim.x(); ++vx)
+    for(size_t vx = 0; vx < volDim.width; ++vx)
     {
         const double x = roi.x.begin + (vx * sgmParams.scale * sgmParams.stepXY);
         const double y = roi.y.begin + (vy * sgmParams.scale * sgmParams.stepXY);
@@ -348,7 +349,7 @@ void exportSimilarityVolumeTopographicCut(const CudaHostMemoryHeap<TSim,3>& in_v
 
         for(size_t vz = 0; vz < in_depths.size(); ++vz)
         {
-            const float simValue = float(*get3DBufferAt_h<TSim>(in_volumeSim_hmh.getBuffer(), spitch, pitch, vx, vy, vz));
+            const float simValue = float(*get3DBufferAt_h<TSim>((TSim*)[in_volumeSim_hmh getBufferPtr], spitch, pitch, vx, vy, vz));
 
             if(simValue > 254.f) // invalid similarity
               continue;
@@ -368,11 +369,11 @@ void exportSimilarityVolumeTopographicCut(const CudaHostMemoryHeap<TSim,3>& in_v
     }
 
     // write point cloud
-    sfmDataIO::Save(pointCloud, filepath, sfmDataIO::ESfMData::STRUCTURE);
+    sfmDataIO::Save(pointCloud,utils::GetParentPath(filepath), utils::GetFileName(filepath), sfmDataIO::ESfMData::STRUCTURE);
 }
 
-void exportSimilarityVolumeTopographicCut(const CudaHostMemoryHeap<TSimRefine, 3>& in_volumeSim_hmh,
-                                          const CudaHostMemoryHeap<float2, 2>& in_depthSimMapSgmUpscale_hmh,
+void exportSimilarityVolumeTopographicCut(DeviceBuffer* in_volumeSim_hmh,
+                                          DeviceBuffer* in_depthSimMapSgmUpscale_hmh,
                                           const mvsUtils::MultiViewParams& mp,
                                           int camIndex,
                                           const RefineParams& refineParams,
@@ -381,20 +382,20 @@ void exportSimilarityVolumeTopographicCut(const CudaHostMemoryHeap<TSimRefine, 3
 {
     sfmData::SfMData pointCloud;
 
-    const auto volDim = in_volumeSim_hmh.getSize();
-    const size_t spitch = in_volumeSim_hmh.getBytesPaddedUpToDim(1);
-    const size_t pitch = in_volumeSim_hmh.getBytesPaddedUpToDim(0);
-    const size_t vy = size_t(divideRoundUp(int(volDim.y()), 2)); // center only
+    MTLSize volDim = [in_volumeSim_hmh getSize];
+    const size_t spitch = [in_volumeSim_hmh getBytesUpToDim:1];
+    const size_t pitch = [in_volumeSim_hmh getBytesUpToDim:0];
+    const size_t vy = size_t(divideRoundUp(int(volDim.height), 2)); // center only
 
     // compute min and max similarity values
     const float minSim = 0.f;
     float maxSim = std::numeric_limits<float>::epsilon();
 
-    for(size_t vx = 0; vx < volDim.x(); ++vx)
+    for(size_t vx = 0; vx < volDim.width; ++vx)
     {
-        for(size_t vz = 0; vz < volDim.z(); ++vz)
+        for(size_t vz = 0; vz < volDim.depth; ++vz)
         {
-            const float simValue = float(*get3DBufferAt_h<TSimRefine>(in_volumeSim_hmh.getBuffer(), spitch, pitch, vx, vy, vz));
+            const float simValue = float(*get3DBufferAt_h<TSimRefine>((TSimRefine*)[in_volumeSim_hmh getBufferPtr], spitch, pitch, vx, vy, vz));
             maxSim = std::max(maxSim, simValue);
         }
     }
@@ -402,20 +403,20 @@ void exportSimilarityVolumeTopographicCut(const CudaHostMemoryHeap<TSimRefine, 3
     // compute each point color and position
     IndexT landmarkId = 0;
 
-    for(size_t vx = 0; vx < volDim.x(); ++vx)
+    for(size_t vx = 0; vx < volDim.width; ++vx)
     {
         const double x = roi.x.begin + (vx * refineParams.scale * refineParams.stepXY);
         const double y = roi.y.begin + (vy * refineParams.scale * refineParams.stepXY);
         const Point2d pix(x, y);
 
-        const float2 depthPixSizeMap = in_depthSimMapSgmUpscale_hmh(vx, vy);
+        const simd_float2 depthPixSizeMap = [in_depthSimMapSgmUpscale_hmh getVec2f:vx y:vy];
 
         if(depthPixSizeMap.x < 0.0f) // middle depth (SGM) invalid or masked
             continue;
 
-        for(size_t vz = 0; vz < volDim.z(); ++vz)
+        for(size_t vz = 0; vz < volDim.depth; ++vz)
         {
-            const float simValue = float(*get3DBufferAt_h<TSimRefine>(in_volumeSim_hmh.getBuffer(), spitch, pitch, vx, vy, vz));
+            const float simValue = float(*get3DBufferAt_h<TSimRefine>((TSimRefine*)[in_volumeSim_hmh getBufferPtr], spitch, pitch, vx, vy, vz));
             const float simValueNorm = (simValue - minSim) / (maxSim - minSim);
             const float simValueColor = 1 - simValueNorm; // best similarity value is 0, worst value is 1
 
@@ -432,7 +433,7 @@ void exportSimilarityVolumeTopographicCut(const CudaHostMemoryHeap<TSimRefine, 3
     }
 
     // write point cloud
-    sfmDataIO::Save(pointCloud, filepath, sfmDataIO::ESfMData::STRUCTURE);
+    sfmDataIO::Save(pointCloud,utils::GetParentPath(filepath), utils::GetFileName(filepath), sfmDataIO::ESfMData::STRUCTURE);
 }
 
 inline unsigned char float_to_uchar(float v)
@@ -443,12 +444,12 @@ inline unsigned char float_to_uchar(float v)
     return out;
 }
 
-inline rgb float4_to_rgb(const float4& v)
-{
-    return { float_to_uchar(v.x), float_to_uchar(v.y), float_to_uchar(v.z) };
-}
+//inline rgb float4_to_rgb(const float4& v)
+//{
+//    return { float_to_uchar(v.x), float_to_uchar(v.y), float_to_uchar(v.z) };
+//}
 
-void exportColorVolume(const CudaHostMemoryHeap<float4, 3>& in_volumeSim_hmh, 
+void exportColorVolume(DeviceBuffer* in_volumeSim_hmh,
                        const std::vector<float>& in_depths,
                        int startDepth, 
                        int nbDepths, 
@@ -459,43 +460,44 @@ void exportColorVolume(const CudaHostMemoryHeap<float4, 3>& in_volumeSim_hmh,
                        const std::string& filepath,
                        const ROI& roi)
 {
-    sfmData::SfMData pointCloud;
-    int xyStep = 10;
-
-    IndexT landmarkId;
-
-    auto volDim = in_volumeSim_hmh.getSize();
-    size_t spitch = in_volumeSim_hmh.getBytesPaddedUpToDim(1);
-    size_t pitch = in_volumeSim_hmh.getBytesPaddedUpToDim(0);
-
-    LOG_X("DepthMap exportColorVolume: " << volDim[0] << " x " << volDim[1] << " x " << nbDepths << ", volDim[2]=" << volDim[2] << ", xyStep=" << xyStep << ".");
-
-
-    for (int vy = 0; vy < volDim[1]; vy += xyStep)
-    {
-        for (int vx = 0; vx < volDim[0]; vx += xyStep)
-        {
-            const double x = roi.x.begin + (vx * scale * step);
-            const double y = roi.y.begin + (vy * scale * step);
-
-            for(int vz = 0; vz < nbDepths; ++vz)
-            {
-                const double planeDepth = in_depths[startDepth + vz];
-                const Point3d planen = (mp.iRArr[camIndex] * Point3d(0.0f, 0.0f, 1.0f)).normalize();
-                const Point3d planep = mp.CArr[camIndex] + planen * planeDepth;
-                const Point3d v = (mp.iCamArr[camIndex] * Point2d(x, y)).normalize();
-                const Point3d p = linePlaneIntersect(mp.CArr[camIndex], v, planep, planen);
-
-                float4 colorValue = *get3DBufferAt_h<float4>(in_volumeSim_hmh.getBuffer(), spitch, pitch, vx, vy, vz);
-                const rgb c = float4_to_rgb(colorValue); // TODO: convert Lab color into sRGB color
-                pointCloud.getLandmarks()[landmarkId] = sfmData::Landmark(Vec3(p.x, p.y, p.z), feature::EImageDescriberType::UNKNOWN, sfmData::Observations(), image::RGBColor(c.r, c.g, c.b));
-
-                ++landmarkId;
-            }
-        }
-    }
-
-    sfmDataIO::Save(pointCloud, filepath, sfmDataIO::ESfMData::STRUCTURE);
+    LOG_INFO("TODO: exportColorVolume IMPL...");
+//    sfmData::SfMData pointCloud;
+//    int xyStep = 10;
+//
+//    IndexT landmarkId;
+//
+//    MTLSize volDim = [in_volumeSim_hmh getSize];
+//    const size_t spitch = [in_volumeSim_hmh getBytesUpToDim:1];
+//    const size_t pitch = [in_volumeSim_hmh getBytesUpToDim:0];
+//
+//    LOG_X("DepthMap exportColorVolume: " << volDim.width << " x " << volDim.height << " x " << nbDepths << ", volDim.depth=" << volDim.depth << ", xyStep=" << xyStep << ".");
+//
+//
+//    for (int vy = 0; vy < volDim.height; vy += xyStep)
+//    {
+//        for (int vx = 0; vx < volDim.width; vx += xyStep)
+//        {
+//            const double x = roi.x.begin + (vx * scale * step);
+//            const double y = roi.y.begin + (vy * scale * step);
+//
+//            for(int vz = 0; vz < nbDepths; ++vz)
+//            {
+//                const double planeDepth = in_depths[startDepth + vz];
+//                const Point3d planen = (mp.iRArr[camIndex] * Point3d(0.0f, 0.0f, 1.0f)).normalize();
+//                const Point3d planep = mp.CArr[camIndex] + planen * planeDepth;
+//                const Point3d v = (mp.iCamArr[camIndex] * Point2d(x, y)).normalize();
+//                const Point3d p = linePlaneIntersect(mp.CArr[camIndex], v, planep, planen);
+//
+//                vector_float4 colorValue = *get3DBufferAt_h<vector_float4>((vector_float4*)[in_volumeSim_hmh getBufferPtr], spitch, pitch, vx, vy, vz);
+//                const rgb c = float4_to_rgb(colorValue); // TODO: convert Lab color into sRGB color
+//                pointCloud.getLandmarks()[landmarkId] = sfmData::Landmark(Vec3(p.x, p.y, p.z), feature::EImageDescriberType::UNKNOWN, sfmData::Observations(), image::RGBColor(c.r, c.g, c.b));
+//
+//                ++landmarkId;
+//            }
+//        }
+//    }
+//
+//    sfmDataIO::Save(pointCloud,utils::GetParentPath(filepath), utils::GetFileName(filepath), sfmDataIO::ESfMData::STRUCTURE);
 }
 
 } // namespace depthMap

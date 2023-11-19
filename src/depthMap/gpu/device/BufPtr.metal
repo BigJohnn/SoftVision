@@ -41,7 +41,7 @@ private:
 template <typename T>
 inline device T* get2DBufferAt(device const T* ptr, int pitch, int x, int y)
 {
-    return BufPtr<T>(ptr,pitch).at(x,y);
+    return &BufPtr<T>((device T*)ptr,pitch).at(x,y);
 }
     
 //template <typename T>

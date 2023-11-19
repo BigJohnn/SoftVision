@@ -4,12 +4,14 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
+#import <depthMap/gpu/host/memory.hpp>
+
 #include <mvsData/ROI.hpp>
 #include <mvsUtils/MultiViewParams.hpp>
 #include <depthMap/SgmParams.hpp>
 #include <depthMap/RefineParams.hpp>
-//#include <depthMap/gpu/host/memory.hpp>
-//#include <depthMap/gpu/planeSweeping/similarity.hpp>
+
+#include <depthMap/gpu/planeSweeping/similarity.hpp>
 
 #include <string>
 #include <vector>
@@ -26,7 +28,7 @@ namespace depthMap {
  * @param[in] filepath the export filepath
  * @param[in] roi the 2d region of interest
  */
-void exportSimilaritySamplesCSV(const CudaHostMemoryHeap<TSim, 3>& in_volumeSim_hmh, 
+void exportSimilaritySamplesCSV(DeviceBuffer* in_volumeSim_hmh,
                                 const std::vector<float>& in_depths,
                                 const std::string& name, 
                                 const SgmParams& sgmParams,
@@ -41,7 +43,7 @@ void exportSimilaritySamplesCSV(const CudaHostMemoryHeap<TSim, 3>& in_volumeSim_
  * @param[in] filepath the export filepath
  * @param[in] roi the 2d region of interest
  */
-void exportSimilaritySamplesCSV(const CudaHostMemoryHeap<TSimRefine, 3>& in_volumeSim_hmh, 
+void exportSimilaritySamplesCSV(DeviceBuffer* in_volumeSim_hmh,
                                 const std::string& name, 
                                 const RefineParams& refineParams,
                                 const std::string& filepath,
@@ -57,7 +59,7 @@ void exportSimilaritySamplesCSV(const CudaHostMemoryHeap<TSimRefine, 3>& in_volu
  * @param[in] filepath the export filepath
  * @param[in] roi the 2d region of interest
  */
-void exportSimilarityVolume(const CudaHostMemoryHeap<TSim, 3>& in_volumeSim_hmh, 
+void exportSimilarityVolume(DeviceBuffer* in_volumeSim_hmh,
                             const std::vector<float>& in_depths,
                             const mvsUtils::MultiViewParams& mp, 
                             int camIndex, 
@@ -75,7 +77,7 @@ void exportSimilarityVolume(const CudaHostMemoryHeap<TSim, 3>& in_volumeSim_hmh,
  * @param[in] filepath the export filepath
  * @param[in] roi the 2d region of interest
  */
-void exportSimilarityVolumeCross(const CudaHostMemoryHeap<TSim, 3>& in_volumeSim_hmh, 
+void exportSimilarityVolumeCross(DeviceBuffer* in_volumeSim_hmh,
                                  const std::vector<float>& in_depths,
                                  const mvsUtils::MultiViewParams& mp, 
                                  int camIndex, 
@@ -93,8 +95,8 @@ void exportSimilarityVolumeCross(const CudaHostMemoryHeap<TSim, 3>& in_volumeSim
  * @param[in] filepath the export filepath
  * @param[in] roi the 2d region of interest
  */
-void exportSimilarityVolumeCross(const CudaHostMemoryHeap<TSimRefine, 3>& in_volumeSim_hmh,
-                                 const CudaHostMemoryHeap<float2, 2>& in_depthSimMapSgmUpscale_hmh,
+void exportSimilarityVolumeCross(DeviceBuffer* in_volumeSim_hmh,
+                                 DeviceBuffer* in_depthSimMapSgmUpscale_hmh,
                                  const mvsUtils::MultiViewParams& mp, 
                                  int camIndex,
                                  const RefineParams& refineParams, 
@@ -111,7 +113,7 @@ void exportSimilarityVolumeCross(const CudaHostMemoryHeap<TSimRefine, 3>& in_vol
  * @param[in] filepath the export filepath
  * @param[in] roi the 2d region of interest
  */
-void exportSimilarityVolumeTopographicCut(const CudaHostMemoryHeap<TSim, 3>& in_volumeSim_hmh,
+void exportSimilarityVolumeTopographicCut(DeviceBuffer* in_volumeSim_hmh,
                                           const std::vector<float>& in_depths,
                                           const mvsUtils::MultiViewParams& mp,
                                           int camIndex,
@@ -129,8 +131,8 @@ void exportSimilarityVolumeTopographicCut(const CudaHostMemoryHeap<TSim, 3>& in_
  * @param[in] filepath the export filepath
  * @param[in] roi the 2d region of interest
  */
-void exportSimilarityVolumeTopographicCut(const CudaHostMemoryHeap<TSimRefine, 3>& in_volumeSim_hmh,
-                                          const CudaHostMemoryHeap<float2, 2>& in_depthSimMapSgmUpscale_hmh,
+void exportSimilarityVolumeTopographicCut(DeviceBuffer* in_volumeSim_hmh,
+                                          DeviceBuffer* in_depthSimMapSgmUpscale_hmh,
                                           const mvsUtils::MultiViewParams& mp,
                                           int camIndex,
                                           const RefineParams& refineParams,
@@ -140,7 +142,7 @@ void exportSimilarityVolumeTopographicCut(const CudaHostMemoryHeap<TSimRefine, 3
 /**
  * @brief Export the given similarity volume to an Alembic file.
  */
-void exportColorVolume(const CudaHostMemoryHeap<float4, 3>& in_volumeSim_hmh, 
+void exportColorVolume(DeviceBuffer* in_volumeSim_hmh, 
                        const std::vector<float>& in_depths,
                        int startDepth, 
                        int nbDepths, 

@@ -25,25 +25,25 @@ namespace depthMap {
 * @return
 */
 template <typename T>
-inline thread T* get3DBufferAt(device T* ptr, size_t spitch, size_t pitch, size_t x, size_t y, size_t z)
+inline device T* get3DBufferAt(device T* ptr, int spitch, int pitch, int x, int y, int z)
 {
-    return ((thread T*)(((device char*)ptr) + z * spitch + y * pitch)) + x;
+    return ((device T*)(((device char*)ptr) + z * spitch + y * pitch)) + x;
 }
 
 template <typename T>
-inline const thread T* get3DBufferAt(const device T* ptr, size_t spitch, size_t pitch, size_t x, size_t y, size_t z)
+inline const thread T* get3DBufferAt(const device T* ptr, int spitch, int pitch, int x, int y, int z)
 {
     return ((const thread T*)(((const device char*)ptr) + z * spitch + y * pitch)) + x;
 }
 
 template <typename T>
-inline thread T* get3DBufferAt(device T* ptr, size_t spitch, size_t pitch, const device int3& v)
+inline thread T* get3DBufferAt(device T* ptr, int spitch, int pitch, const device int3& v)
 {
     return get3DBufferAt(ptr, spitch, pitch, v.x, v.y, v.z);
 }
 
 template <typename T>
-inline const thread T* get3DBufferAt(const device T* ptr, size_t spitch, size_t pitch, const device int3& v)
+inline const thread T* get3DBufferAt(const device T* ptr, int spitch, int pitch, const device int3& v)
 {
     return get3DBufferAt(ptr, spitch, pitch, v.x, v.y, v.z);
 }
