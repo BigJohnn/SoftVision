@@ -2447,20 +2447,21 @@ int DCPDatabase::load(const std::string& databaseDirPath, bool force)
 
     folderName = databaseDirPath;
 
-    if (!bfs::is_directory(databaseDirPath))
-    {
-        return 0;
-    }
-
-    bfs::path targetDir(databaseDirPath);
-    bfs::directory_iterator it(targetDir), eod;
-    BOOST_FOREACH(bfs::path const& p, std::make_pair(it, eod))
-    {
-        if (bfs::is_regular_file(p))
-        {
-            dcpFilenamesList.emplace_back(p.generic_string());
-        }
-    }
+    LOG_INFO("DCPDatabase::load TODO impl");
+//    if (!bfs::is_directory(databaseDirPath))
+//    {
+//        return 0;
+//    }
+//
+//    bfs::path targetDir(databaseDirPath);
+//    bfs::directory_iterator it(targetDir), eod;
+//    BOOST_FOREACH(bfs::path const& p, std::make_pair(it, eod))
+//    {
+//        if (bfs::is_regular_file(p))
+//        {
+//            dcpFilenamesList.emplace_back(p.generic_string());
+//        }
+//    }
 
     return dcpFilenamesList.size();
 }

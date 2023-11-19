@@ -118,8 +118,10 @@ void depthThicknessSmoothThickness(DeviceBuffer* inout_depthThicknessMap_dmp,
     MTLSize gridSize = MTLSizeMake(roi.width(), roi.height(), 1);
     MTLSize threadgroupSize = MTLSizeMake(threadGroupSize, threadGroupSize, 1);
     
-    ROI_d roi_d(roi.x.begin, roi.y.begin,
-                roi.x.end, roi.y.end);
+    ROI_d roi_d;
+    roi_d.lt = simd_make_float2(roi.x.begin, roi.y.begin);
+    roi_d.rb = simd_make_float2(roi.x.end, roi.y.end);
+    
     NSArray* args = @[
         [inout_depthThicknessMap_dmp getBuffer],
         [NSNumber numberWithInt:[inout_depthThicknessMap_dmp getBytesUpToDim:0]],
@@ -261,8 +263,9 @@ void cuda_depthSimMapComputeNormal(DeviceBuffer* out_normalMap_dmp,
     MTLSize gridSize = MTLSizeMake(roi.width(), roi.height(), 1);
     MTLSize threadgroupSize = MTLSizeMake(threadGroupSize, threadGroupSize, 1);
 
-    ROI_d roi_d(roi.x.begin, roi.y.begin,
-                roi.x.end, roi.y.end);
+    ROI_d roi_d;
+    roi_d.lt = simd_make_float2(roi.x.begin, roi.y.begin);
+    roi_d.rb = simd_make_float2(roi.x.end, roi.y.end);
     
 //    NSArray* args = @[
 //                [out_normalMap_dmp getBuffer],

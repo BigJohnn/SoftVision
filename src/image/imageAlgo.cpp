@@ -7,10 +7,9 @@
 
 #include "imageAlgo.hpp"
 
+#include <SoftVisionLog.h>
 #include <image/Image.hpp>
 #include <image/Rgb.hpp>
-#include <SoftVisionLog.hpp>
-
 
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/imagebuf.h>

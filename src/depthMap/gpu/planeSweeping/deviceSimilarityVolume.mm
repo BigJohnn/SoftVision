@@ -210,7 +210,9 @@ void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
     
 //    [inout_volume_dmp allocate:volDim elemSizeInBytes:sizeof(float)];
     Range_d depthRange_d(depthRange.begin, depthRange.end);
-    ROI_d roi_d(roi.x.begin, roi.y.begin, roi.x.end, roi.y.end);
+    ROI_d roi_d;//(roi.x.begin, roi.y.begin, roi.x.end, roi.y.end);
+    roi_d.lt = simd_make_float2(roi.x.begin, roi.y.begin);
+    roi_d.rb = simd_make_float2(roi.x.end, roi.y.end);
     NSArray* args = @[
         [out_volBestSim_dmp getBuffer],
         [NSNumber numberWithInt:[out_volBestSim_dmp getBytesUpToDim:1]], //1024*256

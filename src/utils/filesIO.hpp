@@ -11,6 +11,7 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include <utils/fileUtil.hpp>
 
 //namespace fs = boost::filesystem;
 
@@ -28,15 +29,16 @@ inline std::vector<std::string> getFilesPathsFromFolder(const std::string& folde
     std::vector<std::string> paths;
 
     // If the path isn't a folder path
-    if(!fs::is_directory(folder))
+    if(!utils::is_directory(folder))
         throw std::invalid_argument("The path '" + folder + "' is not a valid folder path.");
 
-    for(const auto& pathIt : fs::directory_iterator(folder))
-    {
-        const fs::path path = pathIt.path();
-        if(is_regular_file(path) && predicate(path))
-            paths.push_back(path.generic_string());
-    }
+    LOG_INFO("getFilesPathsFromFolder TODO: impl");
+//    for(const auto& pathIt : fs::directory_iterator(folder))
+//    {
+//        const fs::path path = pathIt.path();
+//        if(is_regular_file(path) && predicate(path))
+//            paths.push_back(path.generic_string());
+//    }
 
     return paths;
 }
@@ -47,17 +49,17 @@ inline std::vector<std::string> getFilesPathsFromFolder(const std::string& folde
  * @param[in] the predicate
  * @return the paths list to the corresponding files if they validate the predicate, otherwise it returns an empty list.
  */
-inline std::vector<std::string> getFilesPathsFromFolders(const std::vector<std::string>& folders,
-                                                  const std::function<bool(const boost::filesystem::path&)>& predicate)
-{
-    std::vector<std::string> paths;
-    for(const std::string& folder : folders)
-    {
-        const std::vector<std::string> subPaths = getFilesPathsFromFolder(folder, predicate);
-        paths.insert(paths.end(), subPaths.begin(), subPaths.end());
-    }
-
-    return paths;
-}
+//inline std::vector<std::string> getFilesPathsFromFolders(const std::vector<std::string>& folders,
+//                                                  const std::function<bool(const boost::filesystem::path&)>& predicate)
+//{
+//    std::vector<std::string> paths;
+//    for(const std::string& folder : folders)
+//    {
+//        const std::vector<std::string> subPaths = getFilesPathsFromFolder(folder, predicate);
+//        paths.insert(paths.end(), subPaths.begin(), subPaths.end());
+//    }
+//
+//    return paths;
+//}
 
 } // namespace utils

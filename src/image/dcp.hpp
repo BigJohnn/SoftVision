@@ -10,7 +10,7 @@
 
 #include <image/pixelTypes.hpp>
 
-//#include <image/all.hpp>
+#include <image/Image.hpp>
 
 namespace image {
 
