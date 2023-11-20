@@ -17,6 +17,65 @@
 
 namespace image {
 
+std::string ERawColorInterpretation_informations()
+{
+    return "Raw color interpretation :\n"
+           "* none : None \n"
+           "* librawnowhitebalancing : libRaw whithout white balancing \n"
+           "* librawwhitebalancing : libRaw whith white balancing \n"
+           "* dcplinearprocessing : DCP linear processing \n"
+           "* dcpmetadata : None but DCP info embedded in metadata";
+}
+
+ERawColorInterpretation ERawColorInterpretation_stringToEnum(const std::string& rawColorInterpretation)
+{
+    std::string type = rawColorInterpretation;
+    std::transform(type.begin(), type.end(), type.begin(), ::tolower); //tolower
+
+    if (type == "none" || type == "")
+        return ERawColorInterpretation::None;
+    if (type == "librawnowhitebalancing")
+        return ERawColorInterpretation::LibRawNoWhiteBalancing;
+    if (type == "librawwhitebalancing")
+        return ERawColorInterpretation::LibRawWhiteBalancing;
+    if (type == "dcplinearprocessing")
+        return ERawColorInterpretation::DcpLinearProcessing;
+    if (type == "dcpmetadata")
+        return ERawColorInterpretation::DcpMetadata;
+    if (type == "auto")
+        return ERawColorInterpretation::Auto;
+
+    throw std::out_of_range("Invalid raw color interpretation : " + rawColorInterpretation);
+
+}
+
+std::string ERawColorInterpretation_enumToString(const ERawColorInterpretation rawColorInterpretation)
+{
+    switch (rawColorInterpretation)
+    {
+        case ERawColorInterpretation::None: return "none";
+        case ERawColorInterpretation::LibRawNoWhiteBalancing: return "librawnowhitebalancing";
+        case ERawColorInterpretation::LibRawWhiteBalancing: return "librawwhitebalancing";
+        case ERawColorInterpretation::DcpLinearProcessing: return "dcpLinearprocessing";
+        case ERawColorInterpretation::DcpMetadata: return "dcpmetadata";
+        case ERawColorInterpretation::Auto: return "auto";
+    }
+    throw std::out_of_range("Invalid ERawColorInterpretation enum");
+}
+
+std::ostream& operator<<(std::ostream& os, ERawColorInterpretation rawColorInterpretation)
+{
+    return os << ERawColorInterpretation_enumToString(rawColorInterpretation);
+}
+
+std::istream& operator>>(std::istream& in, ERawColorInterpretation& rawColorInterpretation)
+{
+    std::string token;
+    in >> token;
+    rawColorInterpretation = ERawColorInterpretation_stringToEnum(token);
+    return in;
+}
+
 void byteBuffer2EigenMatrix(int w, int h, const uint8_t* imageBuf, Image<RGBAColor>& image)
 {
     // TODO: impl this ...

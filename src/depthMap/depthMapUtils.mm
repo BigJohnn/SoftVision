@@ -35,44 +35,45 @@ void copyFloat2Map(image::Image<float>& out_mapX, image::Image<float>& out_mapY,
     {
         for(int y = 0; y < height; ++y)
         {
-            const float2& value = in_map_hmh(size_t(x), size_t(y));
+            
+            const simd_float2& value = [in_map_hmh getVec2f:x y:y];
             out_mapX(y, x) = value.x;
             out_mapY(y, x) = value.y;
         }
     }
 }
 
-void copyFloat2Map(image::Image<float>& out_mapX, image::Image<float>& out_mapY, DeviceBuffer* in_map_dmp, const ROI& roi, int downscale)
-{
-    // copy float2 map from device pitched memory to host memory
-    CudaHostMemoryHeap<float2, 2> map_hmh(in_map_dmp.getSize());
-    map_hmh.copyFrom(in_map_dmp);
+//void copyFloat2Map(image::Image<float>& out_mapX, image::Image<float>& out_mapY, DeviceBuffer* in_map_dmp, const ROI& roi, int downscale)
+//{
+//    // copy float2 map from device pitched memory to host memory
+//    CudaHostMemoryHeap<float2, 2> map_hmh(in_map_dmp.getSize());
+//    map_hmh.copyFrom(in_map_dmp);
+//
+//    copyFloat2Map(out_mapX, out_mapY, map_hmh, roi, downscale);
+//}
 
-    copyFloat2Map(out_mapX, out_mapY, map_hmh, roi, downscale);
-}
-
-void writeFloat2Map(int rc,
-                    const mvsUtils::MultiViewParams& mp,
-                    const mvsUtils::TileParams& tileParams,
-                    const ROI& roi,
-                    DeviceBuffer* in_map_hmh,
-                    const mvsUtils::EFileType fileTypeX,
-                    const mvsUtils::EFileType fileTypeY,
-                    int scale,
-                    int step,
-                    const std::string& name)
-{
-    const std::string customSuffix = (name.empty()) ? "" : "_" + name;
-    const int scaleStep = scale * step;
-
-    image::Image<float> mapX;
-    image::Image<float> mapY;
-
-    copyFloat2Map(mapX, mapY, in_map_hmh, roi, scaleStep);
-
-    mvsUtils::writeMap(rc, mp, fileTypeX, tileParams, roi, mapX, scale, step, customSuffix);
-    mvsUtils::writeMap(rc, mp, fileTypeY, tileParams, roi, mapY, scale, step, customSuffix);
-}
+//void writeFloat2Map(int rc,
+//                    const mvsUtils::MultiViewParams& mp,
+//                    const mvsUtils::TileParams& tileParams,
+//                    const ROI& roi,
+//                    DeviceBuffer* in_map_hmh,
+//                    const mvsUtils::EFileType fileTypeX,
+//                    const mvsUtils::EFileType fileTypeY,
+//                    int scale,
+//                    int step,
+//                    const std::string& name)
+//{
+//    const std::string customSuffix = (name.empty()) ? "" : "_" + name;
+//    const int scaleStep = scale * step;
+//
+//    image::Image<float> mapX;
+//    image::Image<float> mapY;
+//
+//    copyFloat2Map(mapX, mapY, in_map_hmh, roi, scaleStep);
+//
+//    mvsUtils::writeMap(rc, mp, fileTypeX, tileParams, roi, mapX, scale, step, customSuffix);
+//    mvsUtils::writeMap(rc, mp, fileTypeY, tileParams, roi, mapY, scale, step, customSuffix);
+//}
 
 void writeFloat2Map(int rc,
                     const mvsUtils::MultiViewParams& mp,
@@ -107,58 +108,60 @@ void writeFloat3Map(int rc,
                     int step,
                     const std::string& name)
 {
-  const ROI downscaledROI = downscaleROI(roi, scale * step);
-  const int width  = int(downscaledROI.width());
-  const int height = int(downscaledROI.height());
-
-  // copy map from device pitched memory to host memory
-  CudaHostMemoryHeap<float3, 2> map_hmh(in_map_dmp.getSize());
-  map_hmh.copyFrom(in_map_dmp);
-
-  // copy map from host memory to an Image
-  image::Image<image::RGBfColor> map(width, height, true, {0.f,0.f,0.f});
-
-  for(size_t x = 0; x < size_t(width); ++x)
-  {
-      for(size_t y = 0; y < size_t(height); ++y)
-      {
-          const float3& rgba_hmh = map_hmh(x, y);
-          image::RGBfColor& rgb = map(int(y), int(x));
-          rgb.r() = rgba_hmh.x;
-          rgb.g() = rgba_hmh.y;
-          rgb.b() = rgba_hmh.z;
-      }
-  }
-
-  // write map from the image buffer
-  mvsUtils::writeMap(rc, mp, fileType, tileParams, roi, map, scale, step, (name.empty()) ? "" : "_" + name);
+    LOG_INFO("writeFloat3Map todo...");
+//  const ROI downscaledROI = downscaleROI(roi, scale * step);
+//  const int width  = int(downscaledROI.width());
+//  const int height = int(downscaledROI.height());
+//
+//  // copy map from device pitched memory to host memory
+//  CudaHostMemoryHeap<float3, 2> map_hmh(in_map_dmp.getSize());
+//  map_hmh.copyFrom(in_map_dmp);
+//
+//  // copy map from host memory to an Image
+//  image::Image<image::RGBfColor> map(width, height, true, {0.f,0.f,0.f});
+//
+//  for(size_t x = 0; x < size_t(width); ++x)
+//  {
+//      for(size_t y = 0; y < size_t(height); ++y)
+//      {
+//          const float3& rgba_hmh = map_hmh(x, y);
+//          image::RGBfColor& rgb = map(int(y), int(x));
+//          rgb.r() = rgba_hmh.x;
+//          rgb.g() = rgba_hmh.y;
+//          rgb.b() = rgba_hmh.z;
+//      }
+//  }
+//
+//  // write map from the image buffer
+//  mvsUtils::writeMap(rc, mp, fileType, tileParams, roi, map, scale, step, (name.empty()) ? "" : "_" + name);
 }
 
 void writeDeviceImage(DeviceBuffer* in_img_dmp, const std::string& path) 
 {
-    const CudaSize<2>& imgSize = in_img_dmp.getSize();
-    
-    // copy image from device pitched memory to host memory
-    CudaHostMemoryHeap<CudaRGBA, 2> img_hmh(imgSize);
-    img_hmh.copyFrom(in_img_dmp);
-
-    // copy image from host memory to an Image
-    image::Image<image::RGBfColor> img(imgSize.x(), imgSize.y(), true, {0.f,0.f,0.f});
-
-    for(size_t x = 0; x < imgSize.x(); ++x)
-    {
-        for(size_t y = 0; y < imgSize.y(); ++y)
-        {
-            const CudaRGBA& rgba_hmh = img_hmh(x, y);
-            image::RGBfColor& rgb = img(int(y), int(x));
-            rgb.r() = rgba_hmh.x;
-            rgb.g() = rgba_hmh.y;
-            rgb.b() = rgba_hmh.z;
-        }
-    }
-
-    // write the image buffer
-    image::writeImage(path, img, image::ImageWriteOptions().toColorSpace(image::EImageColorSpace::NO_CONVERSION).storageDataType(image::EStorageDataType::Float));
+    LOG_INFO("writeDeviceImage todo...");
+//    const CudaSize<2>& imgSize = in_img_dmp.getSize();
+//
+//    // copy image from device pitched memory to host memory
+//    CudaHostMemoryHeap<CudaRGBA, 2> img_hmh(imgSize);
+//    img_hmh.copyFrom(in_img_dmp);
+//
+//    // copy image from host memory to an Image
+//    image::Image<image::RGBfColor> img(imgSize.x(), imgSize.y(), true, {0.f,0.f,0.f});
+//
+//    for(size_t x = 0; x < imgSize.x(); ++x)
+//    {
+//        for(size_t y = 0; y < imgSize.y(); ++y)
+//        {
+//            const CudaRGBA& rgba_hmh = img_hmh(x, y);
+//            image::RGBfColor& rgb = img(int(y), int(x));
+//            rgb.r() = rgba_hmh.x;
+//            rgb.g() = rgba_hmh.y;
+//            rgb.b() = rgba_hmh.z;
+//        }
+//    }
+//
+//    // write the image buffer
+//    image::writeImage(path, img, image::ImageWriteOptions().toColorSpace(image::EImageColorSpace::NO_CONVERSION).storageDataType(image::EStorageDataType::Float));
 }
 
 void writeNormalMap(int rc,
@@ -265,7 +268,8 @@ void writeDepthSimMapFromTileList(int rc,
     image::Image<float> tileSimMap;
 
     // copy tile depth/sim map from host memory
-    copyFloat2Map(tileDepthMap, tileSimMap, in_depthSimMapTiles_hmh.at(i), roi, scaleStep);
+      LOG_INFO("copyFloat2Map in writeDepthSimMapFromTileList, todo...");
+//    copyFloat2Map(tileDepthMap, tileSimMap, in_depthSimMapTiles_hmh.at(i), roi, scaleStep);
 
     // add tile maps to the full-size maps with weighting
     mvsUtils::addTileMapWeighted(rc, mp, tileParams, roi, scaleStep, tileDepthMap, depthMap);

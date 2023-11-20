@@ -6,7 +6,8 @@
 
 #include "CustomPatchPatternParams.hpp"
 
-#include <boost/algorithm/string.hpp>
+//#include <boost/algorithm/string.hpp>
+#include <utils/strUtils.hpp>
 
 
 namespace depthMap {
@@ -17,14 +18,16 @@ std::istream& operator>>(std::istream& is, CustomPatchPatternParams::SubpartPara
     std::string token;
     is >> token;
     std::vector<std::string> splitParams;
-    boost::split(splitParams, token, boost::algorithm::is_any_of(":"));
+    
+    utils::split(splitParams, token, ':');
+//    boost::split(splitParams, token, boost::algorithm::is_any_of(":"));
 
     if(splitParams.size() != 5)
         throw std::invalid_argument("Failed to parse CustomPatchPatternParams::SubpartParams from: " + token);
 
     try
     {
-      sp.isCircle = (boost::to_lower_copy(splitParams[0]) == "circle");
+      sp.isCircle = (utils::to_lower_copy(splitParams[0]) == "circle");
       sp.radius = std::stof(splitParams[1]);
       sp.nbCoordinates = std::stoi(splitParams[2]);
       sp.level = std::stoi(splitParams[3]);

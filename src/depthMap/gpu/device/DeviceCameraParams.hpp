@@ -17,12 +17,12 @@ typedef struct DeviceCameraParams
 //    float K[9];
 //    float iK[9];
     
-    matrix_float4x3 P;
-    matrix_float3x3 iP;
-    matrix_float3x3 R;
-    matrix_float3x3 iR;
-    matrix_float3x3 K;
-    matrix_float3x3 iK;
+    simd_float4x3 P;
+    simd_float3x3 iP;
+    simd_float3x3 R;
+    simd_float3x3 iR;
+    simd_float3x3 K;
+    simd_float3x3 iK;
     
     vector_float3 C;
     vector_float3 XVect;

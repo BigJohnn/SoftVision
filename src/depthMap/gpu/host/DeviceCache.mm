@@ -61,76 +61,47 @@ void fillCameraParameters(void* cameraParameters, int camId, int downscale, cons
     cameraParameters_h.C.y = mp.CArr[camId].y;
     cameraParameters_h.C.z = mp.CArr[camId].z;
 
-    cameraParameters_h.P[0] = P.m11;
-    cameraParameters_h.P[1] = P.m21;
-    cameraParameters_h.P[2] = P.m31;
-    cameraParameters_h.P[3] = P.m12;
-    cameraParameters_h.P[4] = P.m22;
-    cameraParameters_h.P[5] = P.m32;
-    cameraParameters_h.P[6] = P.m13;
-    cameraParameters_h.P[7] = P.m23;
-    cameraParameters_h.P[8] = P.m33;
-    cameraParameters_h.P[9] = P.m14;
-    cameraParameters_h.P[10] = P.m24;
-    cameraParameters_h.P[11] = P.m34;
+    cameraParameters_h.P = simd_matrix(
+                                         simd_make_float3(P.m11, P.m21, P.m31),
+                                         simd_make_float3(P.m12, P.m22, P.m32),
+                                         simd_make_float3(P.m13, P.m23, P.m33),
+                                         simd_make_float3(P.m14, P.m24, P.m34));
+    
+    cameraParameters_h.iP = simd_matrix(
+                                         simd_make_float3(iP.m11, iP.m21, iP.m31),
+                                         simd_make_float3(iP.m12, iP.m22, iP.m32),
+                                         simd_make_float3(iP.m13, iP.m23, iP.m33));
+    
+    auto&& R = mp.RArr[camId];
+    cameraParameters_h.R = simd_matrix(
+                                         simd_make_float3(R.m11, R.m21, R.m31),
+                                         simd_make_float3(R.m12, R.m22, R.m32),
+                                         simd_make_float3(R.m13, R.m23, R.m33));
 
-    cameraParameters_h.iP[0] = iP.m11;
-    cameraParameters_h.iP[1] = iP.m21;
-    cameraParameters_h.iP[2] = iP.m31;
-    cameraParameters_h.iP[3] = iP.m12;
-    cameraParameters_h.iP[4] = iP.m22;
-    cameraParameters_h.iP[5] = iP.m32;
-    cameraParameters_h.iP[6] = iP.m13;
-    cameraParameters_h.iP[7] = iP.m23;
-    cameraParameters_h.iP[8] = iP.m33;
+    
+    auto&& iR = mp.iRArr[camId];
+    cameraParameters_h.iR = simd_matrix(
+                                         simd_make_float3(iR.m11, iR.m21, iR.m31),
+                                         simd_make_float3(iR.m12, iR.m22, iR.m32),
+                                         simd_make_float3(iR.m13, iR.m23, iR.m33));
+    
+    cameraParameters_h.K = simd_matrix(
+                                         simd_make_float3(K.m11, K.m21, K.m31),
+                                         simd_make_float3(K.m12, K.m22, K.m32),
+                                         simd_make_float3(K.m13, K.m23, K.m33));
+    
+    cameraParameters_h.iK = simd_matrix(
+                                         simd_make_float3(iK.m11, iK.m21, iK.m31),
+                                         simd_make_float3(iK.m12, iK.m22, iK.m32),
+                                         simd_make_float3(iK.m13, iK.m23, iK.m33));
 
-    cameraParameters_h.R[0] = mp.RArr[camId].m11;
-    cameraParameters_h.R[1] = mp.RArr[camId].m21;
-    cameraParameters_h.R[2] = mp.RArr[camId].m31;
-    cameraParameters_h.R[3] = mp.RArr[camId].m12;
-    cameraParameters_h.R[4] = mp.RArr[camId].m22;
-    cameraParameters_h.R[5] = mp.RArr[camId].m32;
-    cameraParameters_h.R[6] = mp.RArr[camId].m13;
-    cameraParameters_h.R[7] = mp.RArr[camId].m23;
-    cameraParameters_h.R[8] = mp.RArr[camId].m33;
-
-    cameraParameters_h.iR[0] = mp.iRArr[camId].m11;
-    cameraParameters_h.iR[1] = mp.iRArr[camId].m21;
-    cameraParameters_h.iR[2] = mp.iRArr[camId].m31;
-    cameraParameters_h.iR[3] = mp.iRArr[camId].m12;
-    cameraParameters_h.iR[4] = mp.iRArr[camId].m22;
-    cameraParameters_h.iR[5] = mp.iRArr[camId].m32;
-    cameraParameters_h.iR[6] = mp.iRArr[camId].m13;
-    cameraParameters_h.iR[7] = mp.iRArr[camId].m23;
-    cameraParameters_h.iR[8] = mp.iRArr[camId].m33;
-
-    cameraParameters_h.K[0] = K.m11;
-    cameraParameters_h.K[1] = K.m21;
-    cameraParameters_h.K[2] = K.m31;
-    cameraParameters_h.K[3] = K.m12;
-    cameraParameters_h.K[4] = K.m22;
-    cameraParameters_h.K[5] = K.m32;
-    cameraParameters_h.K[6] = K.m13;
-    cameraParameters_h.K[7] = K.m23;
-    cameraParameters_h.K[8] = K.m33;
-
-    cameraParameters_h.iK[0] = iK.m11;
-    cameraParameters_h.iK[1] = iK.m21;
-    cameraParameters_h.iK[2] = iK.m31;
-    cameraParameters_h.iK[3] = iK.m12;
-    cameraParameters_h.iK[4] = iK.m22;
-    cameraParameters_h.iK[5] = iK.m32;
-    cameraParameters_h.iK[6] = iK.m13;
-    cameraParameters_h.iK[7] = iK.m23;
-    cameraParameters_h.iK[8] = iK.m33;
-
-    cameraParameters_h.XVect = M3x3mulV3(cameraParameters_h.iR, simd_make_float3(1.f, 0.f, 0.f));
+    cameraParameters_h.XVect = simd_mul(cameraParameters_h.iR, simd_make_float3(1.f, 0.f, 0.f));
     normalize(cameraParameters_h.XVect);
 
-    cameraParameters_h.YVect = M3x3mulV3(cameraParameters_h.iR, simd_make_float3(0.f, 1.f, 0.f));
+    cameraParameters_h.YVect = simd_mul(cameraParameters_h.iR, simd_make_float3(0.f, 1.f, 0.f));
     normalize(cameraParameters_h.YVect);
 
-    cameraParameters_h.ZVect = M3x3mulV3(cameraParameters_h.iR, simd_make_float3(0.f, 0.f, 1.f));
+    cameraParameters_h.ZVect = simd_mul(cameraParameters_h.iR, simd_make_float3(0.f, 0.f, 1.f));
     normalize(cameraParameters_h.ZVect);
     
     

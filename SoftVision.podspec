@@ -71,7 +71,7 @@ Pod::Spec.new do |spec|
   #  Not including the public_header_files will make all headers public.
   #
 
-  spec.source_files  = "src/*.{h,hpp,cpp,metal}"
+  spec.source_files  = "src/*.{cpp,metal}","src/*.{hpp}","src/*.{h}"
                         
 #  spec.source_files  = "Classes", "Classes/**/*.{h,cpp}"
 #  spec.exclude_files = "src/*test.{h,hpp,cpp}"
@@ -250,7 +250,7 @@ Pod::Spec.new do |spec|
   spec.header_mappings_dir = 'src'
 #   spec.xcconfig = { "HEADER_SEARCH_PATHS" => "$(SDKROOT)/usr/include/libxml2" }
   spec.xcconfig = { #'CLANG_CXX_LIBRARY' => 'libstdc++',
-  'HEADER_SEARCH_PATHS' => '${PROJECT_DIR}/../deps/eigen3 ${PROJECT_DIR}/../deps/OpenImageIO/include $(PROJECT_DIR)/Headers/Public/SoftVision', # To make angled quotes recursive.
+  'HEADER_SEARCH_PATHS' => '${PROJECT_DIR}/../deps/eigen3 ${PROJECT_DIR}/../deps/OpenImageIO/include $(PROJECT_DIR)/Headers/Public/SoftVision $(PROJECT_DIR)/Headers/Private/SoftVision', # To make angled quotes recursive.
   }
   
 #  spec.compiler_flags = '-DEIGEN_MAX_STATIC_ALIGN_BYTES=0 -DEIGEN_MAX_ALIGN_BYTES=0'
@@ -270,7 +270,7 @@ Pod::Spec.new do |spec|
   spec.dependency "cJSON"
   
   
-  spec.public_header_files = 'src/depthMap/gpu/**/*.metal'
+  spec.public_header_files = 'src/depthMap/gpu/**/*.metal','src/*.h','src/*.hpp'
   
   spec.libraries             = 'stdc++'
   

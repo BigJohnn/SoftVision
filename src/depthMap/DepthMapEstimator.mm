@@ -66,7 +66,8 @@ int DepthMapEstimator::getNbSimultaneousTiles() const
     // mipmap image cost
     // mipmap image should not exceed (1.5 * max_width) * max_height
     // TODO: special case first mipmap level != 1
-    const double mipmapCostMB = ((_mp.getMaxImageWidth() * 1.5) * _mp.getMaxImageHeight() * sizeof(CudaRGBA)) / (1024.0 * 1024.0); // process downscale apply
+    const int pixSize = sizeof(float) * 4;
+    const double mipmapCostMB = ((_mp.getMaxImageWidth() * 1.5) * _mp.getMaxImageHeight() * pixSize) / (1024.0 * 1024.0); // process downscale apply
 
     // cameras cost per R camera computation
     // Rc mipmap + Tcs mipmaps
@@ -88,7 +89,7 @@ int DepthMapEstimator::getNbSimultaneousTiles() const
 
       Sgm sgm(_mp, _tileParams, _sgmParams, sgmComputeDepthSimMap, sgmComputeNormalMap);
       sgmTileCostMB = sgm.getDeviceMemoryConsumption();
-      sgmTileCostUnpaddedMB = sgm.getDeviceMemoryConsumptionUnpadded();
+        sgmTileCostUnpaddedMB = sgm.getDeviceMemoryConsumption();
     }
 
     // single tile Refine cost
@@ -99,7 +100,7 @@ int DepthMapEstimator::getNbSimultaneousTiles() const
     {
       Refine refine(_mp, _tileParams, _refineParams);
       refineTileCostMB = refine.getDeviceMemoryConsumption();
-      refineTileCostUnpaddedMB = refine.getDeviceMemoryConsumptionUnpadded();
+      refineTileCostUnpaddedMB = refine.getDeviceMemoryConsumption();
     }
 
     // tile computation cost
@@ -292,10 +293,11 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
         for(int j = 0; j < nbTilesPerCamera; ++j)
         {
           if(_depthMapParams.useRefine)
-              [depthSimMapTile allocate:[refinePerStream.front().getDeviceDepthSimMap() getSize]];
+//              [depthSimMapTile allocate:<#(MTLSize)#> elemSizeInBytes:<#(int)#>]
+              [depthSimMapTile allocate:[refinePerStream.front().getDeviceDepthSimMap() getSize] elemSizeInBytes:sizeof(simd_float2)];
 //            depthSimMapTiles.at(j).allocate(refinePerStream.front().getDeviceDepthSimMap().getSize());
           else // final depth/similarity map is SGM only
-              [depthSimMapTile allocate:[sgmPerStream.front().getDeviceDepthSimMap() getSize]];
+              [depthSimMapTile allocate:[sgmPerStream.front().getDeviceDepthSimMap() getSize] elemSizeInBytes:sizeof(simd_float2)];
 //            depthSimMapTiles.at(j).allocate(sgmPerStream.front().getDeviceDepthSimMap().getSize());
             
             [depthSimMapTiles insertObject:depthSimMapTile atIndex:j];
@@ -425,17 +427,18 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
               refine.refineRc(tile, sgm.getDeviceDepthThicknessMap(), sgm.getDeviceNormalMap());
 
               // copy Refine depth/similarity map from device to host
-              tileDepthSimMap_hmh.copyFrom(refine.getDeviceDepthSimMap(), deviceStreamManager.getStream(streamIndex));
+//              tileDepthSimMap_hmh.copyFrom(refine.getDeviceDepthSimMap(), deviceStreamManager.getStream(streamIndex));
             }
             else
             {
               // copy Sgm depth/similarity map from device to host
-              tileDepthSimMap_hmh.copyFrom(sgm.getDeviceDepthSimMap(), deviceStreamManager.getStream(streamIndex));
+//              tileDepthSimMap_hmh.copyFrom(sgm.getDeviceDepthSimMap(), deviceStreamManager.getStream(streamIndex));
             }
+            LOG_INFO("TODO: copy Refine depth/similarity map from device to host");
         }
 
         // wait for tiles batch computation
-        cudaDeviceSynchronize();
+//        cudaDeviceSynchronize();
         
         // find first and last tile R camera
         const int firstRc = tiles.at(firstTileIndex).rc;
@@ -450,10 +453,11 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
         {
           const int batchCamIndex = c % nbRcPerBatch;
 
+            
           if(_depthMapParams.useRefine)
-            writeDepthSimMapFromTileList(c, _mp, _tileParams, _tileRoiList, depthSimMapTilePerCam.at(batchCamIndex), _refineParams.scale, _refineParams.stepXY);
+            writeDepthSimMapFromTileList(c, _mp, _tileParams, _tileRoiList, [depthSimMapTilePerCam objectAtIndex:batchCamIndex], _refineParams.scale, _refineParams.stepXY);
           else
-            writeDepthSimMapFromTileList(c, _mp, _tileParams, _tileRoiList, depthSimMapTilePerCam.at(batchCamIndex), _sgmParams.scale, _sgmParams.stepXY);
+            writeDepthSimMapFromTileList(c, _mp, _tileParams, _tileRoiList, [depthSimMapTilePerCam objectAtIndex:batchCamIndex], _sgmParams.scale, _sgmParams.stepXY);
 
           if(_depthMapParams.exportTilePattern)
               exportDepthSimMapTilePatternObj(c, _mp, _tileRoiList, depthMinMaxTilePerCam.at(batchCamIndex));
