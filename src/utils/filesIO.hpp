@@ -12,7 +12,7 @@
 #include <string>
 #include <functional>
 #include <utils/fileUtil.hpp>
-
+#include <filesystem>
 //namespace fs = boost::filesystem;
 
 namespace utils {
@@ -32,13 +32,28 @@ inline std::vector<std::string> getFilesPathsFromFolder(const std::string& folde
     if(!utils::is_directory(folder))
         throw std::invalid_argument("The path '" + folder + "' is not a valid folder path.");
 
-    LOG_INFO("getFilesPathsFromFolder TODO: impl");
-//    for(const auto& pathIt : fs::directory_iterator(folder))
-//    {
-//        const fs::path path = pathIt.path();
-//        if(is_regular_file(path) && predicate(path))
-//            paths.push_back(path.generic_string());
-//    }
+    LOG_INFO("getFilesPathsFromFolder %s",folder.c_str());
+    std::filesystem::path sandbox{folder.c_str()};
+    
+    for(const auto& pathIt : std::filesystem::directory_iterator{sandbox})
+    {
+        const auto& path = pathIt.path();
+    
+        LOG_INFO("====== %s",path.generic_string().c_str());
+        if(std::filesystem::is_regular_file(path)){
+            LOG_INFO("1 ok");
+        }
+        
+//        LOG_INFO("path.generic_string == %s", path.generic_string().c_str());
+//        if(predicate(path.generic_string())){
+//            LOG_INFO("2 ok");
+//        }
+        if(std::filesystem::is_regular_file(path) && predicate(path.generic_string())) {
+            paths.push_back(path.generic_string());
+            LOG_X("push back" << path.generic_string());
+        }
+            
+    }
 
     return paths;
 }

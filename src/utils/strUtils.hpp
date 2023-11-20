@@ -35,7 +35,7 @@ namespace utils{
 
     std::string to_lower_copy(std::string const& str)
     {
-        std::string ret;
+        std::string ret = str;
         std::transform(str.begin(), str.end(), ret.begin(), ::tolower);
         return ret;
     }

@@ -20,13 +20,8 @@
 #include <depthMap/gpu/host/utils.hpp>
 #include <depthMap/gpu/host/patchPattern.hpp>
 #include <depthMap/gpu/host/DeviceCache.hpp>
-//#include <depthMap/gpu/host/DeviceStreamManager.hpp>
+
 #include <depthMap/gpu/planeSweeping/deviceDepthSimilarityMap.hpp>
-
-//#include <boost/filesystem.hpp>
-
-//namespace fs = boost::filesystem;
-
 
 namespace depthMap {
 
@@ -89,7 +84,7 @@ int DepthMapEstimator::getNbSimultaneousTiles() const
 
       Sgm sgm(_mp, _tileParams, _sgmParams, sgmComputeDepthSimMap, sgmComputeNormalMap);
       sgmTileCostMB = sgm.getDeviceMemoryConsumption();
-        sgmTileCostUnpaddedMB = sgm.getDeviceMemoryConsumption();
+      sgmTileCostUnpaddedMB = sgm.getDeviceMemoryConsumption();
     }
 
     // single tile Refine cost
@@ -187,7 +182,7 @@ void DepthMapEstimator::getTilesList(const std::vector<int>& cams, std::vector<T
         {
             Tile t;
 
-            t.id = i;
+            t.idx = i;
             t.nbTiles = nbTilesPerCamera;
             t.rc = rc;
             t.roi = intersect(_tileRoiList.at(i), rcImageRoi);
@@ -368,7 +363,7 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
         {
             Tile& tile = tiles.at(i);
             const int batchCamIndex = tile.rc % nbRcPerBatch;
-            const int streamIndex = tile.id % nbStreams;
+            const int streamIndex = tile.idx % nbStreams;
 
             // do not compute empty ROI
             // some images in the dataset may be smaller than others
@@ -377,7 +372,7 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
 
             // get tile result depth/similarity map in host memory
             
-            auto* tileDepthSimMap_hmh = [[depthSimMapTilePerCam objectAtIndex:batchCamIndex] objectAtIndex:tile.id];
+            auto* tileDepthSimMap_hmh = [[depthSimMapTilePerCam objectAtIndex:batchCamIndex] objectAtIndex:tile.idx];
 
             // check T cameras
             if(tile.sgmTCams.empty() || (_depthMapParams.useRefine && tile.refineTCams.empty())) // no T camera found
@@ -396,7 +391,7 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
             if(sgmDepthList.getDepths().empty()) // no depth found
             {
                 resetDepthSimMap(tileDepthSimMap_hmh);
-                depthMinMaxTilePerCam.at(batchCamIndex).at(tile.id) = {0.f, 0.f};
+                depthMinMaxTilePerCam.at(batchCamIndex).at(tile.idx) = {0.f, 0.f};
                 continue;
             }
 
@@ -404,7 +399,7 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
             sgmDepthList.removeTcWithNoDepth(tile);
 
             // store min/max depth
-            depthMinMaxTilePerCam.at(batchCamIndex).at(tile.id) = sgmDepthList.getMinMaxDepths();
+            depthMinMaxTilePerCam.at(batchCamIndex).at(tile.idx) = sgmDepthList.getMinMaxDepths();
 
             // log debug camera / depth information
             sgmDepthList.logRcTcDepthInformation();

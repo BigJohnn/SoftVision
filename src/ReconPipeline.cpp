@@ -918,10 +918,12 @@ void process(const std::string &dstColorImage, const camera::IntrinsicBase* cam,
         UndistortImage(image, cam, image_ud, pixZero);
         
         writeImage(dstColorImage, image_ud, image::ImageWriteOptions(), metadata);
+        LOG_DEBUG("write iMage undistort");
     }
     else
     {
-        writeImage(dstColorImage, image, image::ImageWriteOptions(), metadata);   
+        writeImage(dstColorImage, image, image::ImageWriteOptions(), metadata);
+        LOG_DEBUG("write iMage original");
     }
 }
 
@@ -983,6 +985,11 @@ int ReconPipeline::PrepareDenseScene()
         // we have a valid view with a corresponding camera & pose
         const std::string baseFilename = std::to_string(viewId);
 
+        const std::string dstColorImage = m_outputFolder + baseFilename + "." + image::EImageFileType_enumToString(outputFileType);
+        if(utils::exists(dstColorImage)) {
+            LOG_INFO("dstColorImage %s already exist!", dstColorImage.c_str());
+            continue;
+        }
         // get metadata from source image to be sure we get all metadata. We don't use the metadatas from the Views inside the SfMData to avoid type conversion problems with string maps.
         std::string srcImage = view->getImagePath();
         oiio::ParamValueList metadata;// = image::readImageMetadata(srcImage); //TODO: fill it
@@ -1079,7 +1086,7 @@ int ReconPipeline::PrepareDenseScene()
 //                srcImage = paths[0];
 //            }
 //            const std::string dstColorImage = (fs::path(outFolder) / (baseFilename + "." + image::EImageFileType_enumToString(outputFileType))).string();
-            const std::string dstColorImage = m_outputFolder + baseFilename + "." + image::EImageFileType_enumToString(outputFileType);
+            
             const camera::IntrinsicBase* cam = iterIntrinsic->second.get();
 
             // add exposure values to images metadata
@@ -1118,7 +1125,6 @@ int ReconPipeline::PrepareDenseScene()
             image::Image<image::RGBAColor> imageRGBA;
             
             image::byteBuffer2EigenMatrix(view->getWidth(), view->getHeight(), view->getBuffer(), imageRGBA);
-            
             
             const auto noMaskingFunc = [] (image::Image<image::RGBAColor> const& image) {};
                 process<image::Image<image::RGBAColor>>(dstColorImage, cam, metadata, imageRGBA, evCorrection, exposureCompensation, noMaskingFunc);

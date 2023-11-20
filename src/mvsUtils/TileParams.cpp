@@ -26,7 +26,7 @@ void getTileRoiList(const TileParams& tileParams, int imageWidth, int imageHeigh
     }
 
     // compute maximum effective tile width and height: maximum size without padding
-    const int maxEffectiveTileWidth  = tileParams.bufferWidth  - 2 * tileParams.padding;
+    const int maxEffectiveTileWidth  = tileParams.bufferWidth  - 2 * tileParams.padding; //1024-128=896
     const int maxEffectiveTileHeight = tileParams.bufferHeight - 2 * tileParams.padding;
 
     // compute nb of tile buffers per side

@@ -20,7 +20,7 @@ namespace depthMap {
  */
 struct Tile
 {
-    int id;                       //< tile index
+    int idx;                       //< tile index
     int nbTiles;                  //< number of tiles per image
     int rc;                       //< related R camera index
     std::vector<int> sgmTCams;    //< SGM T camera index list
@@ -30,7 +30,7 @@ struct Tile
 
 inline std::ostream& operator<<(std::ostream& os, const Tile& tile)
 {
-    os << "(rc: " << tile.rc << ", tile: " << (tile.id + 1) << "/" << tile.nbTiles << ") ";
+    os << "(rc: " << tile.rc << ", tile: " << (tile.idx + 1) << "/" << tile.nbTiles << ") ";
     return os;
 }
 

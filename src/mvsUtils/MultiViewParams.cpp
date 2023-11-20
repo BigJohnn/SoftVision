@@ -45,7 +45,7 @@ MultiViewParams::MultiViewParams(const sfmData::SfMData& sfmData,
                                  bool readFromDepthMaps,
                                  int downscale)
     : _sfmData(sfmData)
-    , _imagesFolder(imagesFolder + "/")
+    , _imagesFolder(imagesFolder)
     , _depthMapsFolder(depthMapsFolder + "/")
     , _depthMapsFilterFolder(depthMapsFilterFolder + "/")
     , _processDownscale(downscale)
@@ -100,8 +100,10 @@ MultiViewParams::MultiViewParams(const sfmData::SfMData& sfmData,
             }
             else if(paths.size() > 1)
             {
-                throw std::runtime_error("Ambiguous case: Multiple image file found for the view '" + 
-                    std::to_string(view.getViewId()) + "' in folder '" + _imagesFolder + "'.");
+                LOG_X("Ambiguous case: Multiple image file found for the view '" +
+                      std::to_string(view.getViewId()) + "' in folder '" + _imagesFolder + "'.");
+//                throw std::runtime_error("Ambiguous case: Multiple image file found for the view '" +
+//                    std::to_string(view.getViewId()) + "' in folder '" + _imagesFolder + "'.");
             }
 
             path = _imagesFolder + std::to_string(view.getViewId()) + utils::GetFileExtension(paths[0]);
