@@ -28,7 +28,7 @@ void logDeviceMemoryInfo()
 {
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
     size_t iavail = device.maxBufferLength - device.currentAllocatedSize;
-    size_t itotal = (unsigned long)device.maxThreadgroupMemoryLength;
+    size_t itotal = (unsigned long)device.maxBufferLength;
 
     const double availableMB = double(iavail) / (1024.0 * 1024.0);
     const double totalMB = double(itotal) / (1024.0 * 1024.0);

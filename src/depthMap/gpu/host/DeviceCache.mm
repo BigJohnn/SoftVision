@@ -333,7 +333,7 @@ void DeviceCache::addMipmapImage(int camId,
 //    [_vCamTexturesCache insertObject:[imgTexture initWithSize:imgSize] atIndex:camId];
     
     DeviceBuffer* img_hmh = [DeviceBuffer new];
-    [img_hmh initWithBytes:mp.imageBuffersCache[camId].data() size:imgSize elemSizeInBytes:sizeof(uint8_t)];
+    [img_hmh initWithBytes:mp.imageBuffersCache[camId].data() size:imgSize elemSizeInBytes:sizeof(float)];
     
     
     // copy image from imageCache to CUDA host-side image buffer

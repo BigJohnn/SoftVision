@@ -38,7 +38,7 @@
     MTLSize size = [buffer getSize];
     descriptor.width            = size.width;
     descriptor.height           = size.height;
-    descriptor.storageMode      = MTLStorageModePrivate;
+    descriptor.storageMode      = MTLStorageModeShared;
     
     
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();

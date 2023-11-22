@@ -1,6 +1,7 @@
 //#pragma once
 
-#include <depthMap/gpu/device/DeviceCameraParams.hpp>
+//#include <depthMap/gpu/device/DeviceCameraParams.hpp>
+#include "DeviceCameraParams.hpp"
 
 //#include <depthMap/gpu/device/BufPtr.metal>
 //#include <depthMap/BufPtr.hpp>

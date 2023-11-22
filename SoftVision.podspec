@@ -251,6 +251,9 @@ Pod::Spec.new do |spec|
 #   spec.xcconfig = { "HEADER_SEARCH_PATHS" => "$(SDKROOT)/usr/include/libxml2" }
   spec.xcconfig = { #'CLANG_CXX_LIBRARY' => 'libstdc++',
   'HEADER_SEARCH_PATHS' => '${PROJECT_DIR}/../deps/eigen3 ${PROJECT_DIR}/../deps/OpenImageIO/include $(PROJECT_DIR)/Headers/Public/SoftVision $(PROJECT_DIR)/Headers/Private/SoftVision', # To make angled quotes recursive.
+    'MTL_HEADER_SEARCH_PATHS' => "$(PROJECT_DIR)/Headers/Public/SoftVision",
+    'CLANG_CXX_LANGUAGE_STANDARD' => 'gnu++17',
+#    'IPHONEOS_DEPLOYMENT_TARGET' => '12.0'
   }
   
 #  spec.compiler_flags = '-DEIGEN_MAX_STATIC_ALIGN_BYTES=0 -DEIGEN_MAX_ALIGN_BYTES=0'
@@ -274,6 +277,6 @@ Pod::Spec.new do |spec|
   
   spec.libraries             = 'stdc++'
   
-  spec.ios.resource_bundle = { 'vocabulary' => 'voc', 'metalshaders' => 'src/depthMap/gpu/device'  }
+  spec.ios.resource_bundle = { 'vocabulary' => 'voc', 'metalshaders' => ['src/depthMap/gpu/device/*.metallib']  }
 
 end

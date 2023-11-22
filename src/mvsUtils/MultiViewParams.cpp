@@ -592,7 +592,8 @@ StaticVector<int> MultiViewParams::findNearestCamsFromLandmarks(int rc, int nbNe
   }
 
   if(out.size() < nbNearestCams)
-    LOG_X("Found only " << out.size() << "/" << nbNearestCams << " nearest cameras for view id: " << getViewId(rc));
+      LOG_INFO("Found only %lu/%lu nearest cameras for view id: %lu", out.size(),nbNearestCams, getViewId(rc));
+//    LOG_X("Found only " << out.size() << "/" << nbNearestCams << " nearest cameras for view id: " << getViewId(rc));
 
   return out;
 }

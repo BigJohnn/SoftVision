@@ -15,7 +15,20 @@
 +(void) Exec:(MTLSize)gridSize ThreadgroupSize:(MTLSize)threadgroupSize KernelFuncName:(NSString*)kernelFuncName Args:(NSArray*)args
 {
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
-    id<MTLLibrary> defaultLibrary = [device newDefaultLibrary];
+    
+    NSString* libraryName = @"buffer";
+
+    NSBundle *bundle = [NSBundle bundleForClass:self.classForCoder];
+    NSURL *bundleURL = [[bundle resourceURL] URLByAppendingPathComponent:@"metalshaders.bundle"];
+    NSBundle *resourceBundle = [NSBundle bundleWithURL:bundleURL];
+    NSURL *libraryURL = [resourceBundle URLForResource:libraryName
+                                                    withExtension:@"metallib"];
+
+    NSError *libraryError = nil;
+
+    id <MTLLibrary> defaultLibrary = [device newLibraryWithURL:libraryURL
+                                                  error:&libraryError];
+    
     if (defaultLibrary == nil)
     {
         NSLog(@"Failed to find the default library.");
@@ -28,7 +41,7 @@
     }
 
     // Create a compute pipeline state object.
-    NSError *error = [NSError new];
+    NSError *error = nil;
     id<MTLComputePipelineState> funcPSO = [device newComputePipelineStateWithFunction: func error:&error];
     if (funcPSO == nil)
     {

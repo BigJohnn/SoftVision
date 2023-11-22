@@ -5,6 +5,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface DeviceBuffer : NSObject
 
++(DeviceBuffer*) allocate:(MTLSize)size elemSizeInBytes:(int)nBytes;
+
 -(id<MTLBuffer>) getBuffer;
 -(id<MTLBuffer>) allocate:(MTLSize)size elemSizeInBytes:(int)nBytes;
 -(id<MTLBuffer>) initWithBytes:(nonnull const void*)bytes size:(MTLSize)size elemSizeInBytes:(int)nBytes;

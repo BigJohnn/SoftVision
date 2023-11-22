@@ -13,7 +13,26 @@
     MTLSize sz;
     int elemSizeInBytes;
     int nBytesPerRow;
-    int nBytes;
+    int bufferLengthInBytes;
+}
+
++(DeviceBuffer*) allocate:(MTLSize)size elemSizeInBytes:(int)nBytes
+{
+    DeviceBuffer* buf = [DeviceBuffer new];
+//    buf->buffer
+    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+           
+    buf->nBytesPerRow = static_cast<int>(size.width) * nBytes;
+    
+    buf->bufferLengthInBytes = buf->nBytesPerRow * size.height * size.depth;
+    
+    buf->buffer = [device newBufferWithLength:nBytes
+                                         options:MTLResourceStorageModeShared];
+    
+    buf->sz = size;
+    
+    buf->elemSizeInBytes = nBytes;
+    return buf;
 }
 
 -(id<MTLBuffer>) getBuffer
@@ -24,16 +43,16 @@
 -(id<MTLBuffer>) allocate:(MTLSize)size elemSizeInBytes:(int)nBytes
 {
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
-           
+
     nBytesPerRow = static_cast<int>(size.width) * nBytes;
-    
-    nBytes = nBytesPerRow * size.height * size.depth;
-    
-    buffer = [device newBufferWithLength:nBytes
+
+    bufferLengthInBytes = nBytesPerRow * size.height * size.depth;
+
+    buffer = [device newBufferWithLength:nBytesPerRow
                                          options:MTLResourceStorageModeShared];
-    
+
     sz = size;
-    
+
     elemSizeInBytes = nBytes;
     return buffer;
 }
@@ -44,9 +63,9 @@
 
     nBytesPerRow = static_cast<int>(size.width) * nBytes;
 
-    nBytes = nBytesPerRow * size.height * size.depth;
+    bufferLengthInBytes = nBytesPerRow * size.height * size.depth;
     
-    buffer = [device newBufferWithBytes:bytes length:nBytes options:MTLResourceStorageModeShared];
+    buffer = [device newBufferWithBytes:bytes length:bufferLengthInBytes options:MTLResourceStorageModeShared];
     
     sz = size;
 
@@ -80,7 +99,7 @@
 
 -(int) getBufferLength
 {
-    return nBytes;
+    return bufferLengthInBytes;
 }
 
 -(int) getBytesUpToDim:(int)dim
@@ -95,6 +114,9 @@
     return prod;
 }
 
-
+-(MTLSize) getSize
+{
+    return sz;
+}
 
 @end
