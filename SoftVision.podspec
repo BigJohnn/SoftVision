@@ -71,7 +71,7 @@ Pod::Spec.new do |spec|
   #  Not including the public_header_files will make all headers public.
   #
 
-  spec.source_files  = "src/*.{cpp,metal}","src/*.{hpp}","src/*.{h}"
+  spec.source_files  = "src/*.{cpp}","src/*.{hpp}","src/*.{h}" #,metal
                         
 #  spec.source_files  = "Classes", "Classes/**/*.{h,cpp}"
 #  spec.exclude_files = "src/*test.{h,hpp,cpp}"
@@ -205,7 +205,8 @@ Pod::Spec.new do |spec|
   end
   
   spec.subspec 'depthMap' do |ss|
-      ss.source_files = "src/depthMap/**/*.{hpp,mm,cpp,metal}"
+      ss.source_files = "src/depthMap/**/*.{hpp,mm,cpp}"#,metal
+#      ss.weak_frameworks = 'MetalKit', 'Metal'
   end
   
   spec.subspec 'gpu' do |ss|
@@ -253,7 +254,7 @@ Pod::Spec.new do |spec|
   'HEADER_SEARCH_PATHS' => '${PROJECT_DIR}/../deps/eigen3 ${PROJECT_DIR}/../deps/OpenImageIO/include $(PROJECT_DIR)/Headers/Public/SoftVision $(PROJECT_DIR)/Headers/Private/SoftVision', # To make angled quotes recursive.
     'MTL_HEADER_SEARCH_PATHS' => "$(PROJECT_DIR)/Headers/Public/SoftVision",
     'CLANG_CXX_LANGUAGE_STANDARD' => 'gnu++17',
-#    'IPHONEOS_DEPLOYMENT_TARGET' => '12.0'
+#    'IPHONEOS_DEPLOYMENT_TARGET' => '16.4'
   }
   
 #  spec.compiler_flags = '-DEIGEN_MAX_STATIC_ALIGN_BYTES=0 -DEIGEN_MAX_ALIGN_BYTES=0'
@@ -273,10 +274,13 @@ Pod::Spec.new do |spec|
   spec.dependency "cJSON"
   
   
-  spec.public_header_files = 'src/depthMap/gpu/**/*.metal','src/*.h','src/*.hpp'
+  spec.public_header_files = 'src/*.h','src/*.hpp' #'src/depthMap/gpu/**/*.metal',
   
   spec.libraries             = 'stdc++'
   
-  spec.ios.resource_bundle = { 'vocabulary' => 'voc', 'metalshaders' => ['src/depthMap/gpu/device/*.metallib']  }
+  spec.ios.resource_bundle = { 'vocabulary' => 'voc', 'metalshaders' => ['src/depthMap/gpu/*.metallib'] }#,'src/depthMap/gpu/**/*.metal'
+  
+#  spec.framework = 'Metal', 'MetalKit'
+  spec.static_framework = false
 
 end

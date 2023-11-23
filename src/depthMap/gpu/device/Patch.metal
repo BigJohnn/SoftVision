@@ -1,10 +1,17 @@
-//#include <depthMap/gpu/device/buffer.metal>
-#include <depthMap/gpu/device/color.metal>
-#include <depthMap/gpu/device/matrix.metal>
-#include <depthMap/gpu/device/SimStat.metal>
 
-#include <depthMap/gpu/device/DeviceCameraParams.hpp>
-#include <depthMap/gpu/device/DevicePatchPattern.hpp>
+//#include <depthMap/gpu/device/color.metal>
+//#include <depthMap/gpu/device/matrix.metal>
+//#include <depthMap/gpu/device/SimStat.metal>
+//
+//#include <depthMap/gpu/device/DeviceCameraParams.hpp>
+//#include <depthMap/gpu/device/DevicePatchPattern.hpp>
+
+#include "color.metal"
+#include "matrix.metal"
+#include "SimStat.metal"
+
+#include "DeviceCameraParams.hpp"
+#include "DevicePatchPattern.hpp"
 
 #include <metal_stdlib>
 using namespace metal;

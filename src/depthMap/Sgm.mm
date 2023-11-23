@@ -218,8 +218,8 @@ void Sgm::computeSimilarityVolumes(const Tile& tile, const SgmDepthList& tileDep
     const ROI downscaledRoi = downscaleROI(tile.roi, _sgmParams.scale * _sgmParams.stepXY);
 
     // initialize the two similarity volumes at 255
-    volumeInitialize(_volumeBestSim_dmp, 255.f);
-    volumeInitialize(_volumeSecBestSim_dmp, 255.f);
+    volumeInitialize(_volumeBestSim_dmp, TSim(255.f));
+    volumeInitialize(_volumeSecBestSim_dmp, TSim(255.f));
   
     // get device cache instance
     DeviceCache& deviceCache = DeviceCache::getInstance();

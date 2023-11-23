@@ -16,7 +16,7 @@
 {
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
     
-    NSString* libraryName = @"buffer";
+    NSString* libraryName = @"sgm";
 
     NSBundle *bundle = [NSBundle bundleForClass:self.classForCoder];
     NSURL *bundleURL = [[bundle resourceURL] URLByAppendingPathComponent:@"metalshaders.bundle"];
@@ -37,7 +37,7 @@
     id<MTLFunction> func = [defaultLibrary newFunctionWithName:kernelFuncName];
     if (func == nil)
     {
-        NSLog(@"Failed to find the depthThicknessMapSmoothThickness_kernel function.");
+        NSLog(@"Failed to find the %@ function.", kernelFuncName);
     }
 
     // Create a compute pipeline state object.
@@ -88,6 +88,10 @@
                 auto k = [elem boolValue];
                 [computeEncoder setBytes:&k length:sizeof(k) atIndex:i];
             }
+//            else if ( strcmp([elem objCType], @encode(unsigned char)) == 0 ) { //TODO: how to translate a uint8?
+//                auto k = [elem unsignedCharValue];
+//                [computeEncoder setBytes:&k length:sizeof(k) atIndex:i];
+//            }
             else {
                 NSLog(@"==TODO: impl: elem encode is %s==",[elem objCType]);
             }

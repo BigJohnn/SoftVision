@@ -4,11 +4,16 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#include <mvsData/ROI_d.hpp>
-#include <depthMap/gpu/planeSweeping/similarity.hpp>
-#include <depthMap/gpu/device/BufPtr.metal>
-#include <depthMap/gpu/device/Patch.metal>
-//#include <depahMap/gpu/device/DeviceCameraParams.metal>
+//#include <mvsData/ROI_d.hpp>
+//#include <depthMap/gpu/planeSweeping/similarity.hpp>
+//#include <depthMap/gpu/device/BufPtr.metal>
+//#include <depthMap/gpu/device/Patch.metal>
+
+#include "../../../mvsData/ROI_d.hpp"
+#include "../planeSweeping/similarity.hpp"
+#include "../device/BufPtr.metal"
+#include "../device/Patch.metal"
+
 
 namespace depthMap {
 
@@ -43,20 +48,20 @@ float depthPlaneToDepth(device const DeviceCameraParams& deviceCamParams,
     return length(deviceCamParams.C - p);
 }
 
-template <typename T>
-kernel void volume_init_kernel(device T* inout_volume_d, device int* inout_volume_s, device int* inout_volume_p,
-                               device const unsigned int* volDimX,
-                               device const unsigned int* volDimY,
-                               device const T* value)
+kernel void volume_init_kernel(device TSim* inout_volume_d, device const int& inout_volume_s, device const int& inout_volume_p,
+                               device const unsigned int& volDimX,
+                               device const unsigned int& volDimY,
+                               device const TSim& value,
+                               uint3 index [[thread_position_in_grid]])
 {
-//    const unsigned int vx = blockIdx.x * blockDim.x + threadIdx.x;
-//    const unsigned int vy = blockIdx.y * blockDim.y + threadIdx.y;
-//    const unsigned int vz = blockIdx.z;
-//
-//    if(vx >= volDimX || vy >= volDimY)
-//        return;
-//
-//    *get3DBufferAt(inout_volume_d, inout_volume_s, inout_volume_p, vx, vy, vz) = value;
+    const unsigned int vx = index.x;
+    const unsigned int vy = index.y;
+    const unsigned int vz = index.z;
+
+    if(vx >= volDimX || vy >= volDimY)
+        return;
+
+    *get3DBufferAt<TSim>(inout_volume_d, inout_volume_s, inout_volume_p, vx, vy, vz) = value;
 }
 
 kernel void volume_add_kernel(device TSimRefine* inout_volume_d, device int* inout_volume_s, device int* inout_volume_p,

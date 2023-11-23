@@ -70,14 +70,18 @@ void volumeInitialize(DeviceBuffer* inout_volume_dmp, TSim value)
 //    [inout_volume_dmp allocate:volDim elemSizeInBytes:sizeof(float)];
     NSArray* args = @[
         [inout_volume_dmp getBuffer],
-        [NSNumber numberWithInt:[inout_volume_dmp getBytesUpToDim:1]], //1024*256
-        [NSNumber numberWithInt:[inout_volume_dmp getBytesUpToDim:0]], // 1024
-        [NSNumber numberWithUnsignedInt:(unsigned)volDim.width],
-        [NSNumber numberWithUnsignedInt:(unsigned)volDim.height],
-        @255.f
+        @([inout_volume_dmp getBytesUpToDim:1]),
+        @([inout_volume_dmp getBytesUpToDim:0]),
+        @((unsigned)volDim.width),
+        @((unsigned)volDim.height),
+//        [NSNumber numberWithInt:[inout_volume_dmp getBytesUpToDim:1]], //1024*256
+//        [NSNumber numberWithInt:[inout_volume_dmp getBytesUpToDim:0]], // 1024
+//        [NSNumber numberWithUnsignedInt:(unsigned)volDim.width],
+//        [NSNumber numberWithUnsignedInt:(unsigned)volDim.height],
+        @((unsigned char)value)
     ];
     
-    [ComputePipeline Exec:grid ThreadgroupSize:block KernelFuncName:@"volume_init_kernel" Args:args];
+    [ComputePipeline Exec:grid ThreadgroupSize:block KernelFuncName:@"depthMap::volume_init_kernel" Args:args];
     
 //    volume_init_kernel<TSim><<<grid, block, 0, stream>>>(
 //        inout_volume_dmp.getBuffer(),
