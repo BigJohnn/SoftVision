@@ -49,7 +49,7 @@ void depthSimMapCopyDepthOnly(DeviceBuffer* out_depthSimMap_dmp,
         [NSNumber numberWithFloat:defaultSim]
     ];
     
-    [ComputePipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthSimMapCopyDepthOnly_kernel" Args:args];
+    [ComputePipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthMap::depthSimMapCopyDepthOnly_kernel" Args:args];
 }
 
 void cuda_normalMapUpscale(DeviceBuffer* out_upscaledMap_dmp,
@@ -130,7 +130,7 @@ void depthThicknessSmoothThickness(DeviceBuffer* inout_depthThicknessMap_dmp,
         [NSData dataWithBytes:&roi_d length:sizeof(ROI_d)]
     ];
     
-    [ComputePipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthThicknessMapSmoothThickness_kernel" Args:args];
+    [ComputePipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthMap::depthThicknessMapSmoothThickness_kernel" Args:args];
     
     
     // kernel launch parameters
@@ -198,7 +198,7 @@ void computeSgmUpscaledDepthPixSizeMap(DeviceBuffer* out_upscaledDepthPixSizeMap
 //                        roi_d
 //        ];
 //
-//        [ComputePipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"computeSgmUpscaledDepthPixSizeMap_bilinear_kernel" Args:args];
+//        [ComputePipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthMap::computeSgmUpscaledDepthPixSizeMap_bilinear_kernel" Args:args];
 //
 //        computeSgmUpscaledDepthPixSizeMap_bilinear_kernel<<<grid, block, 0, stream>>>(
 //            out_upscaledDepthPixSizeMap_dmp.getBuffer(),
@@ -233,7 +233,7 @@ void computeSgmUpscaledDepthPixSizeMap(DeviceBuffer* out_upscaledDepthPixSizeMap
 //                        roi_d
 //        ];
 //
-//        [ComputePipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel" Args:args];
+//        [ComputePipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthMap::computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel" Args:args];
 //        computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel<<<grid, block, 0, stream>>>(
 //            out_upscaledDepthPixSizeMap_dmp.getBuffer(),
 //            out_upscaledDepthPixSizeMap_dmp.getPitch(),
@@ -279,7 +279,7 @@ void cuda_depthSimMapComputeNormal(DeviceBuffer* out_normalMap_dmp,
 //                roi_d
 //    ];
 //
-//    [ComputePipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthSimMapComputeNormal_kernel" Args:args];
+//    [ComputePipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthMap::depthSimMapComputeNormal_kernel" Args:args];
     
 //    const dim3 block(8, 8, 1);
 //    const dim3 grid(divUp(roi.width(), block.x), divUp(roi.height(), block.y), 1);

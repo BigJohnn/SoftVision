@@ -422,12 +422,12 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
               refine.refineRc(tile, sgm.getDeviceDepthThicknessMap(), sgm.getDeviceNormalMap());
 
               // copy Refine depth/similarity map from device to host
-//              tileDepthSimMap_hmh.copyFrom(refine.getDeviceDepthSimMap(), deviceStreamManager.getStream(streamIndex));
+              [tileDepthSimMap_hmh copyFrom:refine.getDeviceDepthSimMap()];
             }
             else
             {
               // copy Sgm depth/similarity map from device to host
-//              tileDepthSimMap_hmh.copyFrom(sgm.getDeviceDepthSimMap(), deviceStreamManager.getStream(streamIndex));
+              [tileDepthSimMap_hmh copyFrom:sgm.getDeviceDepthSimMap()];
             }
             LOG_INFO("TODO: copy Refine depth/similarity map from device to host");
         }

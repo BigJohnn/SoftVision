@@ -400,6 +400,9 @@ void DeviceCache::addCameraParams(int camId, int downscale, const mvsUtils::Mult
 
         fillCameraParameters(_cameraParametersBuffer.contents,camId, downscale, mp);
         
+        if(!_vCamParamsBuffer) {
+            _vCamParamsBuffer = [NSMutableArray new];
+        }
         [_vCamParamsBuffer insertObject:_cameraParametersBuffer atIndex:camId];
     }
     

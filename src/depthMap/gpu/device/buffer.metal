@@ -26,7 +26,7 @@ namespace depthMap {
 * @return
 */
 template <typename T>
-inline device T* get3DBufferAt(device T* ptr, int spitch, int pitch, int x, int y, int z)
+inline device T* get3DBufferAt(device T* ptr, int spitch, int pitch, unsigned x, unsigned y, unsigned z)
 {
     return ((device T*)(((device char*)ptr) + z * spitch + y * pitch)) + x;
 }

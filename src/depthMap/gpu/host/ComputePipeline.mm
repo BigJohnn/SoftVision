@@ -6,7 +6,7 @@
 //
 
 #import <depthMap/gpu/host/ComputePipeline.hpp>
-
+#import <objc/runtime.h>
 @interface ComputePipeline()
 @end
 
@@ -68,40 +68,47 @@
     // Encode the pipeline state object and its parameters.
     [computeEncoder setComputePipelineState:funcPSO];
     
+    int texid = 0;
+    int bufferid = 0;
     for(int i=0;i<args.count; ++i) {
         id elem = args[i];
         
-        if([elem isKindOfClass:[NSNumber class]]) {
+//        NSLog(@"====%d", i);
+        if([elem conformsToProtocol:@protocol(MTLBuffer)])
+        {
+            [computeEncoder setBuffer:elem offset:0 atIndex:bufferid++];
+        }
+        else if([elem conformsToProtocol:@protocol(MTLTexture)])
+        {
+            [computeEncoder setTexture:elem atIndex:texid++];
+        }
+        else if([elem isKindOfClass:[NSNumber class]]) {
             if ( strcmp([elem objCType], @encode(float)) == 0 ) {
                 auto k = [elem floatValue];
-                [computeEncoder setBytes:&k length:sizeof(k) atIndex:i];
+                [computeEncoder setBytes:&k length:sizeof(k) atIndex:bufferid++];
             }
             else if ( strcmp([elem objCType], @encode(int)) == 0 ) {
                 auto k = [elem intValue];
-                [computeEncoder setBytes:&k length:sizeof(k) atIndex:i];
+                [computeEncoder setBytes:&k length:sizeof(k) atIndex:bufferid++];
             }
             else if ( strcmp([elem objCType], @encode(long long)) == 0 ) {
                 auto k = [elem unsignedIntValue];
-                [computeEncoder setBytes:&k length:sizeof(k) atIndex:i];
+                [computeEncoder setBytes:&k length:sizeof(k) atIndex:bufferid++];
             }
             else if ( strcmp([elem objCType], @encode(bool)) == 0 ) {
                 auto k = [elem boolValue];
-                [computeEncoder setBytes:&k length:sizeof(k) atIndex:i];
+                [computeEncoder setBytes:&k length:sizeof(k) atIndex:bufferid++];
             }
-//            else if ( strcmp([elem objCType], @encode(unsigned char)) == 0 ) { //TODO: how to translate a uint8?
-//                auto k = [elem unsignedCharValue];
-//                [computeEncoder setBytes:&k length:sizeof(k) atIndex:i];
-//            }
-            else {
-                NSLog(@"==TODO: impl: elem encode is %s==",[elem objCType]);
+            else {//TODO: check: uchar*, default case?
+                auto k = [elem unsignedCharValue];
+                [computeEncoder setBytes:&k length:sizeof(k) atIndex:bufferid++];
+//                NSLog(@"==TODO: impl: elem encode is %s==",[elem objCType]);
             }
         }
         else if([elem isKindOfClass:[NSData class]]) {
-            [computeEncoder setBytes:&elem length:sizeof(elem) atIndex:i];
+            [computeEncoder setBytes:&elem length:sizeof(elem) atIndex:bufferid++];
         }
-        else if([elem isKindOfClass:[NSObject class]]) { // TODO: check 如何判断这个NSOBject是MTLBuffer 或者MTLTexture
-            [computeEncoder setBuffer:elem offset:0 atIndex:i];
-        }
+        
     }
     
     // Encode the compute command.

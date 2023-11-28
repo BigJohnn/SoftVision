@@ -121,7 +121,7 @@ void volumeInitialize(DeviceBuffer* inout_volume_dmp, TSimRefine value)
         @255.f
     ];
     
-    [ComputePipeline Exec:grid ThreadgroupSize:block KernelFuncName:@"volume_init_kernel" Args:args];
+    [ComputePipeline Exec:grid ThreadgroupSize:block KernelFuncName:@"depthMap::volume_init_kernel" Args:args];
     
 //    volume_init_kernel<TSimRefine><<<grid, block, 0, stream>>>(
 //        inout_volume_dmp.getBuffer(),
@@ -248,7 +248,7 @@ void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
         [NSData dataWithBytes:&roi_d length:sizeof(ROI_d)]
     ];
     
-    [ComputePipeline Exec:grid ThreadgroupSize:block KernelFuncName:@"volume_computeSimilarity_kernel" Args:args];
+    [ComputePipeline Exec:grid ThreadgroupSize:block KernelFuncName:@"depthMap::volume_computeSimilarity_kernel" Args:args];
 
     // kernel execution
 //    volume_computeSimilarity_kernel<<<grid, block, 0, stream>>>(

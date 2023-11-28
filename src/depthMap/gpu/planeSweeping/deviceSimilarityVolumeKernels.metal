@@ -61,6 +61,7 @@ kernel void volume_init_kernel(device TSim* inout_volume_d, device const int& in
     if(vx >= volDimX || vy >= volDimY)
         return;
 
+//    *(inout_volume_d+2) = 255;
     *get3DBufferAt<TSim>(inout_volume_d, inout_volume_s, inout_volume_p, vx, vy, vz) = value;
 }
 
@@ -109,17 +110,17 @@ kernel void volume_updateUninitialized_kernel(device TSim* inout_volume2nd_d, de
 //    }
 }
 
-kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, device int& out_volume1st_s, device int& out_volume1st_p,
-                                            device TSim* out_volume2nd_d, device int& out_volume2nd_s, device int& out_volume2nd_p,
+kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, constant int& out_volume1st_s, constant int& out_volume1st_p,
+                                            device TSim* out_volume2nd_d, constant int& out_volume2nd_s, constant int& out_volume2nd_p,
                                             device const float* in_depths_d, device const int& in_depths_p,
                                             device const DeviceCameraParams& rcDeviceCamParams,
                                             device const DeviceCameraParams& tcDeviceCamParams,
                                             texture2d<half>  rcMipmapImage_tex  [[texture(0)]],
                                             texture2d<half>  tcMipmapImage_tex  [[texture(1)]],
-                                            device const unsigned int& rcSgmLevelWidth,
-                                            device const unsigned int& rcSgmLevelHeight,
-                                            device const unsigned int& tcSgmLevelWidth,
-                                            device const unsigned int& tcSgmLevelHeight,
+                                            constant unsigned int& rcSgmLevelWidth,
+                                            constant unsigned int& rcSgmLevelHeight,
+                                            constant unsigned int& tcSgmLevelWidth,
+                                            constant unsigned int& tcSgmLevelHeight,
                                             device const float& rcMipmapLevel,
                                             device const int& stepXY,
                                             device const int& wsh,
@@ -164,43 +165,43 @@ kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, device
     // we do not need positive and filtered similarity values
     bool invertAndFilter = false;
 
-    float fsim;
+    float fsim = INF_F;
 
     // compute patch similarity
     if(useCustomPatchPattern)
     {
-        fsim = compNCCby3DptsYK_customPatchPattern(rcDeviceCamParams,
-                                                                    tcDeviceCamParams,
-                                                                    rcMipmapImage_tex,
-                                                                    tcMipmapImage_tex,
-                                                                    rcSgmLevelWidth,
-                                                                    rcSgmLevelHeight,
-                                                                    tcSgmLevelWidth,
-                                                                    tcSgmLevelHeight,
-                                                                    rcMipmapLevel,
-                                                                    invGammaC,
-                                                                    invGammaP,
-                                                                    useConsistentScale,
-                                                                    invertAndFilter,
-                                                                    patch);
+//        fsim = compNCCby3DptsYK_customPatchPattern(rcDeviceCamParams,
+//                                                                    tcDeviceCamParams,
+//                                                                    rcMipmapImage_tex,
+//                                                                    tcMipmapImage_tex,
+//                                                                    rcSgmLevelWidth,
+//                                                                    rcSgmLevelHeight,
+//                                                                    tcSgmLevelWidth,
+//                                                                    tcSgmLevelHeight,
+//                                                                    rcMipmapLevel,
+//                                                                    invGammaC,
+//                                                                    invGammaP,
+//                                                                    useConsistentScale,
+//                                                                    invertAndFilter,
+//                                                                    patch);
     }
     else
     {
-        fsim = compNCCby3DptsYK(rcDeviceCamParams,
-                                                 tcDeviceCamParams,
-                                                 rcMipmapImage_tex,
-                                                 tcMipmapImage_tex,
-                                                 rcSgmLevelWidth,
-                                                 rcSgmLevelHeight,
-                                                 tcSgmLevelWidth,
-                                                 tcSgmLevelHeight,
-                                                 rcMipmapLevel,
-                                                 wsh,
-                                                 invGammaC,
-                                                 invGammaP,
-                                                 useConsistentScale,
-                                                 invertAndFilter,
-                                                 patch);
+//        fsim = compNCCby3DptsYK(rcDeviceCamParams,
+//                                                 tcDeviceCamParams,
+//                                                 rcMipmapImage_tex,
+//                                                 tcMipmapImage_tex,
+//                                                 rcSgmLevelWidth,
+//                                                 rcSgmLevelHeight,
+//                                                 tcSgmLevelWidth,
+//                                                 tcSgmLevelHeight,
+//                                                 rcMipmapLevel,
+//                                                 wsh,
+//                                                 invGammaC,
+//                                                 invGammaP,
+//                                                 useConsistentScale,
+//                                                 invertAndFilter,
+//                                                 patch);
     }
 
     if(fsim == INF_F) // invalid similarity
