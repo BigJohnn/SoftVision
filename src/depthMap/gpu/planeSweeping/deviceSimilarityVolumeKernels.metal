@@ -156,7 +156,7 @@ kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, consta
     const float y = float(roi.lt.y + vy) * float(stepXY);
 
     // corresponding depth plane
-    float depthPlane = *get2DBufferAt<float>(in_depths_d, in_depths_p, vz, 0);
+    float depthPlane = *get2DBufferAt<float>((device float*)in_depths_d, in_depths_p, vz, 0);
 
     // compute patch
     Patch patch;
@@ -603,60 +603,63 @@ kernel void volume_refineBestDepth_kernel(device float2* out_refineDepthSimMap_d
 //    out_bestDepthSimPtr->y = bestSampleSim;
 }
 
-template <typename T>
-kernel void volume_initVolumeYSlice_kernel(device T* volume_d, device int& volume_s, device int& volume_p, device const int3& volDim, device const int3& axisT, device int& y, device T& cst)
+//template <typename T>
+kernel void volume_initVolumeYSlice_kernel(device TSim* volume_d, constant int& volume_s, constant int& volume_p, constant int3& volDim, constant int3& axisT, constant int& y, constant TSim& cst,
+                                           uint3 index [[thread_position_in_grid]])
 {
-//    const int x = blockIdx.x * blockDim.x + threadIdx.x;
-//    const int z = blockIdx.y * blockDim.y + threadIdx.y;
-//
-//    int3 v;
-//    (&v.x)[axisT.x] = x;
-//    (&v.x)[axisT.y] = y;
-//    (&v.x)[axisT.z] = z;
-//
-//    if ((x >= 0) && (x < (&volDim.x)[axisT.x]) && (z >= 0) && (z < (&volDim.x)[axisT.z]))
-//    {
-//        T* volume_zyx = get3DBufferAt(volume_d, volume_s, volume_p, v.x, v.y, v.z);
-//        *volume_zyx = cst;
-//    }
+    const int x = index.x;
+    const int z = index.y;
+
+    int3 v;
+    v[axisT.x] = x;
+    v[axisT.y] = y;
+    v[axisT.z] = z;
+
+    if ((x >= 0) && (x < volDim[axisT.x]) && (z >= 0) && (z < volDim[axisT.z]))
+    {
+        device TSim* volume_zyx = get3DBufferAt<TSim>(volume_d, volume_s, volume_p, v.x, v.y, v.z);
+        *volume_zyx = cst;
+    }
 }
 
-template <typename T1, typename T2>
-kernel void volume_getVolumeXZSlice_kernel(device T1* slice_d, device int& slice_p,
-                                           device const T2* volume_d, device int& volume_s, device int& volume_p,
-                                           device const int3& volDim, device const int3& axisT, device int& y)
+//template <typename T1, typename T2>
+kernel void volume_getVolumeXZSlice_kernel(device TSimAcc* slice_d, constant int& slice_p,
+                                           device const TSim* volume_d, constant int& volume_s, constant int& volume_p,
+                                           constant int3& volDim, constant int3& axisT, constant int& y,
+                                           uint3 index [[thread_position_in_grid]])
 {
-//    const int x = blockIdx.x * blockDim.x + threadIdx.x;
-//    const int z = blockIdx.y * blockDim.y + threadIdx.y;
-//
-//    int3 v;
-//    (&v.x)[axisT.x] = x;
-//    (&v.x)[axisT.y] = y;
-//    (&v.x)[axisT.z] = z;
-//
-//    if (x >= (&volDim.x)[axisT.x] || z >= (&volDim.x)[axisT.z])
-//      return;
-//
-//    const T2* volume_xyz = get3DBufferAt(volume_d, volume_s, volume_p, v);
-//    T1* slice_xz = get2DBufferAt(slice_d, slice_p, x, z);
-//    *slice_xz = (T1)(*volume_xyz);
+    int x = index.x;
+    int z = index.y;
+
+    int3 v;
+    v[axisT.x] = x;
+    v[axisT.y] = y;
+    v[axisT.z] = z;
+
+    if (x >= volDim[axisT.x] || z >= volDim[axisT.z])
+      return;
+
+    const device TSim* volume_xyz = get3DBufferAt<TSim>(volume_d, volume_s, volume_p, v);
+    device TSimAcc* slice_xz = get2DBufferAt<TSimAcc>(slice_d, slice_p, x, z);
+    *slice_xz = (TSimAcc)(*volume_xyz);
 }
 
-kernel void volume_computeBestZInSlice_kernel(device TSimAcc* xzSlice_d, device int& xzSlice_p, device TSimAcc* ySliceBestInColCst_d, device int& volDimX, device int& volDimZ)
+kernel void volume_computeBestZInSlice_kernel(device TSimAcc* xzSlice_d, constant int& xzSlice_p, device TSimAcc* ySliceBestInColCst_d, constant int& volDimX, constant int& volDimZ,
+                                              uint3 index [[thread_position_in_grid]])
 {
-//    const int x = blockIdx.x * blockDim.x + threadIdx.x;
-//
-//    if(x >= volDimX)
-//        return;
-//
-//    TSimAcc bestCst = *get2DBufferAt(xzSlice_d, xzSlice_p, x, 0);
-//
-//    for(int z = 1; z < volDimZ; ++z)
-//    {
-//        const TSimAcc cst = *get2DBufferAt(xzSlice_d, xzSlice_p, x, z);
-//        bestCst = cst < bestCst ? cst : bestCst;  // min(cst, bestCst);
-//    }
-//    ySliceBestInColCst_d[x] = bestCst;
+    const int x = index.x;
+
+    if(x >= volDimX)
+        return;
+
+    TSimAcc bestCst = *get2DBufferAt(xzSlice_d, xzSlice_p, x, 0);
+
+    for(int z = 1; z < volDimZ; ++z)
+    {
+        const TSimAcc cst = *get2DBufferAt(xzSlice_d, xzSlice_p, x, z);
+        bestCst = cst < bestCst ? cst : bestCst;  // min(cst, bestCst);
+    }
+    ySliceBestInColCst_d[x] = bestCst;
 }
 
 /**
@@ -666,91 +669,98 @@ kernel void volume_computeBestZInSlice_kernel(device TSimAcc* xzSlice_d, device 
  * @param[out] volSimT output similarity volume
  */
 kernel void volume_agregateCostVolumeAtXinSlices_kernel(texture2d<half> rcMipmapImage_tex,
-                                                            device const unsigned int& rcSgmLevelWidth,
-                                                        device const unsigned int& rcSgmLevelHeight,
-                                                        device const float& rcMipmapLevel,
-                                                        device TSimAcc* xzSliceForY_d, device int& xzSliceForY_p,
-                                                        device const TSimAcc* xzSliceForYm1_d, device const int& xzSliceForYm1_p,
+                                                        constant unsigned int& rcSgmLevelWidth,
+                                                        constant unsigned int& rcSgmLevelHeight,
+                                                        constant float& rcMipmapLevel,
+                                                        device TSimAcc* xzSliceForY_d, constant int& xzSliceForY_p,
+                                                        device const TSimAcc* xzSliceForYm1_d, constant int& xzSliceForYm1_p,
                                                         device const TSimAcc* bestSimInYm1_d,
-                                                        device TSim* volAgr_d, device const int& volAgr_s, device const int& volAgr_p,
-                                                        device const int3& volDim,
-                                                        device const int3& axisT,
-                                                        device const float& step,
-                                                        device const int& y,
-                                                        device const float& P1,
-                                                        device const float& _P2,
-                                                        device const int& ySign,
-                                                        device const int& filteringIndex,
-                                                        device const ROI_d& roi)
+                                                        device TSim* volAgr_d, constant int& volAgr_s, constant int& volAgr_p,
+                                                        constant int3& volDim,
+                                                        constant int3& axisT,
+                                                        constant float& step,
+                                                        constant int& y,
+                                                        constant float& P1,
+                                                        constant float& _P2,
+                                                        constant int& ySign,
+                                                        constant int& filteringIndex,
+                                                        constant ROI_d& roi,
+                                                        uint3 index [[thread_position_in_grid]])
 {
-//    const int x = blockIdx.x * blockDim.x + threadIdx.x;
-//    const int z = blockIdx.y * blockDim.y + threadIdx.y;
-//
-//    int3 v;
-//    (&v.x)[axisT.x] = x;
-//    (&v.x)[axisT.y] = y;
-//    (&v.x)[axisT.z] = z;
-//
-//    if (x >= (&volDim.x)[axisT.x] || z >= volDim.z)
-//        return;
-//
-//    // find texture offset
-//    const int beginX = (axisT.x == 0) ? roi->lt.x : roi->lt.y;
-//    const int beginY = (axisT.x == 0) ? roi->lt.y : roi->lt.x;
-//
-//    TSimAcc* sim_xz = get2DBufferAt(xzSliceForY_d, xzSliceForY_p, x, z);
-//    float pathCost = 255.0f;
-//
-//    if((z >= 1) && (z < volDim.z - 1))
-//    {
-//        float P2 = 0;
-//
-//        if(_P2 < 0)
-//        {
-//          // _P2 convention: use negative value to skip the use of deltaC.
-//          P2 = std::abs(_P2);
-//        }
-//        else
-//        {
-//          const int imX0 = (beginX + v.x) * step; // current
-//          const int imY0 = (beginY + v.y) * step;
-//
-//          const int imX1 = imX0 - ySign * step * (axisT.y == 0); // M1
-//          const int imY1 = imY0 - ySign * step * (axisT.y == 1);
-//
+    const int x = index.x;
+    const int z = index.y;
+
+    int3 v;
+    v[axisT.x] = x;
+    v[axisT.y] = y;
+    v[axisT.z] = z;
+
+    if (x >= volDim[axisT.x] || z >= volDim.z)
+        return;
+
+    // find texture offset
+    const int beginX = (axisT.x == 0) ? roi.lt.x : roi.lt.y;
+    const int beginY = (axisT.x == 0) ? roi.lt.y : roi.lt.x;
+
+    device TSimAcc* sim_xz = get2DBufferAt<TSimAcc>(xzSliceForY_d, xzSliceForY_p, x, z);
+    float pathCost = 255.0f;
+
+    constexpr sampler textureSampler (mag_filter::linear,
+                                      min_filter::linear);
+    
+    if((z >= 1) && (z < volDim.z - 1))
+    {
+        float P2 = 0;
+
+        if(_P2 < 0)
+        {
+          // _P2 convention: use negative value to skip the use of deltaC.
+          P2 = abs(_P2);
+        }
+        else
+        {
+          const int imX0 = (beginX + v.x) * step; // current
+          const int imY0 = (beginY + v.y) * step;
+
+          const int imX1 = imX0 - ySign * step * (axisT.y == 0); // M1
+          const int imY1 = imY0 - ySign * step * (axisT.y == 1);
+
 //          const float4 gcr0 = tex2DLod<float4>(rcMipmapImage_tex, (float(imX0) + 0.5f) / float(rcSgmLevelWidth), (float(imY0) + 0.5f) / float(rcSgmLevelHeight), rcMipmapLevel);
 //          const float4 gcr1 = tex2DLod<float4>(rcMipmapImage_tex, (float(imX1) + 0.5f) / float(rcSgmLevelWidth), (float(imY1) + 0.5f) / float(rcSgmLevelHeight), rcMipmapLevel);
-//          const float deltaC = euclideanDist3(gcr0, gcr1);
-//
-//          // sigmoid f(x) = i + (a - i) * (1 / ( 1 + e^(10 * (x - P2) / w)))
-//          // see: https://www.desmos.com/calculator/1qvampwbyx
-//          // best values found from tests: i = 80, a = 255, w = 80, P2 = 100
-//          // historical values: i = 15, a = 255, w = 80, P2 = 20
-//          P2 = sigmoid(80.f, 255.f, 80.f, _P2, deltaC);
-//        }
-//
-//        const TSimAcc bestCostInColM1 = bestSimInYm1_d[x];
-//        const TSimAcc pathCostMDM1 = *get2DBufferAt(xzSliceForYm1_d, xzSliceForYm1_p, x, z - 1); // M1: minus 1 over depths
-//        const TSimAcc pathCostMD   = *get2DBufferAt(xzSliceForYm1_d, xzSliceForYm1_p, x, z);
-//        const TSimAcc pathCostMDP1 = *get2DBufferAt(xzSliceForYm1_d, xzSliceForYm1_p, x, z + 1); // P1: plus 1 over depths
-//        const float minCost = multi_fminf(pathCostMD, pathCostMDM1 + P1, pathCostMDP1 + P1, bestCostInColM1 + P2);
-//
-//        // if 'pathCostMD' is the minimal value of the depth
-//        pathCost = (*sim_xz) + minCost - bestCostInColM1;
-//    }
-//
-//    // fill the current slice with the new similarity score
-//    *sim_xz = TSimAcc(pathCost);
-//
-//#ifndef TSIM_USE_FLOAT
-//    // clamp if TSim = uchar (TSimAcc = unsigned int)
-//    pathCost = min(255.0f, max(0.0f, pathCost));
-//#endif
-//
-//    // aggregate into the final output
-//    TSim* volume_xyz = get3DBufferAt(volAgr_d, volAgr_s, volAgr_p, v.x, v.y, v.z);
-//    const float val = (float(*volume_xyz) * float(filteringIndex) + pathCost) / float(filteringIndex + 1);
-//    *volume_xyz = TSim(val);
+            const half4 gcr0 = rcMipmapImage_tex.sample(textureSampler, float2((float(imX0) + 0.5f) / float(rcSgmLevelWidth), (float(imY0) + 0.5f) / float(rcSgmLevelHeight)), level(rcMipmapLevel));
+            const half4 gcr1 = rcMipmapImage_tex.sample(textureSampler, float2((float(imX1) + 0.5f) / float(rcSgmLevelWidth), (float(imY1) + 0.5f) / float(rcSgmLevelHeight)), level(rcMipmapLevel));
+            
+          const float deltaC = distance(gcr0, gcr1);
+
+          // sigmoid f(x) = i + (a - i) * (1 / ( 1 + e^(10 * (x - P2) / w)))
+          // see: https://www.desmos.com/calculator/1qvampwbyx
+          // best values found from tests: i = 80, a = 255, w = 80, P2 = 100
+          // historical values: i = 15, a = 255, w = 80, P2 = 20
+          P2 = sigmoid(80.f, 255.f, 80.f, _P2, deltaC);
+        }
+
+        const TSimAcc bestCostInColM1 = bestSimInYm1_d[x];
+        const TSimAcc pathCostMDM1 = *get2DBufferAt(xzSliceForYm1_d, xzSliceForYm1_p, x, z - 1); // M1: minus 1 over depths
+        const TSimAcc pathCostMD   = *get2DBufferAt(xzSliceForYm1_d, xzSliceForYm1_p, x, z);
+        const TSimAcc pathCostMDP1 = *get2DBufferAt(xzSliceForYm1_d, xzSliceForYm1_p, x, z + 1); // P1: plus 1 over depths
+        const float minCost = multi_fminf(pathCostMD, pathCostMDM1 + P1, pathCostMDP1 + P1, bestCostInColM1 + P2);
+
+        // if 'pathCostMD' is the minimal value of the depth
+        pathCost = (*sim_xz) + minCost - bestCostInColM1;
+    }
+
+    // fill the current slice with the new similarity score
+    *sim_xz = TSimAcc(pathCost);
+
+#ifndef TSIM_USE_FLOAT
+    // clamp if TSim = uchar (TSimAcc = unsigned int)
+    pathCost = min(255.0f, max(0.0f, pathCost));
+#endif
+
+    // aggregate into the final output
+    device TSim* volume_xyz = get3DBufferAt(volAgr_d, volAgr_s, volAgr_p, v.x, v.y, v.z);
+    const float val = (float(*volume_xyz) * float(filteringIndex) + pathCost) / float(filteringIndex + 1);
+    *volume_xyz = TSim(val);
 }
 
 } // namespace depthMap

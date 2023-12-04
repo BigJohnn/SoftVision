@@ -99,6 +99,10 @@
                 auto k = [elem boolValue];
                 [computeEncoder setBytes:&k length:sizeof(k) atIndex:bufferid++];
             }
+            else if ( strcmp([elem objCType], @encode(double)) == 0 ) {
+                auto k = [elem doubleValue];
+                [computeEncoder setBytes:&k length:sizeof(k) atIndex:bufferid++];
+            }
             else {//TODO: check: uchar*, default case?
                 auto k = [elem unsignedCharValue];
                 [computeEncoder setBytes:&k length:sizeof(k) atIndex:bufferid++];

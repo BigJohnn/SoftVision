@@ -31,20 +31,20 @@ inline device T* get3DBufferAt(device T* ptr, int spitch, int pitch, unsigned x,
     return ((device T*)(((device char*)ptr) + z * spitch + y * pitch)) + x;
 }
 
-template <typename T>
-inline const thread T* get3DBufferAt(const device T* ptr, int spitch, int pitch, int x, int y, int z)
-{
-    return ((const thread T*)(((const device char*)ptr) + z * spitch + y * pitch)) + x;
-}
+//template <typename T>
+//inline const thread T* get3DBufferAt(const device T* ptr, int spitch, int pitch, int x, int y, int z)
+//{
+//    return ((const thread T*)(((const device char*)ptr) + z * spitch + y * pitch)) + x;
+//}
 
 template <typename T>
-inline thread T* get3DBufferAt(device T* ptr, int spitch, int pitch, const device int3& v)
+inline device T* get3DBufferAt(device T* ptr, int spitch, int pitch, const device int3& v)
 {
     return get3DBufferAt(ptr, spitch, pitch, v.x, v.y, v.z);
 }
 
 template <typename T>
-inline const thread T* get3DBufferAt(const device T* ptr, int spitch, int pitch, const device int3& v)
+inline const device T* get3DBufferAt(const device T* ptr, int spitch, int pitch, thread int3& v)
 {
     return get3DBufferAt(ptr, spitch, pitch, v.x, v.y, v.z);
 }

@@ -294,7 +294,7 @@ void Sgm::optimizeSimilarityVolume(const Tile& tile, const SgmDepthList& tileDep
     DeviceCache& deviceCache = DeviceCache::getInstance();
     const DeviceMipmapImage& rcDeviceMipmapImage = deviceCache.requestMipmapImage(tile.rc, _mp);
     
-    cuda_volumeOptimize(_volumeBestSim_dmp,    // output volume (reuse best sim to put optimized similarity)
+    volumeOptimize(_volumeBestSim_dmp,    // output volume (reuse best sim to put optimized similarity)
                         _volumeSliceAccA_dmp,  // slice A accumulation buffer pre-allocate
                         _volumeSliceAccB_dmp,  // slice B accumulation buffer pre-allocate
                         _volumeAxisAcc_dmp,    // axis accumulation buffer pre-allocate

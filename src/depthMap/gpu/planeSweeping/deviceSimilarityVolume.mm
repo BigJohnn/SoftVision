@@ -335,48 +335,68 @@ extern void volumeRefineSimilarity(DeviceBuffer* inout_volSim_dmp,
 }
 
 
-void cuda_volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
+void volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
                                        DeviceBuffer* inout_volSliceAccA_dmp,
                                        DeviceBuffer* inout_volSliceAccB_dmp,
                                        DeviceBuffer* inout_volAxisAcc_dmp,
                                        DeviceBuffer* in_volSim_dmp, 
                                        const DeviceMipmapImage& rcDeviceMipmapImage,
-                                       MTLSize rcLevelDim,
+                                       MTLSize const& rcLevelDim,
                                        const float rcMipmapLevel,
-                                       MTLSize axisT,
+                                       bool axisT,
                                        const SgmParams& sgmParams,
                                        const int lastDepthIndex,
                                        const int filteringIndex,
                                        const bool invY,
                                        const ROI& roi)
 {
-//    CudaSize<3> volDim = in_volSim_dmp.getSize();
-//    volDim[2] = lastDepthIndex; // override volume depth, use rc depth list last index
-//
-//    const size_t volDimX = volDim[axisT[0]];
-//    const size_t volDimY = volDim[axisT[1]];
-//    const size_t volDimZ = volDim[axisT[2]];
-//
-//    const int3 volDim_ = make_int3(volDim[0], volDim[1], volDim[2]);
-//    const int3 axisT_ = make_int3(axisT[0], axisT[1], axisT[2]);
-//    const int ySign = (invY ? -1 : 1);
-//
-//    // setup block and grid
-//    const int blockSize = 8;
-//    const dim3 blockVolXZ(blockSize, blockSize, 1);
-//    const dim3 gridVolXZ(divUp(volDimX, blockVolXZ.x), divUp(volDimZ, blockVolXZ.y), 1);
-//
-//    const int blockSizeL = 64;
-//    const dim3 blockColZ(blockSizeL, 1, 1);
-//    const dim3 gridColZ(divUp(volDimX, blockColZ.x), 1, 1);
-//
-//    const dim3 blockVolSlide(blockSizeL, 1, 1);
-//    const dim3 gridVolSlide(divUp(volDimX, blockVolSlide.x), volDimZ, 1);
-//
-//    CudaDeviceMemoryPitched<TSimAcc, 2>* xzSliceForY_dmpPtr   = &inout_volSliceAccA_dmp; // Y slice
-//    CudaDeviceMemoryPitched<TSimAcc, 2>* xzSliceForYm1_dmpPtr = &inout_volSliceAccB_dmp; // Y-1 slice
-//    CudaDeviceMemoryPitched<TSimAcc, 2>* bestSimInYm1_dmpPtr  = &inout_volAxisAcc_dmp;   // best sim score along the Y axis for each Z value
-//
+    MTLSize volDim = [in_volSim_dmp getSize];
+    volDim.depth = lastDepthIndex; // override volume depth, use rc depth list last index
+
+    size_t volDimX = volDim.width;
+    size_t volDimY = volDim.height;
+    size_t volDimZ = volDim.depth;
+    if(axisT) {
+        std::swap(volDimX, volDimY);
+    }
+
+    simd_int3 volDim_ = simd_make_int3(volDim.width, volDim.height, volDim.depth);
+    simd_int3 axisT_ = axisT ? simd_make_int3(1,0,2) : simd_make_int3(0,1,2);
+    const int ySign = (invY ? -1 : 1);
+
+    // setup block and grid
+    const int blockSize = 8;
+    MTLSize blockVolXZ = MTLSizeMake(blockSize, blockSize, 1);
+    MTLSize gridVolXZ = MTLSizeMake(volDimX, volDimZ, 1);
+
+    const int blockSizeL = 64;
+    MTLSize blockColZ = MTLSizeMake(blockSizeL, 1, 1);
+    MTLSize gridColZ = MTLSizeMake(volDimX, 1, 1);
+
+    MTLSize blockVolSlide = MTLSizeMake(blockSizeL, 1, 1);
+    MTLSize gridVolSlide = MTLSizeMake(volDimX, volDimZ, 1);
+
+    DeviceBuffer* xzSliceForY_dmpPtr   = inout_volSliceAccA_dmp; // Y slice
+    DeviceBuffer* xzSliceForYm1_dmpPtr = inout_volSliceAccB_dmp; // Y-1 slice
+    DeviceBuffer* bestSimInYm1_dmpPtr  = inout_volAxisAcc_dmp;   // best sim score along the Y axis for each Z value
+
+    // Copy the first XZ plane (at Y=0) from 'in_volSim_dmp' into 'xzSliceForYm1_dmpPtr'
+    {
+        NSArray* args = @[
+            [xzSliceForYm1_dmpPtr getBuffer],
+            [NSNumber numberWithInt:[xzSliceForYm1_dmpPtr getBytesUpToDim:0]], // getPitch
+            [in_volSim_dmp getBuffer],
+            [NSNumber numberWithInt:[in_volSim_dmp getBytesUpToDim:1]], //1024*256
+            [NSNumber numberWithInt:[in_volSim_dmp getBytesUpToDim:0]], // 1024
+            [NSData dataWithBytes:&volDim_ length:sizeof(volDim_)],
+            [NSData dataWithBytes:&axisT_ length:sizeof(axisT_)],
+            [NSNumber numberWithInt:0] // Y = 0
+        ];
+        
+        [ComputePipeline Exec:gridVolXZ ThreadgroupSize:blockVolXZ KernelFuncName:@"depthMap::volume_getVolumeXZSlice_kernel" Args:args];
+    }
+    
+    
 //    // Copy the first XZ plane (at Y=0) from 'in_volSim_dmp' into 'xzSliceForYm1_dmpPtr'
 //    volume_getVolumeXZSlice_kernel<TSimAcc, TSim><<<gridVolXZ, blockVolXZ, 0, stream>>>(
 //        xzSliceForYm1_dmpPtr->getBuffer(),
@@ -387,8 +407,23 @@ void cuda_volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
 //        volDim_,
 //        axisT_,
 //        0 /* Y = 0 */ );
-//
-//    // Set the first Z plane from 'out_volAgr_dmp' to 255
+
+    // Set the first Z plane from 'out_volAgr_dmp' to 255
+    {
+        NSArray* args = @[
+            [out_volAgr_dmp getBuffer],
+            [NSNumber numberWithInt:[out_volAgr_dmp getBytesUpToDim:1]], //wbytes * h
+            [NSNumber numberWithInt:[out_volAgr_dmp getBytesUpToDim:0]], // wbytes
+            [NSData dataWithBytes:&volDim_ length:sizeof(volDim_)],
+            [NSData dataWithBytes:&axisT_ length:sizeof(axisT_)],
+            [NSNumber numberWithInt:0],
+            [NSNumber numberWithUnsignedChar:255] //TSim
+        ];
+        
+        [ComputePipeline Exec:gridVolXZ ThreadgroupSize:blockVolXZ KernelFuncName:@"depthMap::volume_initVolumeYSlice_kernel" Args:args];
+    }
+    
+    
 //    volume_initVolumeYSlice_kernel<TSim><<<gridVolXZ, blockVolXZ, 0, stream>>>(
 //        out_volAgr_dmp.getBuffer(),
 //        out_volAgr_dmp.getBytesPaddedUpToDim(1),
@@ -396,21 +431,46 @@ void cuda_volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
 //        volDim_,
 //        axisT_,
 //        0, 255);
-//
-//    for(int iy = 1; iy < volDimY; ++iy)
-//    {
-//        const int y = invY ? volDimY - 1 - iy : iy;
-//
-//        // For each column: compute the best score
-//        // Foreach x:
-//        //   bestSimInYm1[x] = min(d_xzSliceForY[1:height])
+
+    for(int iy = 1; iy < volDimY; ++iy)
+    {
+        const int y = invY ? volDimY - 1 - iy : iy;
+
+        // For each column: compute the best score
+        // Foreach x:
+        //   bestSimInYm1[x] = min(d_xzSliceForY[1:height])
+        {
+            NSArray* args = @[
+                [xzSliceForYm1_dmpPtr getBuffer],
+                [NSNumber numberWithInt:[xzSliceForYm1_dmpPtr getBytesUpToDim:0]], // wbytes
+                [bestSimInYm1_dmpPtr getBuffer],
+                [NSNumber numberWithInt:volDimX],
+                [NSNumber numberWithInt:volDimZ]
+            ];
+            
+            [ComputePipeline Exec:gridColZ ThreadgroupSize:blockColZ KernelFuncName:@"depthMap::volume_computeBestZInSlice_kernel" Args:args];
+        }
 //        volume_computeBestZInSlice_kernel<<<gridColZ, blockColZ, 0, stream>>>(
 //            xzSliceForYm1_dmpPtr->getBuffer(),
 //            xzSliceForYm1_dmpPtr->getPitch(),
 //            bestSimInYm1_dmpPtr->getBuffer(),
 //            volDimX, volDimZ);
-//
-//        // Copy the 'z' plane from 'in_volSim_dmp' into 'xzSliceForY'
+
+        // Copy the 'z' plane from 'in_volSim_dmp' into 'xzSliceForY'
+        {
+            NSArray* args = @[
+                [xzSliceForY_dmpPtr getBuffer],
+                [NSNumber numberWithInt:[xzSliceForY_dmpPtr getBytesUpToDim:0]], // wbytes
+                [in_volSim_dmp getBuffer],
+                [NSNumber numberWithInt:[in_volSim_dmp getBytesUpToDim:1]], //wbytes * h
+                [NSNumber numberWithInt:[in_volSim_dmp getBytesUpToDim:0]], // wbytes
+                [NSData dataWithBytes:&volDim_ length:sizeof(volDim_)],
+                [NSData dataWithBytes:&axisT_ length:sizeof(axisT_)],
+                [NSNumber numberWithInt:y]
+            ];
+            
+            [ComputePipeline Exec:gridVolXZ ThreadgroupSize:blockVolXZ KernelFuncName:@"depthMap::volume_getVolumeXZSlice_kernel" Args:args];
+        }
 //        volume_getVolumeXZSlice_kernel<TSimAcc, TSim><<<gridVolXZ, blockVolXZ, 0, stream>>>(
 //            xzSliceForY_dmpPtr->getBuffer(),
 //            xzSliceForY_dmpPtr->getPitch(),
@@ -418,7 +478,38 @@ void cuda_volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
 //            in_volSim_dmp.getBytesPaddedUpToDim(1),
 //            in_volSim_dmp.getBytesPaddedUpToDim(0),
 //            volDim_, axisT_, y);
-//
+
+        {
+            ROI_d roi_d;//(roi.x.begin, roi.y.begin, roi.x.end, roi.y.end);
+            roi_d.lt = simd_make_float2(roi.x.begin, roi.y.begin);
+            roi_d.rb = simd_make_float2(roi.x.end, roi.y.end);
+            NSArray* args = @[
+                rcDeviceMipmapImage.getTextureObject(),
+                [NSNumber numberWithUnsignedInt:rcLevelDim.width],
+                [NSNumber numberWithUnsignedInt:rcLevelDim.height],
+                [NSNumber numberWithFloat:rcMipmapLevel],
+                [xzSliceForY_dmpPtr getBuffer],// inout: xzSliceForY
+                [NSNumber numberWithInt:[xzSliceForY_dmpPtr getBytesUpToDim:0]], // wbytes
+                [xzSliceForYm1_dmpPtr getBuffer],// in:    xzSliceForYm1
+                [NSNumber numberWithInt:[xzSliceForYm1_dmpPtr getBytesUpToDim:0]], // wbytes
+                [bestSimInYm1_dmpPtr getBuffer],// in:    bestSimInYm1
+                [out_volAgr_dmp getBuffer],// in:    bestSimInYm1
+                [NSNumber numberWithInt:[out_volAgr_dmp getBytesUpToDim:1]], //wbytes * h
+                [NSNumber numberWithInt:[out_volAgr_dmp getBytesUpToDim:0]], // wbytes
+                [NSData dataWithBytes:&volDim_ length:sizeof(volDim_)],
+                [NSData dataWithBytes:&axisT_ length:sizeof(axisT_)],
+                [NSNumber numberWithInt:sgmParams.stepXY],
+                [NSNumber numberWithInt:y],
+                [NSNumber numberWithDouble:sgmParams.p1],
+                [NSNumber numberWithDouble:sgmParams.p2Weighting],
+                [NSNumber numberWithInt:ySign],
+                [NSNumber numberWithInt:filteringIndex],
+                [NSData dataWithBytes:&roi_d length:sizeof(roi_d)]
+            ];
+            
+            [ComputePipeline Exec:gridVolSlide ThreadgroupSize:blockVolSlide KernelFuncName:@"depthMap::volume_agregateCostVolumeAtXinSlices_kernel" Args:args];
+        }
+        
 //        volume_agregateCostVolumeAtXinSlices_kernel<<<gridVolSlide, blockVolSlide, 0, stream>>>(
 //            rcDeviceMipmapImage.getTextureObject(),
 //            (unsigned int)(rcLevelDim.x()),
@@ -440,15 +531,15 @@ void cuda_volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
 //            ySign,
 //            filteringIndex,
 //            roi);
-//
-//        std::swap(xzSliceForYm1_dmpPtr, xzSliceForY_dmpPtr);
-//    }
+
+        std::swap(xzSliceForYm1_dmpPtr, xzSliceForY_dmpPtr);
+    }
 //
 //    // check cuda last error
 //    CHECK_CUDA_ERROR();
 }
 
-void cuda_volumeOptimize(DeviceBuffer* out_volSimFiltered_dmp,
+void volumeOptimize(DeviceBuffer* out_volSimFiltered_dmp,
                                   DeviceBuffer* inout_volSliceAccA_dmp,
                                   DeviceBuffer* inout_volSliceAccB_dmp,
                                   DeviceBuffer* inout_volAxisAcc_dmp,
@@ -458,44 +549,43 @@ void cuda_volumeOptimize(DeviceBuffer* out_volSimFiltered_dmp,
                                   const int lastDepthIndex,
                                   const ROI& roi)
 {
-//    // get R mipmap image level and dimensions
-//    const float rcMipmapLevel = rcDeviceMipmapImage.getLevel(sgmParams.scale);
-//    const CudaSize<2> rcLevelDim = rcDeviceMipmapImage.getDimensions(sgmParams.scale);
-//
-//    // update aggregation volume
-//    int npaths = 0;
-//    const auto updateAggrVolume = [&](const CudaSize<3>& axisT, bool invX)
-//    {
-//        cuda_volumeAggregatePath(out_volSimFiltered_dmp,
-//                                 inout_volSliceAccA_dmp,
-//                                 inout_volSliceAccB_dmp,
-//                                 inout_volAxisAcc_dmp,
-//                                 in_volSim_dmp,
-//                                 rcDeviceMipmapImage,
-//                                 rcLevelDim,
-//                                 rcMipmapLevel,
-//                                 axisT,
-//                                 sgmParams,
-//                                 lastDepthIndex,
-//                                 npaths,
-//                                 invX,
-//                                 roi,
-//                                 stream);
-//        npaths++;
-//    };
-//
-//    // filtering is done on the last axis
-//    const std::map<char, CudaSize<3>> mapAxes = {
-//        {'X', {1, 0, 2}}, // XYZ -> YXZ
-//        {'Y', {0, 1, 2}}, // XYZ
-//    };
-//
-//    for(char axis : sgmParams.filteringAxes)
-//    {
-//        const CudaSize<3>& axisT = mapAxes.at(axis);
-//        updateAggrVolume(axisT, false); // without transpose
-//        updateAggrVolume(axisT, true);  // with transpose of the last axis
-//    }
+    // get R mipmap image level and dimensions
+    const float rcMipmapLevel = rcDeviceMipmapImage.getLevel(sgmParams.scale);
+    MTLSize rcLevelDim = rcDeviceMipmapImage.getDimensions(sgmParams.scale);
+
+    // update aggregation volume
+    int npaths = 0;
+    const auto updateAggrVolume = [&](bool axisT, bool invX)
+    {
+        volumeAggregatePath(out_volSimFiltered_dmp,
+                                 inout_volSliceAccA_dmp,
+                                 inout_volSliceAccB_dmp,
+                                 inout_volAxisAcc_dmp,
+                                 in_volSim_dmp,
+                                 rcDeviceMipmapImage,
+                                 rcLevelDim,
+                                 rcMipmapLevel,
+                                 axisT,
+                                 sgmParams,
+                                 lastDepthIndex,
+                                 npaths,
+                                 invX,
+                                 roi);
+        npaths++;
+    };
+
+    // filtering is done on the last axis
+    const std::map<char, bool> mapAxes = {
+        {'X', true}, // XYZ -> YXZ
+        {'Y', false}, // XYZ
+    };
+
+    for(char axis : sgmParams.filteringAxes)
+    {
+        bool axisT = mapAxes.at(axis);
+        updateAggrVolume(axisT, false); // without transpose
+        updateAggrVolume(axisT, true);  // with transpose of the last axis
+    }
 }
 
 void cuda_volumeRetrieveBestDepth(DeviceBuffer* out_sgmDepthThicknessMap_dmp,

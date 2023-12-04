@@ -110,7 +110,7 @@ extern void volumeRefineSimilarity(DeviceBuffer* inout_volSim_dmp,
  * @param[in] roi the 2d region of interest
  * @param[in] stream the stream for gpu execution
  */
-extern void cuda_volumeOptimize(DeviceBuffer* out_volSimFiltered_dmp,
+extern void volumeOptimize(DeviceBuffer* out_volSimFiltered_dmp,
                                 DeviceBuffer* inout_volSliceAccA_dmp,
                                 DeviceBuffer* inout_volSliceAccB_dmp,
                                 DeviceBuffer* inout_volAxisAcc_dmp,
