@@ -403,7 +403,8 @@ void DeviceCache::addCameraParams(int camId, int downscale, const mvsUtils::Mult
         if(!_vCamParamsBuffer) {
             _vCamParamsBuffer = [NSMutableArray new];
         }
-        [_vCamParamsBuffer insertObject:_cameraParametersBuffer atIndex:camId];
+        
+        [_vCamParamsBuffer insertObject:_cameraParametersBuffer atIndex:deviceCameraParamsId];
     }
     
     // fill the host-side camera parameters from multi-view parameters.

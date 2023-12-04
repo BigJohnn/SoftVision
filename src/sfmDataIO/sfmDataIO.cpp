@@ -106,8 +106,11 @@ bool Load(sfmData::SfMData& sfmData, const std::string& foldername, const std::s
   }
   else if (extension == ".abc") // Alembic
   {
-      AlembicImporter(filename).populateSfM(sfmData, partFlag);
-      status = true;
+      AlembicImporter importer = AlembicImporter(filename);
+      if(importer.isValid()) {
+          importer.populateSfM(sfmData, partFlag);
+          status = true;
+      }
   }
 //  else if(fs::is_directory(filename))
 //  {

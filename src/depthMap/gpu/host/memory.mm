@@ -89,19 +89,19 @@
 -(simd_float2) getVec2f:(int)x y:(int)y
 {
     assert(elemSizeInBytes == sizeof(simd_float2));
-    return *((simd_float2*)buffer.contents + y * nBytesPerRow + x * sizeof(simd_float2));
+    return *((simd_float2*)((char*)buffer.contents + y * nBytesPerRow + x * sizeof(simd_float2)));
 }
 
 -(void) setVec2f:(simd_float2)val x:(int)x y:(int)y
 {
     assert(elemSizeInBytes == sizeof(simd_float2));
-    *((simd_float2*)buffer.contents + y * nBytesPerRow + x * sizeof(simd_float2)) = val;
+    *((simd_float2*)((char*)buffer.contents + y * nBytesPerRow + x * sizeof(simd_float2))) = val;
 }
 
 -(void) setVec1f:(float)val x:(int)x y:(int)y
 {
     assert(elemSizeInBytes == sizeof(float));
-    *((float*)buffer.contents + y * nBytesPerRow + x * sizeof(float)) = val;
+    *((float*)((char*)buffer.contents + y * nBytesPerRow + x * sizeof(float))) = val;
 }
 
 -(void*) getBufferPtr

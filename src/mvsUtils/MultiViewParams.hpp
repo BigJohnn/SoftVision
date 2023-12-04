@@ -133,7 +133,7 @@ public:
         return _imagesParams.at(index).path;
     }
 
-    inline int getViewId(int index) const
+    inline uint32_t getViewId(int index) const
     {
         return _imagesParams.at(index).viewId;
     }

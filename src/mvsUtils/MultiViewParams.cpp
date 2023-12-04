@@ -46,8 +46,8 @@ MultiViewParams::MultiViewParams(const sfmData::SfMData& sfmData,
                                  int downscale)
     : _sfmData(sfmData)
     , _imagesFolder(imagesFolder)
-    , _depthMapsFolder(depthMapsFolder + "/")
-    , _depthMapsFilterFolder(depthMapsFilterFolder + "/")
+    , _depthMapsFolder(depthMapsFolder)
+    , _depthMapsFilterFolder(depthMapsFilterFolder)
     , _processDownscale(downscale)
 {
     verbose = true;

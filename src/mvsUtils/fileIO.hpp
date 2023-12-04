@@ -28,7 +28,7 @@ namespace mvsUtils {
  * @return file path
  */
 std::string getFileNameFromViewId(const MultiViewParams& mp,
-                                  int viewId,
+                                  uint32_t viewId,
                                   EFileType fileType,
                                   const std::string& customSuffix = "",
                                   int tileBeginX = -1,

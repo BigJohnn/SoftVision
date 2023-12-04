@@ -18,7 +18,7 @@
 
 namespace mvsUtils {
 
-std::string getFileNameFromViewId(const MultiViewParams& mp, int viewId, EFileType fileType, const std::string& customSuffix, int tileBeginX, int tileBeginY)
+std::string getFileNameFromViewId(const MultiViewParams& mp, uint32_t viewId, EFileType fileType, const std::string& customSuffix, int tileBeginX, int tileBeginY)
 {
   std::string folder = mp._imagesFolder;
   std::string suffix;

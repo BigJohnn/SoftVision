@@ -720,7 +720,7 @@ bool loadJSON(sfmData::SfMData& sfmData, const std::string& foldername, const st
     
     fp = fopen ((foldername + filename).c_str(), "r");
     if(!fp) {
-        LOG_ERROR("failed to open sfm data file %s", filename.c_str());
+        LOG_ERROR("failed to open sfm data file %s", (foldername + filename).c_str());
         return false;
     }
     

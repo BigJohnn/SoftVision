@@ -883,18 +883,36 @@ void visitObject(const Version& abcVersion, IObject iObj, M44d mat, sfmData::SfM
 
 struct AlembicImporter::DataImpl
 {
-  DataImpl(const std::string& filename)
-  {
-    Alembic::AbcCoreFactory::IFactory factory;
-    Alembic::AbcCoreFactory::IFactory::CoreType coreType;
-    Abc::IArchive archive = factory.getArchive(filename, coreType);
+    
+//  DataImpl(const std::string& filename)
+//  {
+//    Alembic::AbcCoreFactory::IFactory factory;
+//    Alembic::AbcCoreFactory::IFactory::CoreType coreType;
+//    Abc::IArchive archive = factory.getArchive(filename, coreType);
+//
+//    if(!archive.valid())
+//      LOG_ERROR("Can't open '%s' : Alembic file is not valid.",filename.c_str());
+//
+//    _rootEntity = archive.getTop();
+//    _filename = filename;
+//  }
+    
+    static DataImpl *create(const std::string& filename)
+    {
+        Alembic::AbcCoreFactory::IFactory factory;
+        Alembic::AbcCoreFactory::IFactory::CoreType coreType;
+        Abc::IArchive archive = factory.getArchive(filename, coreType);
 
-    if(!archive.valid())
-      throw std::runtime_error("Can't open '" + filename + "' : Alembic file is not valid.");
-
-    _rootEntity = archive.getTop();
-    _filename = filename;
-  }
+        if(!archive.valid()) {
+            LOG_ERROR("Can't open '%s' : Alembic file is not valid.",filename.c_str());
+            return nullptr;
+        }
+        
+        auto* pImpl = new DataImpl();
+        pImpl->_rootEntity = archive.getTop();
+        pImpl->_filename = filename;
+        return pImpl;
+    }
   
   IObject _rootEntity;
   std::string _filename;
@@ -902,7 +920,7 @@ struct AlembicImporter::DataImpl
 
 AlembicImporter::AlembicImporter(const std::string& filename)
 {
-  _dataImpl.reset(new DataImpl(filename));
+  _dataImpl.reset(DataImpl::create(filename));
 }
 
 AlembicImporter::~AlembicImporter()

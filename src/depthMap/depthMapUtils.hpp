@@ -144,7 +144,7 @@ void writeDepthSimMapFromTileList(int rc,
                                   const mvsUtils::MultiViewParams& mp,
                                   const mvsUtils::TileParams& tileParams,
                                   const std::vector<ROI>& tileRoiList,
-                                  DeviceBuffer* in_depthSimMapTiles_hmh,
+                                  NSMutableArray* in_depthSimMapTiles_hmh,
                                   int scale,
                                   int step,
                                   const std::string& name = "");

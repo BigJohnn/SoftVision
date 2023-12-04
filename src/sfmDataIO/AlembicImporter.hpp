@@ -22,6 +22,7 @@ public:
 
   ~AlembicImporter();
 
+    bool isValid() { return _dataImpl != nullptr; }
   /**
    * @brief populate a SfMData from the alembic file
    * @param[out] sfmData The output SfMData

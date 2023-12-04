@@ -61,6 +61,7 @@ std::vector<int> createRandomArrayOfIntegers(const int size, const unsigned int 
 int findNSubstrsInString(const std::string& str, const std::string& val);
 std::string num2str(int num);
 std::string num2str(float num);
+std::string num2str(uint32_t num);
 std::string num2str(int64_t num);
 std::string num2strThreeDigits(int index);
 std::string num2strFourDecimal(int index);

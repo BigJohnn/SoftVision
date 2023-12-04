@@ -106,7 +106,8 @@
             }
         }
         else if([elem isKindOfClass:[NSData class]]) {
-            [computeEncoder setBytes:&elem length:sizeof(elem) atIndex:bufferid++];
+            
+            [computeEncoder setBytes:&elem length:[elem length] atIndex:bufferid++];
         }
         
     }

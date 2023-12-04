@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <common/types.h>
+
 #include <mvsData/Point2d.hpp>
 #include <mvsData/Point3d.hpp>
 #include <mvsData/Matrix3x3.hpp>
@@ -15,9 +17,6 @@
 
 
 struct Voxel;
-
-// TODO: Remove and replace with <types.hpp>
-typedef uint32_t IndexT;
 
 struct ImageParams
 {

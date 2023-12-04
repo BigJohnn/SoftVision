@@ -764,6 +764,13 @@ std::string num2str(int64_t num)
     return out.str();
 }
 
+std::string num2str(uint32_t num)
+{
+    std::stringstream out;
+    out << num;
+    return out.str();
+}
+
 std::string num2strThreeDigits(int index)
 {
     std::string ms;

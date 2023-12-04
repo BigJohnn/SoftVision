@@ -239,7 +239,7 @@ void writeDepthSimMapFromTileList(int rc,
                                   const mvsUtils::MultiViewParams& mp,
                                   const mvsUtils::TileParams& tileParams,
                                   const std::vector<ROI>& tileRoiList,
-                                  DeviceBuffer* in_depthSimMapTiles_hmh,
+                                  NSMutableArray* in_depthSimMapTiles_hmh,
                                   int scale,
                                   int step,
                                   const std::string& name)
@@ -268,8 +268,8 @@ void writeDepthSimMapFromTileList(int rc,
     image::Image<float> tileSimMap;
 
     // copy tile depth/sim map from host memory
-      LOG_INFO("copyFloat2Map in writeDepthSimMapFromTileList, todo...");
-//    copyFloat2Map(tileDepthMap, tileSimMap, in_depthSimMapTiles_hmh.at(i), roi, scaleStep);
+//      LOG_INFO("copyFloat2Map in writeDepthSimMapFromTileList, todo...");
+    copyFloat2Map(tileDepthMap, tileSimMap, [in_depthSimMapTiles_hmh objectAtIndex:i], roi, scaleStep);
 
     // add tile maps to the full-size maps with weighting
     mvsUtils::addTileMapWeighted(rc, mp, tileParams, roi, scaleStep, tileDepthMap, depthMap);
