@@ -10,7 +10,7 @@
 //#include <depthMap/gpu/device/Patch.metal>
 
 #include "../../../mvsData/ROI_d.hpp"
-#include "../planeSweeping/similarity.hpp"
+#include "similarity.hpp"
 #include "../device/BufPtr.metal"
 #include "../device/Patch.metal"
 
@@ -48,10 +48,10 @@ float depthPlaneToDepth(device const DeviceCameraParams& deviceCamParams,
     return length(deviceCamParams.C - p);
 }
 
-kernel void volume_init_kernel(device TSim* inout_volume_d, device const int& inout_volume_s, device const int& inout_volume_p,
-                               device const unsigned int& volDimX,
-                               device const unsigned int& volDimY,
-                               device const TSim& value,
+kernel void volume_init_kernel(device TSim* inout_volume_d, constant int& inout_volume_s, constant int& inout_volume_p,
+                               constant unsigned int& volDimX,
+                               constant unsigned int& volDimY,
+                               constant TSim& value,
                                uint3 index [[thread_position_in_grid]])
 {
     const unsigned int vx = index.x;
@@ -61,7 +61,6 @@ kernel void volume_init_kernel(device TSim* inout_volume_d, device const int& in
     if(vx >= volDimX || vy >= volDimY)
         return;
 
-//    *(inout_volume_d+2) = 255;
     *get3DBufferAt<TSim>(inout_volume_d, inout_volume_s, inout_volume_p, vx, vy, vz) = value;
 }
 
@@ -624,7 +623,7 @@ kernel void volume_initVolumeYSlice_kernel(device TSim* volume_d, constant int& 
 
 //template <typename T1, typename T2>
 kernel void volume_getVolumeXZSlice_kernel(device TSimAcc* slice_d, constant int& slice_p,
-                                           device const TSim* volume_d, constant int& volume_s, constant int& volume_p,
+                                           device TSim* volume_d, constant int& volume_s, constant int& volume_p,
                                            constant int3& volDim, constant int3& axisT, constant int& y,
                                            uint3 index [[thread_position_in_grid]])
 {

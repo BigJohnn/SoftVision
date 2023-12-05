@@ -5,10 +5,10 @@
 
 struct Range_d
 {
-    Range_d (int s, int t){
-        begin = s;
-        end = t;
-    }
+//    Range_d (int s, int t){
+//        begin = s;
+//        end = t;
+//    }
     unsigned int begin = 0;
     unsigned int end = 0;
 };

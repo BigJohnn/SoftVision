@@ -29,6 +29,8 @@
     id <MTLLibrary> defaultLibrary = [device newLibraryWithURL:libraryURL
                                                   error:&libraryError];
     
+//    id <MTLLibrary> defaultLibrary = [device newDefaultLibrary];
+    
     if (defaultLibrary == nil)
     {
         NSLog(@"Failed to find the default library.");

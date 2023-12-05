@@ -1330,14 +1330,14 @@ int ReconPipeline::DepthMapEstimation()
         const int maxSgmBufferHeight = divideRoundUp(mp.getMaxImageHeight(), sgmParams.scale * sgmParams.stepXY);
 
         // update SGM step XY
-        if(!autoSgmScaleStep && // user define SGM scale & stepXY
-           (sgmParams.stepXY == 2) && // default stepXY
-           (maxSgmBufferWidth  < tileParams.bufferWidth  * 0.5) &&
-           (maxSgmBufferHeight < tileParams.bufferHeight * 0.5))
-        {
-          LOG_X("Single tile computation, override SGM step XY (before: " << sgmParams.stepXY  << ", now: 1).");
-          sgmParams.stepXY = 1;
-        }
+//        if(!autoSgmScaleStep && // user define SGM scale & stepXY
+//           (sgmParams.stepXY == 2) && // default stepXY
+//           (maxSgmBufferWidth  < tileParams.bufferWidth  * 0.5) &&
+//           (maxSgmBufferHeight < tileParams.bufferHeight * 0.5))
+//        {
+//          LOG_X("Single tile computation, override SGM step XY (before: " << sgmParams.stepXY  << ", now: 1).");
+//          sgmParams.stepXY = 1;
+//        }
     }
     
     // compute the maximum downscale factor

@@ -213,7 +213,9 @@ void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
     // kernel execution
     
 //    [inout_volume_dmp allocate:volDim elemSizeInBytes:sizeof(float)];
-    Range_d depthRange_d(depthRange.begin, depthRange.end);
+    Range_d depthRange_d;
+    depthRange_d.begin = depthRange.begin;
+    depthRange_d.end = depthRange.end;
     ROI_d roi_d;//(roi.x.begin, roi.y.begin, roi.x.end, roi.y.end);
     roi_d.lt = simd_make_float2(roi.x.begin, roi.y.begin);
     roi_d.rb = simd_make_float2(roi.x.end, roi.y.end);
@@ -460,13 +462,13 @@ void volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
         {
             NSArray* args = @[
                 [xzSliceForY_dmpPtr getBuffer],
-                [NSNumber numberWithInt:[xzSliceForY_dmpPtr getBytesUpToDim:0]], // wbytes
+                @([xzSliceForY_dmpPtr getBytesUpToDim:0]), // wbytes
                 [in_volSim_dmp getBuffer],
-                [NSNumber numberWithInt:[in_volSim_dmp getBytesUpToDim:1]], //wbytes * h
-                [NSNumber numberWithInt:[in_volSim_dmp getBytesUpToDim:0]], // wbytes
+                @([in_volSim_dmp getBytesUpToDim:1]), //wbytes * h
+                @([in_volSim_dmp getBytesUpToDim:0]), // wbytes
                 [NSData dataWithBytes:&volDim_ length:sizeof(volDim_)],
                 [NSData dataWithBytes:&axisT_ length:sizeof(axisT_)],
-                [NSNumber numberWithInt:y]
+                @(y)
             ];
             
             [ComputePipeline Exec:gridVolXZ ThreadgroupSize:blockVolXZ KernelFuncName:@"depthMap::volume_getVolumeXZSlice_kernel" Args:args];

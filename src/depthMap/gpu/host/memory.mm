@@ -38,7 +38,7 @@
     
     buf->bufferLengthInBytes = buf->nBytesPerRow * size.height * size.depth;
     
-    buf->buffer = [device newBufferWithLength:nBytes
+    buf->buffer = [device newBufferWithLength:buf->bufferLengthInBytes
                                          options:MTLResourceStorageModeShared];
     
     buf->sz = size;
@@ -60,7 +60,7 @@
 
     bufferLengthInBytes = nBytesPerRow * size.height * size.depth;
 
-    buffer = [device newBufferWithLength:nBytesPerRow
+    buffer = [device newBufferWithLength:bufferLengthInBytes
                                          options:MTLResourceStorageModeShared];
 
     sz = size;
