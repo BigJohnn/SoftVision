@@ -12,7 +12,9 @@
 
 @interface ComputePipeline : NSObject
 
-+(void) Exec:(MTLSize)gridSize ThreadgroupSize:(MTLSize)threadgroupSize KernelFuncName:(NSString*)kernelFuncName Args:(NSArray*)args;
++(instancetype)createPipeline;
+
+-(void) Exec:(MTLSize)gridSize ThreadgroupSize:(MTLSize)threadgroupSize KernelFuncName:(NSString*)kernelFuncName Args:(NSArray*)args;
 
 @end
 

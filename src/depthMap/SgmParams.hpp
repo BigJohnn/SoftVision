@@ -22,7 +22,7 @@ struct SgmParams
   int stepXY = 2;
   int stepZ = -1;
   int wsh = 4;
-  int maxDepths = 1000; // cause 1500 exceeds gpu memory!
+  int maxDepths = 1500; // cause 1500 exceeds gpu memory!
   int maxTCamsPerTile = 4;
   double seedsRangeInflate = 0.2;
   double depthThicknessInflate = 0.0;

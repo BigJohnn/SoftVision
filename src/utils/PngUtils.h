@@ -96,6 +96,8 @@ void loadpng(std::vector<uint8_t>& image_buffer, const char* file_path, int& ima
 
       png_destroy_read_struct(&png, &info, NULL);
     
+    free(row_pointers);
+    
 }
 
 void write2png(const char* output_path, int image_width, int image_height, const uint8_t* image_buffer)

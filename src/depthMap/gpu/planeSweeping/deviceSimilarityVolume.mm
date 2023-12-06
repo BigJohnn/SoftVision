@@ -80,8 +80,8 @@ void volumeInitialize(DeviceBuffer* inout_volume_dmp, TSim value)
 //        [NSNumber numberWithUnsignedInt:(unsigned)volDim.height],
         @((unsigned char)value)
     ];
-    
-    [ComputePipeline Exec:grid ThreadgroupSize:block KernelFuncName:@"depthMap::volume_init_kernel" Args:args];
+    ComputePipeline* pipeline = [ComputePipeline createPipeline];
+    [pipeline Exec:grid ThreadgroupSize:block KernelFuncName:@"depthMap::volume_init_kernel" Args:args];
     
 //    volume_init_kernel<TSim><<<grid, block, 0, stream>>>(
 //        inout_volume_dmp.getBuffer(),
@@ -120,8 +120,8 @@ void volumeInitialize(DeviceBuffer* inout_volume_dmp, TSimRefine value)
         [NSNumber numberWithUnsignedInt:(unsigned)volDim.height],
         @255.f
     ];
-    
-    [ComputePipeline Exec:grid ThreadgroupSize:block KernelFuncName:@"depthMap::volume_init_kernel" Args:args];
+    ComputePipeline* pipeline = [ComputePipeline createPipeline];
+    [pipeline Exec:grid ThreadgroupSize:block KernelFuncName:@"depthMap::volume_init_kernel" Args:args];
     
 //    volume_init_kernel<TSimRefine><<<grid, block, 0, stream>>>(
 //        inout_volume_dmp.getBuffer(),
@@ -250,7 +250,8 @@ void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
         [NSData dataWithBytes:&roi_d length:sizeof(ROI_d)]
     ];
     
-    [ComputePipeline Exec:grid ThreadgroupSize:block KernelFuncName:@"depthMap::volume_computeSimilarity_kernel" Args:args];
+    ComputePipeline* pipeline = [ComputePipeline createPipeline];
+    [pipeline Exec:grid ThreadgroupSize:block KernelFuncName:@"depthMap::volume_computeSimilarity_kernel" Args:args];
 
     // kernel execution
 //    volume_computeSimilarity_kernel<<<grid, block, 0, stream>>>(
@@ -382,20 +383,22 @@ void volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
     DeviceBuffer* xzSliceForYm1_dmpPtr = inout_volSliceAccB_dmp; // Y-1 slice
     DeviceBuffer* bestSimInYm1_dmpPtr  = inout_volAxisAcc_dmp;   // best sim score along the Y axis for each Z value
 
+    ComputePipeline* pipeline = [ComputePipeline createPipeline];
+    
     // Copy the first XZ plane (at Y=0) from 'in_volSim_dmp' into 'xzSliceForYm1_dmpPtr'
     {
         NSArray* args = @[
             [xzSliceForYm1_dmpPtr getBuffer],
-            [NSNumber numberWithInt:[xzSliceForYm1_dmpPtr getBytesUpToDim:0]], // getPitch
+            @([xzSliceForYm1_dmpPtr getBytesUpToDim:0]), // getPitch
             [in_volSim_dmp getBuffer],
-            [NSNumber numberWithInt:[in_volSim_dmp getBytesUpToDim:1]], //1024*256
-            [NSNumber numberWithInt:[in_volSim_dmp getBytesUpToDim:0]], // 1024
+            @([in_volSim_dmp getBytesUpToDim:1]), //1024*256
+            @([in_volSim_dmp getBytesUpToDim:0]), // 1024
             [NSData dataWithBytes:&volDim_ length:sizeof(volDim_)],
             [NSData dataWithBytes:&axisT_ length:sizeof(axisT_)],
-            [NSNumber numberWithInt:0] // Y = 0
+            @(0) // Y = 0
         ];
         
-        [ComputePipeline Exec:gridVolXZ ThreadgroupSize:blockVolXZ KernelFuncName:@"depthMap::volume_getVolumeXZSlice_kernel" Args:args];
+        [pipeline Exec:gridVolXZ ThreadgroupSize:blockVolXZ KernelFuncName:@"depthMap::volume_getVolumeXZSlice_kernel" Args:args];
     }
     
     
@@ -414,15 +417,15 @@ void volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
     {
         NSArray* args = @[
             [out_volAgr_dmp getBuffer],
-            [NSNumber numberWithInt:[out_volAgr_dmp getBytesUpToDim:1]], //wbytes * h
-            [NSNumber numberWithInt:[out_volAgr_dmp getBytesUpToDim:0]], // wbytes
+            @([out_volAgr_dmp getBytesUpToDim:1]), //wbytes * h
+            @([out_volAgr_dmp getBytesUpToDim:0]), // wbytes
             [NSData dataWithBytes:&volDim_ length:sizeof(volDim_)],
             [NSData dataWithBytes:&axisT_ length:sizeof(axisT_)],
-            [NSNumber numberWithInt:0],
-            [NSNumber numberWithUnsignedChar:255] //TSim
+            @(0),
+            @((TSim)255) //TSim
         ];
         
-        [ComputePipeline Exec:gridVolXZ ThreadgroupSize:blockVolXZ KernelFuncName:@"depthMap::volume_initVolumeYSlice_kernel" Args:args];
+        [pipeline Exec:gridVolXZ ThreadgroupSize:blockVolXZ KernelFuncName:@"depthMap::volume_initVolumeYSlice_kernel" Args:args];
     }
     
     
@@ -433,24 +436,26 @@ void volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
 //        volDim_,
 //        axisT_,
 //        0, 255);
-
+    
+    
     for(int iy = 1; iy < volDimY; ++iy)
     {
         const int y = invY ? volDimY - 1 - iy : iy;
 
+        
         // For each column: compute the best score
         // Foreach x:
         //   bestSimInYm1[x] = min(d_xzSliceForY[1:height])
         {
             NSArray* args = @[
                 [xzSliceForYm1_dmpPtr getBuffer],
-                [NSNumber numberWithInt:[xzSliceForYm1_dmpPtr getBytesUpToDim:0]], // wbytes
+                @([xzSliceForYm1_dmpPtr getBytesUpToDim:0]), // wbytes
                 [bestSimInYm1_dmpPtr getBuffer],
-                [NSNumber numberWithInt:volDimX],
-                [NSNumber numberWithInt:volDimZ]
+                @(volDimX),
+                @(volDimZ)
             ];
             
-            [ComputePipeline Exec:gridColZ ThreadgroupSize:blockColZ KernelFuncName:@"depthMap::volume_computeBestZInSlice_kernel" Args:args];
+            [pipeline Exec:gridColZ ThreadgroupSize:blockColZ KernelFuncName:@"depthMap::volume_computeBestZInSlice_kernel" Args:args];
         }
 //        volume_computeBestZInSlice_kernel<<<gridColZ, blockColZ, 0, stream>>>(
 //            xzSliceForYm1_dmpPtr->getBuffer(),
@@ -471,7 +476,7 @@ void volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
                 @(y)
             ];
             
-            [ComputePipeline Exec:gridVolXZ ThreadgroupSize:blockVolXZ KernelFuncName:@"depthMap::volume_getVolumeXZSlice_kernel" Args:args];
+            [pipeline Exec:gridVolXZ ThreadgroupSize:blockVolXZ KernelFuncName:@"depthMap::volume_getVolumeXZSlice_kernel" Args:args];
         }
 //        volume_getVolumeXZSlice_kernel<TSimAcc, TSim><<<gridVolXZ, blockVolXZ, 0, stream>>>(
 //            xzSliceForY_dmpPtr->getBuffer(),
@@ -487,29 +492,29 @@ void volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
             roi_d.rb = simd_make_float2(roi.x.end, roi.y.end);
             NSArray* args = @[
                 rcDeviceMipmapImage.getTextureObject(),
-                [NSNumber numberWithUnsignedInt:rcLevelDim.width],
-                [NSNumber numberWithUnsignedInt:rcLevelDim.height],
-                [NSNumber numberWithFloat:rcMipmapLevel],
+                @(rcLevelDim.width),
+                @(rcLevelDim.height),
+                @(rcMipmapLevel),
                 [xzSliceForY_dmpPtr getBuffer],// inout: xzSliceForY
-                [NSNumber numberWithInt:[xzSliceForY_dmpPtr getBytesUpToDim:0]], // wbytes
+                @([xzSliceForY_dmpPtr getBytesUpToDim:0]), // wbytes
                 [xzSliceForYm1_dmpPtr getBuffer],// in:    xzSliceForYm1
-                [NSNumber numberWithInt:[xzSliceForYm1_dmpPtr getBytesUpToDim:0]], // wbytes
+                @([xzSliceForYm1_dmpPtr getBytesUpToDim:0]), // wbytes
                 [bestSimInYm1_dmpPtr getBuffer],// in:    bestSimInYm1
                 [out_volAgr_dmp getBuffer],// in:    bestSimInYm1
-                [NSNumber numberWithInt:[out_volAgr_dmp getBytesUpToDim:1]], //wbytes * h
-                [NSNumber numberWithInt:[out_volAgr_dmp getBytesUpToDim:0]], // wbytes
+                @([out_volAgr_dmp getBytesUpToDim:1]), //wbytes * h
+                @([out_volAgr_dmp getBytesUpToDim:0]), // wbytes
                 [NSData dataWithBytes:&volDim_ length:sizeof(volDim_)],
                 [NSData dataWithBytes:&axisT_ length:sizeof(axisT_)],
-                [NSNumber numberWithInt:sgmParams.stepXY],
-                [NSNumber numberWithInt:y],
-                [NSNumber numberWithDouble:sgmParams.p1],
-                [NSNumber numberWithDouble:sgmParams.p2Weighting],
-                [NSNumber numberWithInt:ySign],
-                [NSNumber numberWithInt:filteringIndex],
+                @(sgmParams.stepXY),
+                @(y),
+                @(sgmParams.p1),
+                @(sgmParams.p2Weighting),
+                @(ySign),
+                @(filteringIndex),
                 [NSData dataWithBytes:&roi_d length:sizeof(roi_d)]
             ];
             
-            [ComputePipeline Exec:gridVolSlide ThreadgroupSize:blockVolSlide KernelFuncName:@"depthMap::volume_agregateCostVolumeAtXinSlices_kernel" Args:args];
+            [pipeline Exec:gridVolSlide ThreadgroupSize:blockVolSlide KernelFuncName:@"depthMap::volume_agregateCostVolumeAtXinSlices_kernel" Args:args];
         }
         
 //        volume_agregateCostVolumeAtXinSlices_kernel<<<gridVolSlide, blockVolSlide, 0, stream>>>(

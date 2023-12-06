@@ -7,35 +7,62 @@
 
 #import <depthMap/gpu/host/ComputePipeline.hpp>
 #import <objc/runtime.h>
+
+#include <depthMap/gpu/host/utils.hpp>
+
 @interface ComputePipeline()
 @end
 
 @implementation ComputePipeline
-
-+(void) Exec:(MTLSize)gridSize ThreadgroupSize:(MTLSize)threadgroupSize KernelFuncName:(NSString*)kernelFuncName Args:(NSArray*)args
 {
-    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
-    
-    NSString* libraryName = @"sgm";
+    id<MTLDevice> device;
+    id<MTLCommandQueue> commandQueue;
+    id <MTLLibrary> defaultLibrary;
+}
 
-    NSBundle *bundle = [NSBundle bundleForClass:self.classForCoder];
-    NSURL *bundleURL = [[bundle resourceURL] URLByAppendingPathComponent:@"metalshaders.bundle"];
-    NSBundle *resourceBundle = [NSBundle bundleWithURL:bundleURL];
-    NSURL *libraryURL = [resourceBundle URLForResource:libraryName
-                                                    withExtension:@"metallib"];
++ (instancetype)createPipeline
+{
+    static ComputePipeline *pipeline = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        pipeline = [[ComputePipeline alloc] init];
+        // Do any other initialisation stuff here
+        id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+        
+        NSString* libraryName = @"sgm";
 
-    NSError *libraryError = nil;
+        NSBundle *bundle = [NSBundle bundleForClass:self.classForCoder];
+        NSURL *bundleURL = [[bundle resourceURL] URLByAppendingPathComponent:@"metalshaders.bundle"];
+        NSBundle *resourceBundle = [NSBundle bundleWithURL:bundleURL];
+        NSURL *libraryURL = [resourceBundle URLForResource:libraryName
+                                                        withExtension:@"metallib"];
 
-    id <MTLLibrary> defaultLibrary = [device newLibraryWithURL:libraryURL
-                                                  error:&libraryError];
-    
-//    id <MTLLibrary> defaultLibrary = [device newDefaultLibrary];
-    
-    if (defaultLibrary == nil)
-    {
-        NSLog(@"Failed to find the default library.");
-    }
+        NSError *libraryError = nil;
 
+        id <MTLLibrary> defaultLibrary = [device newLibraryWithURL:libraryURL
+                                                      error:&libraryError];
+        
+    //    id <MTLLibrary> defaultLibrary = [device newDefaultLibrary];
+        
+        if (defaultLibrary == nil)
+        {
+            NSLog(@"Failed to find the default library.");
+        }
+        
+        
+        id<MTLCommandQueue> commandQueue = [device newCommandQueue];
+        assert(nil != commandQueue);
+        
+        pipeline->defaultLibrary = defaultLibrary;
+        pipeline->commandQueue = commandQueue;
+        pipeline->device = device;
+        
+    });
+    return pipeline;
+}
+
+-(void) Exec:(MTLSize)gridSize ThreadgroupSize:(MTLSize)threadgroupSize KernelFuncName:(NSString*)kernelFuncName Args:(NSArray*)args
+{
     id<MTLFunction> func = [defaultLibrary newFunctionWithName:kernelFuncName];
     if (func == nil)
     {
@@ -52,17 +79,10 @@
         //  from Xcode)
         NSLog(@"Failed to created pipeline state object, error %@.", error);
     }
-
-    id<MTLCommandQueue> commandQueue = [device newCommandQueue];
-    if (commandQueue == nil)
-    {
-        NSLog(@"Failed to find the command queue.");
-    }
     
-    // Create a command buffer to hold commands.
     id<MTLCommandBuffer> commandBuffer = [commandQueue commandBuffer];
     assert(commandBuffer != nil);
-
+    
     // Start a compute pass.
     id<MTLComputeCommandEncoder> computeEncoder = [commandBuffer computeCommandEncoder];
     assert(computeEncoder != nil);
@@ -112,7 +132,7 @@
             }
         }
         else if([elem isKindOfClass:[NSData class]]) {
-            
+//            NSLog(@"[elem length] %lu",[elem length] );
             [computeEncoder setBytes:&elem length:[elem length] atIndex:bufferid++];
         }
         
@@ -127,7 +147,7 @@
 
     // Execute the command.
     [commandBuffer commit];
-
+    
     // Normally, you want to do other work in your app while the GPU is running,
     // but in this example, the code simply blocks until the calculation is complete.
     [commandBuffer waitUntilCompleted];
