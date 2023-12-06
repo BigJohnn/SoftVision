@@ -35,22 +35,22 @@ void depthSimMapCopyDepthOnly(DeviceBuffer* out_depthSimMap_dmp,
     
     NSUInteger threadGroupSize = 16;
 //    MTLSize gridSize = MTLSizeMake(divUp(depthSimMapDim.x(), threadGroupSize), divUp(depthSimMapDim.y(), threadGroupSize), 1);
-    MTLSize gridSize = MTLSizeMake(depthSimMapDim.width, depthSimMapDim.height, 1);
+    MTLSize threadsSize = MTLSizeMake(depthSimMapDim.width, depthSimMapDim.height, 1);
     MTLSize threadgroupSize = MTLSizeMake(threadGroupSize, threadGroupSize, 1);
 
     // kernel execution
     NSArray* args = @[
         [out_depthSimMap_dmp getBuffer],
-        [NSNumber numberWithInt:[out_depthSimMap_dmp getBytesUpToDim:0]],
+        @([out_depthSimMap_dmp getBytesUpToDim:0]),
         [in_depthSimMap_dmp getBuffer],
-        [NSNumber numberWithInt:[in_depthSimMap_dmp getBytesUpToDim:0]],
-        [NSNumber numberWithUnsignedInt:depthSimMapDim.width],
-        [NSNumber numberWithUnsignedInt:depthSimMapDim.height],
-        [NSNumber numberWithFloat:defaultSim]
+        @([in_depthSimMap_dmp getBytesUpToDim:0]),
+        @(depthSimMapDim.width),
+        @(depthSimMapDim.height),
+        @(defaultSim)
     ];
     
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
-    [pipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthMap::depthSimMapCopyDepthOnly_kernel" Args:args];
+    [pipeline Exec:threadsSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthMap::depthSimMapCopyDepthOnly_kernel" Args:args];
 }
 
 void cuda_normalMapUpscale(DeviceBuffer* out_upscaledMap_dmp,
@@ -116,7 +116,7 @@ void depthThicknessSmoothThickness(DeviceBuffer* inout_depthThicknessMap_dmp,
     // Calculate a threadgroup size.
     NSUInteger threadGroupSize = 8;
 //    MTLSize gridSize = MTLSizeMake(divUp(roi.width(), threadGroupSize), divUp(roi.height(), threadGroupSize), 1);
-    MTLSize gridSize = MTLSizeMake(roi.width(), roi.height(), 1);
+    MTLSize threadsSize = MTLSizeMake(roi.width(), roi.height(), 1);
     MTLSize threadgroupSize = MTLSizeMake(threadGroupSize, threadGroupSize, 1);
     
     ROI_d roi_d;
@@ -125,14 +125,14 @@ void depthThicknessSmoothThickness(DeviceBuffer* inout_depthThicknessMap_dmp,
     
     NSArray* args = @[
         [inout_depthThicknessMap_dmp getBuffer],
-        [NSNumber numberWithInt:[inout_depthThicknessMap_dmp getBytesUpToDim:0]],
-        [NSNumber numberWithFloat:minThicknessInflate],
-        [NSNumber numberWithFloat:maxThicknessInflate],
+        @([inout_depthThicknessMap_dmp getBytesUpToDim:0]),
+        @(minThicknessInflate),
+        @(maxThicknessInflate),
         [NSData dataWithBytes:&roi_d length:sizeof(ROI_d)]
     ];
     
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
-    [pipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthMap::depthThicknessMapSmoothThickness_kernel" Args:args];
+    [pipeline Exec:threadsSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthMap::depthThicknessMapSmoothThickness_kernel" Args:args];
     
     
     // kernel launch parameters

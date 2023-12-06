@@ -61,7 +61,8 @@ void volumeInitialize(DeviceBuffer* inout_volume_dmp, TSim value)
 
     // kernel launch parameters
     MTLSize block = MTLSizeMake(32, 4, 1);
-    MTLSize grid = MTLSizeMake(volDim.width, volDim.height, volDim.depth);
+//    MTLSize grid = MTLSizeMake((volDim.width + block.width - 1)/block.width, (volDim.height+block.height-1)/block.height, volDim.depth);
+    MTLSize threads = MTLSizeMake(volDim.width, volDim.height, volDim.depth);
 //    const dim3 block(32, 4, 1);
 //    const dim3 grid(divUp(volDim.x(), block.x), divUp(volDim.y(), block.y), volDim.z());
 
@@ -74,15 +75,13 @@ void volumeInitialize(DeviceBuffer* inout_volume_dmp, TSim value)
         @([inout_volume_dmp getBytesUpToDim:0]),
         @((unsigned)volDim.width),
         @((unsigned)volDim.height),
-//        [NSNumber numberWithInt:[inout_volume_dmp getBytesUpToDim:1]], //1024*256
-//        [NSNumber numberWithInt:[inout_volume_dmp getBytesUpToDim:0]], // 1024
-//        [NSNumber numberWithUnsignedInt:(unsigned)volDim.width],
-//        [NSNumber numberWithUnsignedInt:(unsigned)volDim.height],
         @((unsigned char)value)
     ];
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
-    [pipeline Exec:grid ThreadgroupSize:block KernelFuncName:@"depthMap::volume_init_kernel" Args:args];
+    [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_init_kernel" Args:args];
     
+    auto* p = [inout_volume_dmp getBufferPtr];
+    NSLog(@"inout_volume_dmp addr==%p", p);
 //    volume_init_kernel<TSim><<<grid, block, 0, stream>>>(
 //        inout_volume_dmp.getBuffer(),
 //        inout_volume_dmp.getBytesPaddedUpToDim(1),
@@ -109,19 +108,19 @@ void volumeInitialize(DeviceBuffer* inout_volume_dmp, TSimRefine value)
 
     // kernel launch parameters
     MTLSize block = MTLSizeMake(32, 4, 1);
-    MTLSize grid = MTLSizeMake(volDim.width, volDim.height, volDim.depth);
+    MTLSize threads = MTLSizeMake(volDim.width, volDim.height, volDim.depth);
 
     // kernel execution
     NSArray* args = @[
         [inout_volume_dmp getBuffer], //TODO: check: TSimRefine是否使用half
-        [NSNumber numberWithInt:[inout_volume_dmp getBytesUpToDim:1]], //1024*256
-        [NSNumber numberWithInt:[inout_volume_dmp getBytesUpToDim:0]], // 1024
-        [NSNumber numberWithUnsignedInt:(unsigned)volDim.width],
-        [NSNumber numberWithUnsignedInt:(unsigned)volDim.height],
+        @([inout_volume_dmp getBytesUpToDim:1]), //1024*256
+        @([inout_volume_dmp getBytesUpToDim:0]), // 1024
+        @((unsigned)volDim.width),
+        @((unsigned)volDim.height),
         @255.f
     ];
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
-    [pipeline Exec:grid ThreadgroupSize:block KernelFuncName:@"depthMap::volume_init_kernel" Args:args];
+    [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_init_kernel" Args:args];
     
 //    volume_init_kernel<TSimRefine><<<grid, block, 0, stream>>>(
 //        inout_volume_dmp.getBuffer(),
@@ -130,9 +129,6 @@ void volumeInitialize(DeviceBuffer* inout_volume_dmp, TSimRefine value)
 //        (unsigned int)(volDim.x()),
 //        (unsigned int)(volDim.y()),
 //        value);
-//
-//    // check cuda last error
-//    CHECK_CUDA_ERROR();
 }
 
 void cuda_volumeAdd(DeviceBuffer* inout_volume_dmp,
@@ -208,7 +204,7 @@ void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
 //    const dim3 grid(divUp(roi.width(), block.x), divUp(roi.height(), block.y), depthRange.size());
     
     MTLSize block = MTLSizeMake(32, 4, 1); // TODO: check!
-    MTLSize grid = MTLSizeMake(roi.width(), roi.height(), depthRange.size());
+    MTLSize threads = MTLSizeMake(roi.width(), roi.height(), depthRange.size());
 
     // kernel execution
     
@@ -221,37 +217,37 @@ void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
     roi_d.rb = simd_make_float2(roi.x.end, roi.y.end);
     NSArray* args = @[
         [out_volBestSim_dmp getBuffer],
-        [NSNumber numberWithInt:[out_volBestSim_dmp getBytesUpToDim:1]], //1024*256
-        [NSNumber numberWithInt:[out_volBestSim_dmp getBytesUpToDim:0]], // 1024
+        @([out_volBestSim_dmp getBytesUpToDim:1]), //1024*256
+        @([out_volBestSim_dmp getBytesUpToDim:0]), // 1024
         [out_volSecBestSim_dmp getBuffer],
-        [NSNumber numberWithInt:[out_volSecBestSim_dmp getBytesUpToDim:1]], //1024*256
-        [NSNumber numberWithInt:[out_volSecBestSim_dmp getBytesUpToDim:0]], // 1024
+        @([out_volSecBestSim_dmp getBytesUpToDim:1]), //1024*256
+        @([out_volSecBestSim_dmp getBytesUpToDim:0]), // 1024
         [in_depths_dmp getBuffer],
-        [NSNumber numberWithInt:[in_depths_dmp getBytesUpToDim:0]], // 1024
+        @([in_depths_dmp getBytesUpToDim:0]), // 1024
         rcDeviceCameraParams,
         tcDeviceCameraParams,
         rcDeviceMipmapImage.getTextureObject(),
         tcDeviceMipmapImage.getTextureObject(),
-        [NSNumber numberWithUnsignedInt:(unsigned)rcLevelDim.width],
-        [NSNumber numberWithUnsignedInt:(unsigned)rcLevelDim.height],
-        [NSNumber numberWithUnsignedInt:(unsigned)tcLevelDim.width],
-        [NSNumber numberWithUnsignedInt:(unsigned)tcLevelDim.height],
-        [NSNumber numberWithInt:rcMipmapLevel],
-        [NSNumber numberWithInt:sgmParams.stepXY],
-        [NSNumber numberWithInt:sgmParams.wsh],
+        @((unsigned)rcLevelDim.width),
+        @((unsigned)rcLevelDim.height),
+        @((unsigned)tcLevelDim.width),
+        @((unsigned)tcLevelDim.height),
+        @(rcMipmapLevel),
+        @(sgmParams.stepXY),
+        @(sgmParams.wsh),
         
-        [NSNumber numberWithFloat:1.f / float(sgmParams.gammaC)],
-        [NSNumber numberWithInt:1.f / float(sgmParams.gammaP)],
+        @(1.f / float(sgmParams.gammaC)),
+        @(1.f / float(sgmParams.gammaP)),
         
-        [NSNumber numberWithBool:sgmParams.useConsistentScale],
-        [NSNumber numberWithBool:sgmParams.useCustomPatchPattern],
+        @(sgmParams.useConsistentScale),
+        @(sgmParams.useCustomPatchPattern),
         
         [NSData dataWithBytes:&depthRange_d length:sizeof(Range_d)],
         [NSData dataWithBytes:&roi_d length:sizeof(ROI_d)]
     ];
     
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
-    [pipeline Exec:grid ThreadgroupSize:block KernelFuncName:@"depthMap::volume_computeSimilarity_kernel" Args:args];
+    [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_computeSimilarity_kernel" Args:args];
 
     // kernel execution
 //    volume_computeSimilarity_kernel<<<grid, block, 0, stream>>>(

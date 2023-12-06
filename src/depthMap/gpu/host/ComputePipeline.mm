@@ -61,7 +61,7 @@
     return pipeline;
 }
 
--(void) Exec:(MTLSize)gridSize ThreadgroupSize:(MTLSize)threadgroupSize KernelFuncName:(NSString*)kernelFuncName Args:(NSArray*)args
+-(void) Exec:(MTLSize)threadsSize ThreadgroupSize:(MTLSize)threadgroupSize KernelFuncName:(NSString*)kernelFuncName Args:(NSArray*)args
 {
     id<MTLFunction> func = [defaultLibrary newFunctionWithName:kernelFuncName];
     if (func == nil)
@@ -139,8 +139,10 @@
     }
     
     // Encode the compute command.
-    [computeEncoder dispatchThreads:gridSize
+    [computeEncoder dispatchThreads:threadsSize
               threadsPerThreadgroup:threadgroupSize];
+    
+//    computeEncoder dispatchThreadgroups:<#(MTLSize)#> threadsPerThreadgroup:<#(MTLSize)#>
 
     // End the compute pass.
     [computeEncoder endEncoding];
