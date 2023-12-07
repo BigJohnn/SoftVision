@@ -136,10 +136,10 @@ inline void outerMultiply(thread float3x3& O3x3, const thread float3& a, const t
     O3x3[8] = a.z * b.z;
 }
 
-inline float3 linePlaneIntersect(device const float3& linePoint,
+inline float3 linePlaneIntersect(constant float3& linePoint,
                                             const thread float3& lineVect,
                                             const thread float3& planePoint,
-                                            const device float3& planeNormal)
+                                 constant float3& planeNormal)
 {
     const float k = (dot(planePoint, planeNormal) - dot(planeNormal, linePoint)) / dot(planeNormal, lineVect);
     return linePoint + lineVect * k;

@@ -123,6 +123,7 @@ void Refine::refineRc(const Tile& tile, DeviceBuffer* in_sgmDepthThicknessMap_dm
 
         // get R device camera parameters id from cache
         const int rcDeviceCameraParamsId = deviceCache.requestCameraParamsId(tile.rc, _refineParams.scale, _mp);
+        auto&& rcDeviceCameraParams = deviceCache.requestCameraParamsBuffer(tile.rc, _refineParams.scale, _mp);
 
         // get R device mipmap image from cache
         const DeviceMipmapImage& rcDeviceMipmapImage = deviceCache.requestMipmapImage(tile.rc, _mp);
@@ -133,7 +134,7 @@ void Refine::refineRc(const Tile& tile, DeviceBuffer* in_sgmDepthThicknessMap_dm
         // - compute pixSize from SGM thickness
         computeSgmUpscaledDepthPixSizeMap(_sgmDepthPixSizeMap_dmp,
                                                in_sgmDepthThicknessMap_dmp,
-                                               rcDeviceCameraParamsId,
+                                               rcDeviceCameraParams,
                                                rcDeviceMipmapImage,
                                                _refineParams,
                                                downscaledRoi);
@@ -145,7 +146,7 @@ void Refine::refineRc(const Tile& tile, DeviceBuffer* in_sgmDepthThicknessMap_dm
         // upscale SGM normal map (if needed)
         if(_refineParams.useSgmNormalMap && [in_sgmNormalMap_dmp getBufferPtr] != nullptr)
         {
-            cuda_normalMapUpscale(_sgmNormalMap_dmp, in_sgmNormalMap_dmp, downscaledRoi);
+            normalMapUpscale(_sgmNormalMap_dmp, in_sgmNormalMap_dmp, downscaledRoi);
         }
     }
 
@@ -206,7 +207,7 @@ void Refine::refineAndFuseDepthSimMap(const Tile& tile)
 
     // get R device camera parameters id from cache
     const int rcDeviceCameraParamsId = deviceCache.requestCameraParamsId(tile.rc, _refineParams.scale, _mp);
-    id<MTLBuffer> rcDeviceCameraParams = deviceCache.requestCameraParamsBuffer(tile.rc, _refineParams.scale, _mp);
+    auto&& rcDeviceCameraParams = deviceCache.requestCameraParamsBuffer(tile.rc, _refineParams.scale, _mp);
     
     // get R device mipmap image from cache
     const DeviceMipmapImage& rcDeviceMipmapImage = deviceCache.requestMipmapImage(tile.rc, _mp);
@@ -219,7 +220,7 @@ void Refine::refineAndFuseDepthSimMap(const Tile& tile)
 
         // get T device camera parameters id from cache
         const int tcDeviceCameraParamsId = deviceCache.requestCameraParamsId(tc, _refineParams.scale, _mp);
-        id<MTLBuffer> tcDeviceCameraParams = deviceCache.requestCameraParamsBuffer(tc, _refineParams.scale, _mp);
+        auto&& tcDeviceCameraParams = deviceCache.requestCameraParamsBuffer(tc, _refineParams.scale, _mp);
 
         // get T device mipmap image from cache
         const DeviceMipmapImage& tcDeviceMipmapImage = deviceCache.requestMipmapImage(tc, _mp);
@@ -249,9 +250,9 @@ void Refine::refineAndFuseDepthSimMap(const Tile& tile)
 
     // retrieve the best depth/sim in the volume
     // compute sub-pixel sample using a sliding gaussian 
-    cuda_volumeRefineBestDepth(_refinedDepthSimMap_dmp, 
-                               _sgmDepthPixSizeMap_dmp,
-                               _volumeRefineSim_dmp,
+    volumeRefineBestDepth(_refinedDepthSimMap_dmp,  //depth == 1
+                               _sgmDepthPixSizeMap_dmp, //depth == 1
+                               _volumeRefineSim_dmp, //depth > 1
                                _refineParams,
                                downscaledRoi);
     
@@ -295,10 +296,11 @@ void Refine::computeAndWriteNormalMap(const Tile& tile, DeviceBuffer* in_depthSi
     // get R device camera parameters id from cache
     DeviceCache& deviceCache = DeviceCache::getInstance();
     const int rcDeviceCameraParamsId = deviceCache.requestCameraParamsId(tile.rc, _refineParams.scale, _mp);
+    DeviceCameraParams rcDeviceCameraParams = deviceCache.requestCameraParamsBuffer(tile.rc, _refineParams.scale, _mp);
 
     LOG_X(tile << "Refine compute normal map of view id: " << _mp.getViewId(tile.rc) << ", rc: " << tile.rc << " (" << (tile.rc + 1) << " / " << _mp.ncams << ").");
 
-    cuda_depthSimMapComputeNormal(_normalMap_dmp, in_depthSimMap_dmp, rcDeviceCameraParamsId, _refineParams.stepXY, downscaledRoi);
+    depthSimMapComputeNormal(_normalMap_dmp, in_depthSimMap_dmp, rcDeviceCameraParams, _refineParams.stepXY, downscaledRoi);
 
     writeNormalMap(tile.rc, _mp, _tileParams, tile.roi, _normalMap_dmp, _refineParams.scale, _refineParams.stepXY, name);
 }

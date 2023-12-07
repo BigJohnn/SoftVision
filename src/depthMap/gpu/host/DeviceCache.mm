@@ -38,9 +38,9 @@ void normalize(vector_float3& a)
     a.z /= d;
 }
 
-void fillCameraParameters(void* cameraParameters, int camId, int downscale, const mvsUtils::MultiViewParams& mp)
+void fillCameraParameters(DeviceCameraParams &cameraParameters_h, int camId, int downscale, const mvsUtils::MultiViewParams& mp)
 {
-    DeviceCameraParams &cameraParameters_h = *(DeviceCameraParams*)cameraParameters;
+//    DeviceCameraParams &cameraParameters_h = *(DeviceCameraParams*)cameraParameters;
     Matrix3x3 scaleM;
     scaleM.m11 = 1.0 / float(downscale);
     scaleM.m12 = 0.0;
@@ -392,19 +392,20 @@ void DeviceCache::addCameraParams(int camId, int downscale, const mvsUtils::Mult
 
     //TODO: check AAA
     {
-        id<MTLDevice> device = MTLCreateSystemDefaultDevice();
-        id<MTLBuffer> _cameraParametersBuffer = [device newBufferWithLength:sizeof(DeviceCameraParams)
-                                            options:MTLResourceStorageModeShared];
+//        id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+//        id<MTLBuffer> _cameraParametersBuffer = [device newBufferWithLength:sizeof(DeviceCameraParams)
+//                                            options:MTLResourceStorageModeShared];
+//
+//        _cameraParametersBuffer.label = @"CameraParametersBuffer";
 
-        _cameraParametersBuffer.label = @"CameraParametersBuffer";
-
-        fillCameraParameters(_cameraParametersBuffer.contents,camId, downscale, mp);
+        DeviceCameraParams params;
+        fillCameraParameters(params,camId, downscale, mp);
+        _vCamParams.emplace_back(params);
+//        if(!_vCamParamsBuffer) {
+//            _vCamParamsBuffer = [NSMutableArray new];
+//        }
         
-        if(!_vCamParamsBuffer) {
-            _vCamParamsBuffer = [NSMutableArray new];
-        }
-        
-        [_vCamParamsBuffer insertObject:_cameraParametersBuffer atIndex:deviceCameraParamsId];
+//        [_vCamParamsBuffer insertObject:_cameraParametersBuffer atIndex:deviceCameraParamsId];
     }
     
     // fill the host-side camera parameters from multi-view parameters.
@@ -468,9 +469,9 @@ const int DeviceCache::requestCameraParamsId(int camId, int downscale, const mvs
     return deviceCameraParamsId;
 }
 
-id<MTLBuffer> DeviceCache::requestCameraParamsBuffer(int camId, int downscale, const mvsUtils::MultiViewParams& mp)
+DeviceCameraParams const& DeviceCache::requestCameraParamsBuffer(int camId, int downscale, const mvsUtils::MultiViewParams& mp)
 {
-    return _vCamParamsBuffer[requestCameraParamsId(camId, downscale, mp)];
+    return _vCamParams[requestCameraParamsId(camId, downscale, mp)];
 }
 
 } // namespace depthMap

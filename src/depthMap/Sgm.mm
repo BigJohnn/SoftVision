@@ -183,9 +183,10 @@ void Sgm::sgmRc(const Tile& tile, const SgmDepthList& tileDepthList)
         // get R device camera parameters id from cache
         DeviceCache& deviceCache = DeviceCache::getInstance();
         const int rcDeviceCameraParamsId = deviceCache.requestCameraParamsId(tile.rc, _sgmParams.scale, _mp);
+        auto&& rcDeviceCameraParams = deviceCache.requestCameraParamsBuffer(tile.rc, _sgmParams.scale, _mp);
 
         LOG_X(tile << "SGM compute normal map of view id: " << viewId << ", rc: " << tile.rc << " (" << (tile.rc + 1) << " / " << _mp.ncams << ").");
-        cuda_depthSimMapComputeNormal(_normalMap_dmp, _depthSimMap_dmp, rcDeviceCameraParamsId, _sgmParams.stepXY, downscaledRoi);
+        depthSimMapComputeNormal(_normalMap_dmp, _depthSimMap_dmp, rcDeviceCameraParams, _sgmParams.stepXY, downscaledRoi);
 
         // export intermediate normal map (if requested by user)
         if(_sgmParams.exportIntermediateNormalMaps)
@@ -226,7 +227,7 @@ void Sgm::computeSimilarityVolumes(const Tile& tile, const SgmDepthList& tileDep
 
     // get R device camera parameters id from cache
     const int rcDeviceCameraParamsId = deviceCache.requestCameraParamsId(tile.rc, _sgmParams.scale, _mp);
-    id<MTLBuffer> rcDeviceCameraParams = deviceCache.requestCameraParamsBuffer(tile.rc, _sgmParams.scale, _mp);
+    auto&& rcDeviceCameraParams = deviceCache.requestCameraParamsBuffer(tile.rc, _sgmParams.scale, _mp);
 
     // get R device mipmap image from cache
     const DeviceMipmapImage& rcDeviceMipmapImage = deviceCache.requestMipmapImage(tile.rc, _mp);
@@ -243,7 +244,7 @@ void Sgm::computeSimilarityVolumes(const Tile& tile, const SgmDepthList& tileDep
 
         // get T device camera parameters id from cache
         const int tcDeviceCameraParamsId = deviceCache.requestCameraParamsId(tc, _sgmParams.scale, _mp);
-        id<MTLBuffer> tcDeviceCameraParams = deviceCache.requestCameraParamsBuffer(tc, _sgmParams.scale, _mp);
+        auto&& tcDeviceCameraParams = deviceCache.requestCameraParamsBuffer(tc, _sgmParams.scale, _mp);
 
         // get T device mipmap image from cache
         const DeviceMipmapImage& tcDeviceMipmapImage = deviceCache.requestMipmapImage(tc, _mp);

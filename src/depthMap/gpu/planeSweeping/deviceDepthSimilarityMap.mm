@@ -11,6 +11,7 @@
 //#include "deviceDepthSimilarityMapKernels.cuh"
 
 #include <depthMap/gpu/host/divUp.hpp>
+#include <depthMap/gpu/device/DeviceCameraParams.hpp>
 
 #include <utility>
 #include <mvsData/ROI_d.hpp>
@@ -53,38 +54,38 @@ void depthSimMapCopyDepthOnly(DeviceBuffer* out_depthSimMap_dmp,
     [pipeline Exec:threadsSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthMap::depthSimMapCopyDepthOnly_kernel" Args:args];
 }
 
-void cuda_normalMapUpscale(DeviceBuffer* out_upscaledMap_dmp,
+void normalMapUpscale(DeviceBuffer* out_upscaledMap_dmp,
                                     DeviceBuffer* in_map_dmp,
                                     const ROI& roi)
 {
     // compute upscale ratio
-//    const CudaSize<2>& out_mapDim = out_upscaledMap_dmp.getSize();
-//    const CudaSize<2>& in_mapDim = in_map_dmp.getSize();
-//    const float ratio = float(in_mapDim.x()) / float(out_mapDim.x());
-//
-//    // kernel launch parameters
-////    const int blockSize = 16;
-////    const dim3 block(blockSize, blockSize, 1);
-////    const dim3 grid(divUp(roi.width(), blockSize), divUp(roi.height(), blockSize), 1);
-//
-//    NSUInteger threadGroupSize = 16;
-//    MTLSize gridSize = MTLSizeMake(divUp(roi.width(), threadGroupSize), divUp(roi.height(), threadGroupSize), 1);
-//    MTLSize threadgroupSize = MTLSizeMake(threadGroupSize, threadGroupSize, 1);
-//
-//    ROI_d roi_d(roi.x.begin, roi.y.begin,
-//                roi.x.end, roi.y.end);
-//
-//    NSArray* args = @[
-//                out_upscaledMap_dmp.getBuffer(),
-//                out_upscaledMap_dmp.getPitch(),
-//                in_map_dmp.getBuffer(),
-//                in_map_dmp.getPitch(),
-//                ratio,
-//                roi_d
-//    ];
-//
-//    [pipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"mapUpscale_kernel" Args:args];
+    const MTLSize& out_mapDim = [out_upscaledMap_dmp getSize];
+    const MTLSize& in_mapDim = [in_map_dmp getSize];
+    const float ratio = float(in_mapDim.width) / float(out_mapDim.width);
+
+    // kernel launch parameters
+    const int blockSize = 16;
+    const MTLSize block = MTLSizeMake(blockSize, blockSize, 1);
+//    const dim3 grid(divUp(roi.width(), blockSize), divUp(roi.height(), blockSize), 1);
+    const MTLSize threads = MTLSizeMake(roi.width(), roi.height(), 1);
+
+    ROI_d roi_d;
+    roi_d.lt = simd_make_float2(roi.x.begin, roi.y.begin);
+    roi_d.rb = simd_make_float2(roi.x.end, roi.y.end);
+
+    NSArray* args = @[
+                [out_upscaledMap_dmp getBuffer],
+                @([out_upscaledMap_dmp getBytesUpToDim:0]),
+                [in_map_dmp getBuffer],
+                @([in_map_dmp getBytesUpToDim:0]),
+                @(ratio),
+                [NSData dataWithBytes:&roi_d length:sizeof(roi_d)]
+    ];
+
     // kernel execution
+    ComputePipeline* pipeline = [ComputePipeline createPipeline];
+    [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"mapUpscale_kernel" Args:args];
+    
 //    mapUpscale_kernel<float3><<<grid, block, 0, stream>>>(
 //        out_upscaledMap_dmp.getBuffer(),
 //        out_upscaledMap_dmp.getPitch(),
@@ -154,54 +155,57 @@ void depthThicknessSmoothThickness(DeviceBuffer* inout_depthThicknessMap_dmp,
 
 void computeSgmUpscaledDepthPixSizeMap(DeviceBuffer* out_upscaledDepthPixSizeMap_dmp,
                                                      DeviceBuffer* in_sgmDepthThicknessMap_dmp,
-                                                     const int rcDeviceCameraParamsId,
+                                                     DeviceCameraParams const& rcDeviceCameraParams,
                                                      const DeviceMipmapImage& rcDeviceMipmapImage,
                                                      const RefineParams& refineParams,
                                                      const ROI& roi)
 {
     // compute upscale ratio
+    MTLSize out_mapDim = [out_upscaledDepthPixSizeMap_dmp getSize];
+    MTLSize in_mapDim = [in_sgmDepthThicknessMap_dmp getSize];
+    const float ratio = float(in_mapDim.width)/float(out_mapDim.width);
 //    const CudaSize<2>& out_mapDim = out_upscaledDepthPixSizeMap_dmp.getSize();
 //    const CudaSize<2>& in_mapDim = in_sgmDepthThicknessMap_dmp.getSize();
 //    const float ratio = float(in_mapDim.x()) / float(out_mapDim.x());
 //
 //    // get R mipmap image level and dimensions
-//    const float rcMipmapLevel = rcDeviceMipmapImage.getLevel(refineParams.scale);
+    const float rcMipmapLevel = rcDeviceMipmapImage.getLevel(refineParams.scale);
+    const MTLSize& rcLevelDim = rcDeviceMipmapImage.getDimensions(refineParams.scale);
 //    const CudaSize<2> rcLevelDim = rcDeviceMipmapImage.getDimensions(refineParams.scale);
 //
-////    // kernel launch parameters
-////    const int blockSize = 16;
-////    const dim3 block(blockSize, blockSize, 1);
-////    const dim3 grid(divUp(roi.width(), blockSize), divUp(roi.height(), blockSize), 1);
-//
-//    NSUInteger threadGroupSize = 16;
-//    MTLSize gridSize = MTLSizeMake(divUp(roi.width(), threadGroupSize), divUp(roi.height(), threadGroupSize), 1);
-//    MTLSize threadgroupSize = MTLSizeMake(threadGroupSize, threadGroupSize, 1);
-//
-//    ROI_d roi_d(roi.x.begin, roi.y.begin,
-//                roi.x.end, roi.y.end);
-//
-//    // kernel execution
-//    if(refineParams.interpolateMiddleDepth)
-//    {
-//
-//        NSArray* args = @[
-//                        out_upscaledDepthPixSizeMap_dmp.getBuffer(),
-//                        out_upscaledDepthPixSizeMap_dmp.getPitch(),
-//                        in_sgmDepthThicknessMap_dmp.getBuffer(),
-//                        in_sgmDepthThicknessMap_dmp.getPitch(),
-//                        rcDeviceCameraParamsId,
-//                        rcDeviceMipmapImage.getTextureObject(),
-//                        (unsigned int)(rcLevelDim.x()),
-//                        (unsigned int)(rcLevelDim.y()),
-//                        rcMipmapLevel,
-//                        refineParams.stepXY,
-//                        refineParams.halfNbDepths,
-//                        ratio,
-//                        roi_d
-//        ];
-//
-//        [pipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthMap::computeSgmUpscaledDepthPixSizeMap_bilinear_kernel" Args:args];
-//
+    // kernel launch parameters
+    const int blockSize = 16;
+    const MTLSize block = MTLSizeMake(blockSize, blockSize, 1);
+    const MTLSize threads = MTLSizeMake(roi.width(), roi.height(), 1);
+//    const dim3 grid(divUp(roi.width(), blockSize), divUp(roi.height(), blockSize), 1);
+
+    ROI_d roi_d;
+    roi_d.lt = simd_make_float2(roi.x.begin, roi.y.begin);
+    roi_d.rb = simd_make_float2(roi.x.end, roi.y.end);
+
+    ComputePipeline* pipeline = [ComputePipeline createPipeline];
+    // kernel execution
+    if(refineParams.interpolateMiddleDepth)
+    {
+
+        NSArray* args = @[
+                        [out_upscaledDepthPixSizeMap_dmp getBuffer],
+                        @([out_upscaledDepthPixSizeMap_dmp getBytesUpToDim:0]),
+                        [in_sgmDepthThicknessMap_dmp getBuffer],
+                        @([in_sgmDepthThicknessMap_dmp getBytesUpToDim:0]),
+                        [NSData dataWithBytes:&rcDeviceCameraParams length:sizeof(rcDeviceCameraParams)],
+                        rcDeviceMipmapImage.getTextureObject(),
+                        @((unsigned int)(rcLevelDim.width)),
+                        @((unsigned int)(rcLevelDim.height)),
+                        @(rcMipmapLevel),
+                        @(refineParams.stepXY),
+                        @(refineParams.halfNbDepths),
+                        @(ratio),
+                        [NSData dataWithBytes:&roi_d length:sizeof(roi_d)]
+        ];
+
+        [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::computeSgmUpscaledDepthPixSizeMap_bilinear_kernel" Args:args];
+
 //        computeSgmUpscaledDepthPixSizeMap_bilinear_kernel<<<grid, block, 0, stream>>>(
 //            out_upscaledDepthPixSizeMap_dmp.getBuffer(),
 //            out_upscaledDepthPixSizeMap_dmp.getPitch(),
@@ -216,26 +220,26 @@ void computeSgmUpscaledDepthPixSizeMap(DeviceBuffer* out_upscaledDepthPixSizeMap
 //            refineParams.halfNbDepths,
 //            ratio,
 //            roi);
-//    }
-//    else
-//    {
-//        NSArray* args = @[
-//                        out_upscaledDepthPixSizeMap_dmp.getBuffer(),
-//                        out_upscaledDepthPixSizeMap_dmp.getPitch(),
-//                        in_sgmDepthThicknessMap_dmp.getBuffer(),
-//                        in_sgmDepthThicknessMap_dmp.getPitch(),
-//                        rcDeviceCameraParamsId,
-//                        rcDeviceMipmapImage.getTextureObject(),
-//                        (unsigned int)(rcLevelDim.x()),
-//                        (unsigned int)(rcLevelDim.y()),
-//                        rcMipmapLevel,
-//                        refineParams.stepXY,
-//                        refineParams.halfNbDepths,
-//                        ratio,
-//                        roi_d
-//        ];
-//
-//        [pipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthMap::computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel" Args:args];
+    }
+    else
+    {
+        NSArray* args = @[
+                        [out_upscaledDepthPixSizeMap_dmp getBuffer],
+                        @([out_upscaledDepthPixSizeMap_dmp getBytesUpToDim:0]),
+                        [in_sgmDepthThicknessMap_dmp getBuffer],
+                        @([in_sgmDepthThicknessMap_dmp getBytesUpToDim:0]),
+                        [NSData dataWithBytes:&rcDeviceCameraParams length:sizeof(rcDeviceCameraParams)],
+                        rcDeviceMipmapImage.getTextureObject(),
+                        @((unsigned int)(rcLevelDim.width)),
+                        @((unsigned int)(rcLevelDim.height)),
+                        @(rcMipmapLevel),
+                        @(refineParams.stepXY),
+                        @(refineParams.halfNbDepths),
+                        @(ratio),
+                        [NSData dataWithBytes:&roi_d length:sizeof(roi_d)]
+        ];
+
+        [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel" Args:args];
 //        computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel<<<grid, block, 0, stream>>>(
 //            out_upscaledDepthPixSizeMap_dmp.getBuffer(),
 //            out_upscaledDepthPixSizeMap_dmp.getPitch(),
@@ -250,38 +254,37 @@ void computeSgmUpscaledDepthPixSizeMap(DeviceBuffer* out_upscaledDepthPixSizeMap
 //            refineParams.halfNbDepths,
 //            ratio,
 //            roi);
-//    }
+    }
 }
 
-void cuda_depthSimMapComputeNormal(DeviceBuffer* out_normalMap_dmp,
+void depthSimMapComputeNormal(DeviceBuffer* out_normalMap_dmp,
                                             DeviceBuffer* in_depthSimMap_dmp,
-                                            const int rcDeviceCameraParamsId,
+                              DeviceCameraParams const& rcDeviceCameraParams,
                                             const int stepXY,
                                             const ROI& roi)
 {
     // kernel launch parameters
     NSUInteger threadGroupSize = 8;
 //    MTLSize gridSize = MTLSizeMake(divUp(roi.width(), threadGroupSize), divUp(roi.height(), threadGroupSize), 1);
-    MTLSize gridSize = MTLSizeMake(roi.width(), roi.height(), 1);
+    MTLSize threads = MTLSizeMake(roi.width(), roi.height(), 1);
     MTLSize threadgroupSize = MTLSizeMake(threadGroupSize, threadGroupSize, 1);
 
     ROI_d roi_d;
     roi_d.lt = simd_make_float2(roi.x.begin, roi.y.begin);
     roi_d.rb = simd_make_float2(roi.x.end, roi.y.end);
     
-//    NSArray* args = @[
-//                [out_normalMap_dmp getBuffer],
-//                [NSNumber numberWithInt:[out_normalMap_dmp getBytesUpToDim:0]],
-//                [in_depthSimMap_dmp getBuffer],
-//                [NSNumber numberWithInt:[in_depthSimMap_dmp getBytesUpToDim:0]],
-//
-//                //TODO: use texture instead!!
-//                rcDeviceCameraParamsId,
-//                stepXY,
-//                roi_d
-//    ];
-//
-//    [pipeline Exec:gridSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthMap::depthSimMapComputeNormal_kernel" Args:args];
+    NSArray* args = @[
+                [out_normalMap_dmp getBuffer],
+                @([out_normalMap_dmp getBytesUpToDim:0]),
+                [in_depthSimMap_dmp getBuffer],
+                @([in_depthSimMap_dmp getBytesUpToDim:0]),
+                [NSData dataWithBytes:&rcDeviceCameraParams length:sizeof(rcDeviceCameraParams)],
+                @(stepXY),
+                [NSData dataWithBytes:&roi_d length:sizeof(roi_d)]
+    ];
+
+    ComputePipeline* pipeline = [ComputePipeline createPipeline];
+    [pipeline Exec:threads ThreadgroupSize:threadgroupSize KernelFuncName:@"depthMap::depthSimMapComputeNormal_kernel" Args:args];
     
 //    const dim3 block(8, 8, 1);
 //    const dim3 grid(divUp(roi.width(), block.x), divUp(roi.height(), block.y), 1);

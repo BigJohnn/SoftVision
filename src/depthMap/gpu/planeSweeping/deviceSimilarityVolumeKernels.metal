@@ -27,17 +27,17 @@ void move3DPointByRcPixSize(device float3& p,
 }
 
 void volume_computePatch(thread Patch& patch,
-                                           device const DeviceCameraParams& rcDeviceCamParams,
-                                           device const DeviceCameraParams& tcDeviceCamParams,
-                                           const float fpPlaneDepth,
-                                           thread const float2& pix)
+                                           constant DeviceCameraParams& rcDeviceCamParams,
+                         constant DeviceCameraParams& tcDeviceCamParams,
+                                           thread float& fpPlaneDepth,
+                                           float2 pix)
 {
     patch.p = get3DPointForPixelAndFrontoParellePlaneRC(rcDeviceCamParams, pix, fpPlaneDepth);
     patch.d = computePixSize(rcDeviceCamParams, patch.p);
     computeRotCSEpip(patch, rcDeviceCamParams, tcDeviceCamParams);
 }
 
-float depthPlaneToDepth(device const DeviceCameraParams& deviceCamParams,
+float depthPlaneToDepth(constant DeviceCameraParams& deviceCamParams,
                                           const float fpPlaneDepth,
                                           thread const float2& pix)
 {
@@ -112,23 +112,23 @@ kernel void volume_updateUninitialized_kernel(device TSim* inout_volume2nd_d, de
 kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, constant int& out_volume1st_s, constant int& out_volume1st_p,
                                             device TSim* out_volume2nd_d, constant int& out_volume2nd_s, constant int& out_volume2nd_p,
                                             device const float* in_depths_d, device const int& in_depths_p,
-                                            device const DeviceCameraParams& rcDeviceCamParams,
-                                            device const DeviceCameraParams& tcDeviceCamParams,
+                                            constant DeviceCameraParams& rcDeviceCamParams,
+                                            constant DeviceCameraParams& tcDeviceCamParams,
                                             texture2d<half>  rcMipmapImage_tex  [[texture(0)]],
                                             texture2d<half>  tcMipmapImage_tex  [[texture(1)]],
                                             constant unsigned int& rcSgmLevelWidth,
                                             constant unsigned int& rcSgmLevelHeight,
                                             constant unsigned int& tcSgmLevelWidth,
                                             constant unsigned int& tcSgmLevelHeight,
-                                            device const float& rcMipmapLevel,
-                                            device const int& stepXY,
-                                            device const int& wsh,
-                                            device const float& invGammaC,
-                                            device const float& invGammaP,
-                                            device const bool& useConsistentScale,
-                                            device const bool& useCustomPatchPattern,
-                                            device const Range_d& depthRange,
-                                            device const ROI_d& roi,
+                                            constant float& rcMipmapLevel,
+                                            constant int& stepXY,
+                                            constant int& wsh,
+                                            constant float& invGammaC,
+                                            constant float& invGammaP,
+                                            constant bool& useConsistentScale,
+                                            constant bool& useCustomPatchPattern,
+                                            constant Range_d& depthRange,
+                                            constant ROI_d& roi,
                                             uint3 index [[thread_position_in_grid]])
 {
     const unsigned int roiX = index.x;
@@ -241,27 +241,27 @@ kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, consta
     }
 }
 
-kernel void volume_refineSimilarity_kernel(device TSimRefine* inout_volSim_d, device int* inout_volSim_s, device int* inout_volSim_p,
-                                           device const float2* in_sgmDepthPixSizeMap_d, device const int* in_sgmDepthPixSizeMap_p,
-                                           device const float3* in_sgmNormalMap_d, device const int* in_sgmNormalMap_p,
-                                           device const int* rcDeviceCameraParamsId,
-                                           device const int* tcDeviceCameraParamsId,
+kernel void volume_refineSimilarity_kernel(device TSimRefine* inout_volSim_d, constant int& inout_volSim_s, constant int& inout_volSim_p,
+                                           device const float2* in_sgmDepthPixSizeMap_d, constant int& in_sgmDepthPixSizeMap_p,
+                                           device const float3* in_sgmNormalMap_d, constant int& in_sgmNormalMap_p,
+                                           constant DeviceCameraParams& rcDeviceCameraParams,
+                                           constant DeviceCameraParams& tcDeviceCameraParams,
                                            texture2d<half> rcMipmapImage_tex[[texture(0)]],
                                            texture2d<half> tcMipmapImage_tex[[texture(1)]],
-                                           device const unsigned int* rcRefineLevelWidth,
-                                           device const unsigned int* rcRefineLevelHeight,
-                                           device const unsigned int* tcRefineLevelWidth,
-                                           device const unsigned int* tcRefineLevelHeight,
-                                           device const float* rcMipmapLevel,
-                                           device const int* volDimZ,
-                                           device const int* stepXY,
-                                           device const int* wsh,
-                                           device const float* invGammaC,
-                                           device const float* invGammaP,
-                                           device const bool* useConsistentScale,
-                                           device const bool* useCustomPatchPattern,
-                                           device const Range_d* depthRange,
-                                           device const ROI_d* roi)
+                                           constant unsigned int& rcRefineLevelWidth,
+                                           constant unsigned int& rcRefineLevelHeight,
+                                           constant unsigned int& tcRefineLevelWidth,
+                                           constant unsigned int& tcRefineLevelHeight,
+                                           constant float& rcMipmapLevel,
+                                           constant int& volDimZ,
+                                           constant int& stepXY,
+                                           constant int& wsh,
+                                           constant float& invGammaC,
+                                           constant float& invGammaP,
+                                           constant bool& useConsistentScale,
+                                           constant bool& useCustomPatchPattern,
+                                           constant Range_d& depthRange,
+                                           constant ROI_d& roi)
 {
 //    const unsigned int roiX = blockIdx.x * blockDim.x + threadIdx.x;
 //    const unsigned int roiY = blockIdx.y * blockDim.y + threadIdx.y;

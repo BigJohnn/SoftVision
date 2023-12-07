@@ -91,7 +91,7 @@ public:
      */
     const int requestCameraParamsId(int camId, int downscale, const mvsUtils::MultiViewParams& mp);
     
-    id<MTLBuffer> requestCameraParamsBuffer(int camId, int downscale, const mvsUtils::MultiViewParams& mp);
+    DeviceCameraParams const& requestCameraParamsBuffer(int camId, int downscale, const mvsUtils::MultiViewParams& mp);
 
 private:
 
@@ -114,7 +114,8 @@ private:
     };
     std::map <int, std::unique_ptr<SingleDeviceCache>> _cachePerDevice; // <cudaDeviceId, SingleDeviceCachePtr>
 
-    NSMutableArray* _vCamParamsBuffer;
+//    NSMutableArray* _vCamParamsBuffer;
+    std::vector<DeviceCameraParams> _vCamParams;
     NSMutableArray* _vCamTexturesCache;
     // private methods
 

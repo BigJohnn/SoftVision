@@ -29,7 +29,7 @@ struct Patch
     float d;  //< pixel size
 };
 
-inline float2 project3DPoint(device const float4x3& M3x4, thread const float3& V)
+inline float2 project3DPoint(constant float4x3& M3x4, thread const float3& V)
 {
     // without optimization
     // const float3 p = M3x4mulV3(M3x4, V);
@@ -122,8 +122,8 @@ inline void computeRotCS(thread float3& xax, thread float3& yax, thread float3& 
 }
 
 inline void computeRotCSEpip(thread Patch& ptch,
-                             device const DeviceCameraParams& rcDeviceCamParams,
-                             device const DeviceCameraParams& tcDeviceCamParams)
+                             constant DeviceCameraParams& rcDeviceCamParams,
+                             constant DeviceCameraParams& tcDeviceCamParams)
 {
     // Vector from the reference camera to the 3d point
     float3 v1 = rcDeviceCamParams.C - ptch.p;
@@ -147,12 +147,12 @@ inline void computeRotCSEpip(thread Patch& ptch,
     ptch.x = normalize(ptch.x);
 }
 
-inline float pointLineDistance3D(const thread float3& point, const device float3& linePoint, const thread float3& lineVectNormalized)
+inline float pointLineDistance3D(const thread float3& point, constant float3& linePoint, const thread float3& lineVectNormalized)
 {
     return length(cross(lineVectNormalized, linePoint - point));
 }
     
-inline float computePixSize(const device DeviceCameraParams& deviceCamParams, thread const float3& p)
+inline float computePixSize(constant DeviceCameraParams& deviceCamParams, thread const float3& p)
 {
     const float2 rp = project3DPoint(deviceCamParams.P, p);
     const float2 rp1 = rp + float2(1.0f, 0.0f);
@@ -173,7 +173,7 @@ inline void getPixelFor3DPoint(thread float2& out, thread const DeviceCameraPara
         out = float2(p.x / p.z, p.y / p.z);
 }
 
-inline float3 get3DPointForPixelAndFrontoParellePlaneRC(device const DeviceCameraParams& deviceCamParams, thread const float2& pix, float fpPlaneDepth)
+inline float3 get3DPointForPixelAndFrontoParellePlaneRC(constant DeviceCameraParams& deviceCamParams, thread const float2& pix, float fpPlaneDepth)
 {
     const float3 planep = deviceCamParams.C + deviceCamParams.ZVect * fpPlaneDepth;
     float3 v = deviceCamParams.iP * float3(pix, 1.0f);
@@ -181,7 +181,7 @@ inline float3 get3DPointForPixelAndFrontoParellePlaneRC(device const DeviceCamer
     return linePlaneIntersect(deviceCamParams.C, v, planep, deviceCamParams.ZVect);
 }
 
-inline float3 get3DPointForPixelAndDepthFromRC(thread const DeviceCameraParams& deviceCamParams, thread const float2& pix, float depth)
+inline float3 get3DPointForPixelAndDepthFromRC(constant DeviceCameraParams& deviceCamParams, float2 pix, float depth)
 {
     float3 rpv = deviceCamParams.iP * float3(pix, 1.0f);
     rpv = normalize(rpv);
@@ -365,9 +365,9 @@ inline float refineDepthSubPixel(thread const float3& depths, thread const float
 
 inline void computeRcTcMipmapLevels(thread float& out_rcMipmapLevel,
                                     thread            float& out_tcMipmapLevel,
-                                    device            const float& mipmapLevel,
-                                    device            const DeviceCameraParams& rcDeviceCamParams,
-                                    device            const DeviceCameraParams& tcDeviceCamParams,
+                                    constant float& mipmapLevel,
+                                    constant DeviceCameraParams& rcDeviceCamParams,
+                                    constant DeviceCameraParams& tcDeviceCamParams,
                                     thread            const float2& rp0,
                                     thread            const float2& tp0,
                                     thread            const float3& p0)
@@ -586,19 +586,19 @@ static float compNCCbyH(const DeviceCameraParams& rcDeviceCamParams,
  *          -> invalid/uninitialized/masked similarity: INF_F
  */
 //template<bool TInvertAndFilter>
-inline float compNCCby3DptsYK(device const DeviceCameraParams& rcDeviceCamParams,
-                              device           const DeviceCameraParams& tcDeviceCamParams,
+inline float compNCCby3DptsYK(constant DeviceCameraParams& rcDeviceCamParams,
+                              constant DeviceCameraParams& tcDeviceCamParams,
                               texture2d<half> rcMipmapImage_tex[[texture(0)]],
                               texture2d<half> tcMipmapImage_tex[[texture(1)]],
                               constant unsigned int& rcLevelWidth,
                               constant unsigned int& rcLevelHeight,
                               constant unsigned int& tcLevelWidth,
                               constant unsigned int& tcLevelHeight,
-                              device           const float& mipmapLevel,
-                              device           const int& wsh,
-                              device           const float& invGammaC,
-                              device           const float& invGammaP,
-                              device           const bool& useConsistentScale,
+                              constant float& mipmapLevel,
+                              constant int& wsh,
+                              constant float& invGammaC,
+                              constant float& invGammaP,
+                              constant bool& useConsistentScale,
                               thread bool TInvertAndFilter,
                               thread           const Patch& patch)
 {
@@ -725,18 +725,18 @@ inline float compNCCby3DptsYK(device const DeviceCameraParams& rcDeviceCamParams
  *          -> invalid/uninitialized/masked similarity: INF_F
  */
 //template<bool TInvertAndFilter>
-inline float compNCCby3DptsYK_customPatchPattern(device const DeviceCameraParams& rcDeviceCamParams,
-                                                 device            const DeviceCameraParams& tcDeviceCamParams,
+inline float compNCCby3DptsYK_customPatchPattern(constant DeviceCameraParams& rcDeviceCamParams,
+                                                 constant DeviceCameraParams& tcDeviceCamParams,
                                                  texture2d<half> rcMipmapImage_tex[[texture(0)]],
                                                  texture2d<half> tcMipmapImage_tex[[texture(1)]],
                                                  constant unsigned int &rcLevelWidth,
                                                  constant unsigned int &rcLevelHeight,
                                                  constant unsigned int &tcLevelWidth,
                                                  constant unsigned int &tcLevelHeight,
-                                                 device            const float &mipmapLevel,
-                                                 device            const float &invGammaC,
-                                                 device            const float &invGammaP,
-                                                 device            const bool &useConsistentScale,
+                                                 constant float &mipmapLevel,
+                                                 constant float &invGammaC,
+                                                 constant float &invGammaP,
+                                                 constant bool &useConsistentScale,
                                                  thread bool TInvertAndFilter,
                                                  thread            const Patch& patch)
 {

@@ -80,8 +80,8 @@ void volumeInitialize(DeviceBuffer* inout_volume_dmp, TSim value)
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
     [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_init_kernel" Args:args];
     
-    auto* p = [inout_volume_dmp getBufferPtr];
-    NSLog(@"inout_volume_dmp addr==%p", p);
+//    auto* p = [inout_volume_dmp getBufferPtr];
+//    NSLog(@"inout_volume_dmp addr==%p", p);
 //    volume_init_kernel<TSim><<<grid, block, 0, stream>>>(
 //        inout_volume_dmp.getBuffer(),
 //        inout_volume_dmp.getBytesPaddedUpToDim(1),
@@ -186,8 +186,8 @@ void cuda_volumeUpdateUninitializedSimilarity(DeviceBuffer* in_volBestSim_dmp,
 void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
                               DeviceBuffer* out_volSecBestSim_dmp,
                                DeviceBuffer* in_depths_dmp,
-                               DeviceBuffer* rcDeviceCameraParams,
-                               DeviceBuffer* tcDeviceCameraParams,
+                             DeviceCameraParams const& rcDeviceCameraParams,
+                             DeviceCameraParams const& tcDeviceCameraParams,
                                const DeviceMipmapImage& rcDeviceMipmapImage,
                                const DeviceMipmapImage& tcDeviceMipmapImage,
                                const SgmParams& sgmParams,
@@ -224,8 +224,8 @@ void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
         @([out_volSecBestSim_dmp getBytesUpToDim:0]), // 1024
         [in_depths_dmp getBuffer],
         @([in_depths_dmp getBytesUpToDim:0]), // 1024
-        rcDeviceCameraParams,
-        tcDeviceCameraParams,
+        [NSData dataWithBytes:&rcDeviceCameraParams length:sizeof(rcDeviceCameraParams)],
+        [NSData dataWithBytes:&tcDeviceCameraParams length:sizeof(rcDeviceCameraParams)],
         rcDeviceMipmapImage.getTextureObject(),
         tcDeviceMipmapImage.getTextureObject(),
         @((unsigned)rcLevelDim.width),
@@ -284,8 +284,8 @@ void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
 extern void volumeRefineSimilarity(DeviceBuffer* inout_volSim_dmp,
                                         DeviceBuffer* in_sgmDepthPixSizeMap_dmp,
                                         DeviceBuffer* in_sgmNormalMap_dmpPtr,
-                                   DeviceBuffer* rcDeviceCameraParams,
-                                   DeviceBuffer* tcDeviceCameraParams,
+                                   DeviceCameraParams const& rcDeviceCameraParams,
+                                   DeviceCameraParams const& tcDeviceCameraParams,
                                         const DeviceMipmapImage& rcDeviceMipmapImage,
                                         const DeviceMipmapImage& tcDeviceMipmapImage,
                                         const RefineParams& refineParams, 
@@ -293,15 +293,55 @@ extern void volumeRefineSimilarity(DeviceBuffer* inout_volSim_dmp,
                                         const ROI& roi)
 {
     // get mipmap images level and dimensions
-//    const float rcMipmapLevel = rcDeviceMipmapImage.getLevel(refineParams.scale);
-//    const CudaSize<2> rcLevelDim = rcDeviceMipmapImage.getDimensions(refineParams.scale);
-//    const CudaSize<2> tcLevelDim = tcDeviceMipmapImage.getDimensions(refineParams.scale);
-//
-//    // kernel launch parameters
+    const float rcMipmapLevel = rcDeviceMipmapImage.getLevel(refineParams.scale);
+    const MTLSize rcLevelDim = rcDeviceMipmapImage.getDimensions(refineParams.scale);
+    const MTLSize tcLevelDim = tcDeviceMipmapImage.getDimensions(refineParams.scale);
+
+    // kernel launch parameters
 //    const dim3 block = getMaxPotentialBlockSize(volume_refineSimilarity_kernel);
 //    const dim3 grid(divUp(roi.width(), block.x), divUp(roi.height(), block.y), depthRange.size());
-//
-//    // kernel execution
+    const MTLSize block = MTLSizeMake(32, 32, 1);
+    const MTLSize threads = MTLSizeMake(roi.width(), roi.height(), depthRange.size());
+    
+    Range_d depthRange_d;
+    depthRange_d.begin = depthRange.begin;
+    depthRange_d.end = depthRange.end;
+    ROI_d roi_d;
+    roi_d.lt = simd_make_float2(roi.x.begin, roi.y.begin);
+    roi_d.rb = simd_make_float2(roi.x.end, roi.y.end);
+    NSArray* args = @[
+                [inout_volSim_dmp getBuffer],
+                @([inout_volSim_dmp getBytesUpToDim:1]),
+                @([inout_volSim_dmp getBytesUpToDim:0]),
+                [in_sgmDepthPixSizeMap_dmp getBuffer],
+                @([in_sgmDepthPixSizeMap_dmp getBytesUpToDim:0]),
+                (in_sgmNormalMap_dmpPtr == nil) ? nil : [in_sgmNormalMap_dmpPtr getBuffer],
+                (in_sgmNormalMap_dmpPtr == nil) ? 0 : @([in_sgmNormalMap_dmpPtr getBytesUpToDim:0]),
+                [NSData dataWithBytes:&rcDeviceCameraParams length:sizeof(rcDeviceCameraParams)],
+                [NSData dataWithBytes:&tcDeviceCameraParams length:sizeof(tcDeviceCameraParams)],
+                rcDeviceMipmapImage.getTextureObject(),
+                tcDeviceMipmapImage.getTextureObject(),
+                @((unsigned int)(rcLevelDim.width)),
+                @((unsigned int)(rcLevelDim.height)),
+                @((unsigned int)(tcLevelDim.width)),
+                @((unsigned int)(tcLevelDim.height)),
+                @(rcMipmapLevel),
+                @(int([inout_volSim_dmp getSize].depth)),
+                @(refineParams.stepXY),
+                @(refineParams.wsh),
+                @((1.f / float(refineParams.gammaC))), // inverted gammaC
+                @((1.f / float(refineParams.gammaP))), // inverted gammaP
+                @(refineParams.useConsistentScale),
+                @(refineParams.useCustomPatchPattern),
+                [NSData dataWithBytes:&depthRange_d length:sizeof(depthRange_d)],
+                [NSData dataWithBytes:&roi_d length:sizeof(roi_d)]
+
+    ];
+    
+    ComputePipeline* pipeline = [ComputePipeline createPipeline];
+    [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_refineSimilarity_kernel" Args:args];
+    
+    // kernel execution
 //    volume_refineSimilarity_kernel<<<grid, block, 0, stream>>>(
 //        inout_volSim_dmp.getBuffer(),
 //        inout_volSim_dmp.getBytesPaddedUpToDim(1),
@@ -632,21 +672,46 @@ void cuda_volumeRetrieveBestDepth(DeviceBuffer* out_sgmDepthThicknessMap_dmp,
 //    CHECK_CUDA_ERROR();
 }
 
-extern void cuda_volumeRefineBestDepth(DeviceBuffer* out_refineDepthSimMap_dmp,
+extern void volumeRefineBestDepth(DeviceBuffer* out_refineDepthSimMap_dmp,
                                        DeviceBuffer* in_sgmDepthPixSizeMap_dmp,
                                        DeviceBuffer* in_volSim_dmp,
                                        const RefineParams& refineParams, 
                                        const ROI& roi)
 {
     // constant kernel inputs
-//    const int halfNbSamples = refineParams.nbSubsamples * refineParams.halfNbDepths;
-//    const float twoTimesSigmaPowerTwo = float(2.0 * refineParams.sigma * refineParams.sigma);
-//
-//    // kernel launch parameters
+    const int halfNbSamples = refineParams.nbSubsamples * refineParams.halfNbDepths;
+    const float twoTimesSigmaPowerTwo = float(2.0 * refineParams.sigma * refineParams.sigma);
+
+    // kernel launch parameters
 //    const dim3 block = getMaxPotentialBlockSize(volume_refineBestDepth_kernel);
 //    const dim3 grid(divUp(roi.width(), block.x), divUp(roi.height(), block.y), 1);
-//
-//    // kernel execution
+    MTLSize const& block = MTLSizeMake(32, 32, 1);//TODO: check
+    MTLSize const& threads = MTLSizeMake(roi.width(), roi.height(), 1);
+    
+    // kernel execution
+    ROI_d roi_d;
+    roi_d.lt = simd_make_float2(roi.x.begin, roi.y.begin);
+    roi_d.rb = simd_make_float2(roi.x.end, roi.y.end);
+    NSArray* args = @[
+                [out_refineDepthSimMap_dmp getBuffer],
+                @([out_refineDepthSimMap_dmp getBytesUpToDim:0]),
+                [in_sgmDepthPixSizeMap_dmp getBuffer],
+                @([in_sgmDepthPixSizeMap_dmp getBytesUpToDim:0]),
+                [in_volSim_dmp getBuffer],
+                @([in_volSim_dmp getBytesUpToDim:1]),
+                @([in_volSim_dmp getBytesUpToDim:0]),
+                @(int([in_volSim_dmp getSize].depth)),
+                @(refineParams.nbSubsamples),  // number of samples between two depths
+                @(halfNbSamples),              // number of samples (in front and behind mid depth)
+                @(refineParams.halfNbDepths),  // number of depths  (in front and behind mid depth)
+                @(twoTimesSigmaPowerTwo),
+                [NSData dataWithBytes:&roi_d length:sizeof(roi_d)]
+
+    ];
+    
+    ComputePipeline* pipeline = [ComputePipeline createPipeline];
+    [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_refineBestDepth_kernel" Args:args];
+    
 //    volume_refineBestDepth_kernel<<<grid, block, 0, stream>>>(
 //        out_refineDepthSimMap_dmp.getBuffer(),
 //        out_refineDepthSimMap_dmp.getBytesPaddedUpToDim(0),

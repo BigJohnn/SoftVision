@@ -13,6 +13,7 @@
 #include <depthMap/RefineParams.hpp>
 
 #include <depthMap/gpu/host/DeviceMipmapImage.hpp>
+#include <depthMap/gpu/device/DeviceCameraParams.hpp>
 
 
 namespace depthMap {
@@ -35,7 +36,7 @@ extern void depthSimMapCopyDepthOnly(DeviceBuffer* out_depthSimMap_dmp,
  * @param[in] roi the 2d region of interest
  * @param[in] stream the stream for gpu execution
  */
-extern void cuda_normalMapUpscale(DeviceBuffer* out_upscaledMap_dmp,
+extern void normalMapUpscale(DeviceBuffer* out_upscaledMap_dmp,
                                   DeviceBuffer* in_map_dmp,
                                   const ROI& roi);
 
@@ -64,7 +65,7 @@ extern void depthThicknessSmoothThickness(DeviceBuffer* inout_depthThicknessMap_
  */
 extern void computeSgmUpscaledDepthPixSizeMap(DeviceBuffer* out_upscaledDepthPixSizeMap_dmp,
                                                    DeviceBuffer* in_sgmDepthThicknessMap_dmp,
-                                                   const int rcDeviceCameraParamsId,
+                                                DeviceCameraParams const& rcDeviceCameraParams,
                                                    const DeviceMipmapImage& rcDeviceMipmapImage,
                                                    const RefineParams& refineParams,
                                                    const ROI& roi);
@@ -77,9 +78,9 @@ extern void computeSgmUpscaledDepthPixSizeMap(DeviceBuffer* out_upscaledDepthPix
  * @param[in] stepXY the input depth/sim map stepXY factor
  * @param[in] roi the 2d region of interest
  */
-extern void cuda_depthSimMapComputeNormal(DeviceBuffer* out_normalMap_dmp,
+extern void depthSimMapComputeNormal(DeviceBuffer* out_normalMap_dmp,
                                           DeviceBuffer* in_depthSimMap_dmp,
-                                          const int rcDeviceCameraParamsId,
+                                          DeviceCameraParams const& rcDeviceCameraParams,
                                           const int stepXY,
                                           const ROI& roi);
 

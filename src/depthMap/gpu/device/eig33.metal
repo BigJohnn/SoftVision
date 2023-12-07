@@ -372,7 +372,7 @@ struct cuda_stat3d
         count = 0;
     }
 
-    void update(const device float3& p, const device float& w)
+    void update(float3 p, float w)
     {
         xxsum += (float)p.x * (float)p.x;
         yysum += (float)p.y * (float)p.y;
@@ -423,7 +423,7 @@ struct cuda_stat3d
         d3 = (float)d[0];
     }
 
-    bool computePlaneByPCA(device float3& p, device float3& n)
+    bool computePlaneByPCA(thread float3& p, thread float3& n)
     {
         if(count < 3.0)
         {

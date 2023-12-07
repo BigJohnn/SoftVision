@@ -13,6 +13,8 @@
 #include <depthMap/gpu/host/DeviceMipmapImage.hpp>
 #include <depthMap/gpu/planeSweeping/similarity.hpp>
 
+#include <depthMap/gpu/device/DeviceCameraParams.hpp>
+
 
 namespace depthMap {
 
@@ -64,8 +66,8 @@ extern void cuda_volumeUpdateUninitializedSimilarity(DeviceBuffer* in_volBestSim
 extern void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
                                          DeviceBuffer* out_volSecBestSim_dmp,
                                          DeviceBuffer* in_depths_dmp,
-                                    DeviceBuffer* rcDeviceCameraParams,
-                                    DeviceBuffer* tcDeviceCameraParams,
+                                    DeviceCameraParams const& rcDeviceCameraParams,
+                                    DeviceCameraParams const& tcDeviceCameraParams,
                                          const DeviceMipmapImage& rcDeviceMipmapImage,
                                          const DeviceMipmapImage& tcDeviceMipmapImage,
                                          const SgmParams& sgmParams, 
@@ -89,8 +91,8 @@ extern void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
 extern void volumeRefineSimilarity(DeviceBuffer* inout_volSim_dmp, 
                                         DeviceBuffer* in_sgmDepthPixSizeMap_dmp,
                                         DeviceBuffer* in_sgmNormalMap_dmpPtr,
-                                   DeviceBuffer* rcDeviceCameraParams,
-                                   DeviceBuffer* tcDeviceCameraParams,
+                                   DeviceCameraParams const& rcDeviceCameraParams,
+                                   DeviceCameraParams const& tcDeviceCameraParams,
                                         const DeviceMipmapImage& rcDeviceMipmapImage,
                                         const DeviceMipmapImage& tcDeviceMipmapImage,
                                         const RefineParams& refineParams, 
@@ -151,7 +153,7 @@ extern void cuda_volumeRetrieveBestDepth(DeviceBuffer* out_sgmDepthThicknessMap_
  * @param[in] roi the 2d region of interest
  * @param[in] stream the stream for gpu execution
  */
-extern void cuda_volumeRefineBestDepth(DeviceBuffer* out_refineDepthSimMap_dmp,
+extern void volumeRefineBestDepth(DeviceBuffer* out_refineDepthSimMap_dmp,
                                        DeviceBuffer* in_sgmDepthPixSizeMap_dmp,
                                        DeviceBuffer* in_volSim_dmp, 
                                        const RefineParams& refineParams, 
