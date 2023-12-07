@@ -97,12 +97,12 @@ extern void depthSimMapComputeNormal(DeviceBuffer* out_normalMap_dmp,
  * @param[in] roi the 2d region of interest
  * @param[in] stream the stream for gpu execution
  */
-extern void cuda_depthSimMapOptimizeGradientDescent(DeviceBuffer* out_optimizeDepthSimMap_dmp,
+extern void depthSimMapOptimizeGradientDescent(DeviceBuffer* out_optimizeDepthSimMap_dmp,
                                                     DeviceBuffer* inout_imgVariance_dmp,
                                                     DeviceBuffer* inout_tmpOptDepthMap_dmp,
                                                     DeviceBuffer* in_sgmDepthPixSizeMap_dmp,
                                                     DeviceBuffer* in_refineDepthSimMap_dmp,
-                                                    const int rcDeviceCameraParamsId,
+                                                    DeviceCameraParams const& rcDeviceCameraParams,
                                                     const DeviceMipmapImage& rcDeviceMipmapImage,
                                                     const RefineParams& refineParams,
                                                     const ROI& roi);

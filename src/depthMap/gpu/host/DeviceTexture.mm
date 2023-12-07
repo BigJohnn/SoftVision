@@ -54,5 +54,30 @@
     return texture;
 }
 
++(id<MTLTexture>) initWithFloatBuffer:(DeviceBuffer*)buffer
+{
+    MTLTextureDescriptor * descriptor = [MTLTextureDescriptor new];
+    
+    descriptor.pixelFormat = MTLPixelFormatR16Float;
+    descriptor.textureType      = MTLTextureType2D;
+    
+    MTLSize size = [buffer getSize];
+    descriptor.width            = size.width;
+    descriptor.height           = size.height;
+    descriptor.storageMode      = MTLStorageModeShared;
+    
+    
+    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+    MTLRegion region = {
+            { 0, 0, 0 },                   // MTLOrigin
+            {descriptor.width, descriptor.height, 1} // MTLSize
+        };
+    id<MTLTexture> texture = [device newTextureWithDescriptor:descriptor];
+    [texture replaceRegion:region
+               mipmapLevel:0
+                 withBytes:[buffer getBuffer].contents
+               bytesPerRow:[buffer getBytesUpToDim:0]];
+    return texture;
+}
 @end
 

@@ -303,29 +303,51 @@ void depthSimMapComputeNormal(DeviceBuffer* out_normalMap_dmp,
 //    CHECK_CUDA_ERROR();
 }
 
-void cuda_depthSimMapOptimizeGradientDescent(DeviceBuffer* out_optimizeDepthSimMap_dmp,
+void depthSimMapOptimizeGradientDescent(DeviceBuffer* out_optimizeDepthSimMap_dmp,
                                                       DeviceBuffer* inout_imgVariance_dmp,
                                                       DeviceBuffer* inout_tmpOptDepthMap_dmp,
                                                       DeviceBuffer* in_sgmDepthPixSizeMap_dmp,
                                                       DeviceBuffer* in_refineDepthSimMap_dmp,
-                                                      const int rcDeviceCameraParamsId,
+                                                      DeviceCameraParams const& rcDeviceCameraParams,
                                                       const DeviceMipmapImage& rcDeviceMipmapImage,
                                                       const RefineParams& refineParams,
                                                       const ROI& roi)
 {
     // get R mipmap image level and dimensions
-//    const float rcMipmapLevel = rcDeviceMipmapImage.getLevel(refineParams.scale);
-//    const CudaSize<2> rcLevelDim = rcDeviceMipmapImage.getDimensions(refineParams.scale);
-//
-//    // initialize depth/sim map optimized with SGM depth/pixSize map
+    const float rcMipmapLevel = rcDeviceMipmapImage.getLevel(refineParams.scale);
+    const MTLSize& rcLevelDim = rcDeviceMipmapImage.getDimensions(refineParams.scale);
+
+    // initialize depth/sim map optimized with SGM depth/pixSize map
+    [out_optimizeDepthSimMap_dmp copyFrom:in_sgmDepthPixSizeMap_dmp];
 //    out_optimizeDepthSimMap_dmp.copyFrom(in_sgmDepthPixSizeMap_dmp, stream);
-//
-//    {
-//        // kernel launch parameters
-//        const dim3 lblock(32, 2, 1);
+
+    ROI_d roi_d;
+    roi_d.lt = simd_make_float2(roi.x.begin, roi.y.begin);
+    roi_d.rb = simd_make_float2(roi.x.end, roi.y.end);
+    ComputePipeline* pipeline = [ComputePipeline createPipeline];
+    
+    {
+        // kernel launch parameters
+        const MTLSize& lblock = MTLSizeMake(32, 2, 1);
+        const MTLSize& lthreads = MTLSizeMake(roi.width(), roi.height(), 1);
 //        const dim3 lgrid(divUp(roi.width(), lblock.x), divUp(roi.height(), lblock.y), 1);
-//
-//        // kernel execution
+
+        // kernel execution
+        
+        
+        NSArray* args = @[
+                        [inout_imgVariance_dmp getBuffer],
+                        @([inout_imgVariance_dmp getBytesUpToDim:0]),
+                        rcDeviceMipmapImage.getTextureObject(),
+                        @((unsigned int)(rcLevelDim.width)),
+                        @((unsigned int)(rcLevelDim.height)),
+                        @(rcMipmapLevel),
+                        @(refineParams.stepXY),
+                        [NSData dataWithBytes:&roi_d length:sizeof(roi_d)]
+        ];
+
+        
+        [pipeline Exec:lthreads ThreadgroupSize:lblock KernelFuncName:@"depthMap::optimize_varLofLABtoW_kernel" Args:args];
 //        optimize_varLofLABtoW_kernel<<<lgrid, lblock, 0, stream>>>(
 //            inout_imgVariance_dmp.getBuffer(), 
 //            inout_imgVariance_dmp.getPitch(),
@@ -335,27 +357,56 @@ void cuda_depthSimMapOptimizeGradientDescent(DeviceBuffer* out_optimizeDepthSimM
 //            rcMipmapLevel,
 //            refineParams.stepXY,
 //            roi);
-//    }
-//
+    }
+
+    id<MTLTexture> imgVarianceTex = [DeviceTexture initWithFloatBuffer:inout_imgVariance_dmp];
+    id<MTLTexture> depthTex = [DeviceTexture initWithFloatBuffer:inout_tmpOptDepthMap_dmp];
 //    CudaTexture<float, false, false> imgVarianceTex(inout_imgVariance_dmp); // neighbor interpolation, without normalized coordinates
 //    CudaTexture<float, false, false> depthTex(inout_tmpOptDepthMap_dmp);    // neighbor interpolation, without normalized coordinates
-//
-//    // kernel launch parameters
-//    const int blockSize = 16;
-//    const dim3 block(blockSize, blockSize, 1);
+
+    // kernel launch parameters
+    const int blockSize = 16;
+    const MTLSize& block = MTLSizeMake(blockSize, blockSize, 1);
 //    const dim3 grid(divUp(roi.width(), blockSize), divUp(roi.height(), blockSize), 1);
-//
-//    for(int iter = 0; iter < refineParams.optimizationNbIterations; ++iter) // default nb iterations is 100
-//    {
-//        // copy depths values from out_depthSimMapOptimized_dmp to inout_tmpOptDepthMap_dmp
+    const MTLSize& threads = MTLSizeMake(roi.width(), roi.height(), 1);
+
+    for(int iter = 0; iter < refineParams.optimizationNbIterations; ++iter) // default nb iterations is 100
+    {
+        // copy depths values from out_depthSimMapOptimized_dmp to inout_tmpOptDepthMap_dmp
+        {
+            NSArray* args = @[
+                            [inout_tmpOptDepthMap_dmp getBuffer],
+                            @([inout_tmpOptDepthMap_dmp getBytesUpToDim:0]),
+                            [out_optimizeDepthSimMap_dmp getBuffer], // initialized with SGM depth/pixSize map
+                            @([out_optimizeDepthSimMap_dmp getBytesUpToDim:0]),
+                            [NSData dataWithBytes:&roi_d length:sizeof(roi_d)]
+            ];
+            [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::optimize_getOptDeptMapFromOptDepthSimMap_kernel" Args:args];
+        }
 //        optimize_getOptDeptMapFromOptDepthSimMap_kernel<<<grid, block, 0, stream>>>(
 //            inout_tmpOptDepthMap_dmp.getBuffer(), 
 //            inout_tmpOptDepthMap_dmp.getPitch(), 
 //            out_optimizeDepthSimMap_dmp.getBuffer(), // initialized with SGM depth/pixSize map
 //            out_optimizeDepthSimMap_dmp.getPitch(),
 //            roi);
-//
-//        // adjust depth/sim by using previously computed depths
+
+        // adjust depth/sim by using previously computed depths
+        {
+            NSArray* args = @[
+                            [out_optimizeDepthSimMap_dmp getBuffer],
+                            @([out_optimizeDepthSimMap_dmp getBytesUpToDim:0]),
+                            [in_sgmDepthPixSizeMap_dmp getBuffer],
+                            @([in_sgmDepthPixSizeMap_dmp getBytesUpToDim:0]),
+                            [in_refineDepthSimMap_dmp getBuffer],
+                            @([in_refineDepthSimMap_dmp getBytesUpToDim:0]),
+                            [NSData dataWithBytes:&rcDeviceCameraParams length:sizeof(rcDeviceCameraParams)],
+                            imgVarianceTex,
+                            depthTex,
+                            @(iter),
+                            [NSData dataWithBytes:&roi_d length:sizeof(roi_d)]
+            ];
+            [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::optimize_depthSimMap_kernel" Args:args];
+        }
 //        optimize_depthSimMap_kernel<<<grid, block, 0, stream>>>(
 //            out_optimizeDepthSimMap_dmp.getBuffer(),
 //            out_optimizeDepthSimMap_dmp.getPitch(),
@@ -368,7 +419,7 @@ void cuda_depthSimMapOptimizeGradientDescent(DeviceBuffer* out_optimizeDepthSimM
 //            depthTex.textureObj,
 //            iter, 
 //            roi);
-//    }
+    }
 //
 //    // check cuda last error
 //    CHECK_CUDA_ERROR();

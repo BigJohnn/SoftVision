@@ -271,16 +271,17 @@ void Refine::optimizeDepthSimMap(const Tile& tile)
 
     // get R device camera parameters id from cache
     const int rcDeviceCameraParamsId = deviceCache.requestCameraParamsId(tile.rc, _refineParams.scale, _mp);
+    auto&& rcDeviceCameraParams = deviceCache.requestCameraParamsBuffer(tile.rc, _refineParams.scale, _mp);
 
     // get R device mipmap image from cache
     const DeviceMipmapImage& rcDeviceMipmapImage = deviceCache.requestMipmapImage(tile.rc, _mp);
 
-    cuda_depthSimMapOptimizeGradientDescent(_optimizedDepthSimMap_dmp, // output depth/sim map optimized
+    depthSimMapOptimizeGradientDescent(_optimizedDepthSimMap_dmp, // output depth/sim map optimized
                                             _optImgVariance_dmp,       // image variance buffer pre-allocate
                                             _optTmpDepthMap_dmp,       // temporary depth map buffer pre-allocate
                                             _sgmDepthPixSizeMap_dmp,   // input SGM upscaled depth/pixSize map
                                             _refinedDepthSimMap_dmp,   // input refined and fused depth/sim map
-                                            rcDeviceCameraParamsId,
+                                            rcDeviceCameraParams,
                                             rcDeviceMipmapImage,
                                             _refineParams,
                                             downscaledRoi);

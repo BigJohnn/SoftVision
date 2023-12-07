@@ -128,27 +128,29 @@ kernel void depthSimMapCopyDepthOnly_kernel(device float2* out_deptSimMap_d, dev
 //    out_depthSim->y = defaultSim;
 }
 
-template<class T>
-kernel void mapUpscale_kernel(device T* out_upscaledMap_d, device int* out_upscaledMap_p,
-                              device const T* in_map_d, device int* in_map_p,
-                              device const float* ratio,
-                              device const ROI_d* roi)
+kernel void mapUpscale_kernel(device float3* out_upscaledMap_d, constant int& out_upscaledMap_p,
+                              device const float3* in_map_d, constant int& in_map_p,
+                              constant float& ratio,
+                              constant ROI_d& roi,
+                              uint2 index [[thread_position_in_grid]])
 {
-//    const unsigned int x = blockIdx.x * blockDim.x + threadIdx.x;
-//    const unsigned int y = blockIdx.y * blockDim.y + threadIdx.y;
-//
-//    if(x >= roiWidth || y >= roiHeight)
-//        return;
-//
-//    const float ox = (float(x) - 0.5f) * ratio;
-//    const float oy = (float(y) - 0.5f) * ratio;
-//
-//    // nearest neighbor, no interpolation
-//    const int xp = min(int(floor(ox + 0.5)), int(roiWidth  * ratio) - 1);
-//    const int yp = min(int(floor(oy + 0.5)), int(roiHeight * ratio) - 1);
-//
-//    // write output upscaled map
-//    *get2DBufferAt(out_upscaledMap_d, out_upscaledMap_p, x, y) = *get2DBufferAt(in_map_d, in_map_p, xp, yp);
+    const unsigned int x = index.x;
+    const unsigned int y = index.y;
+
+    float roiWidth = roi.rb.x-roi.lt.x;
+    float roiHeight = roi.rb.y-roi.lt.y;
+    if(x >= roiWidth || y >= roiHeight)
+        return;
+
+    const float ox = (float(x) - 0.5f) * ratio;
+    const float oy = (float(y) - 0.5f) * ratio;
+
+    // nearest neighbor, no interpolation
+    const int xp = min(int(floor(ox + 0.5)), int(roiWidth  * ratio) - 1);
+    const int yp = min(int(floor(oy + 0.5)), int(roiHeight * ratio) - 1);
+
+    // write output upscaled map
+    *get2DBufferAt(out_upscaledMap_d, out_upscaledMap_p, x, y) = *get2DBufferAt(in_map_d, in_map_p, xp, yp);
 }
 
 kernel void depthThicknessMapSmoothThickness_kernel(device float2* inout_depthThicknessMap_d, constant int& inout_depthThicknessMap_p,

@@ -96,7 +96,7 @@
         id elem = args[i];
         
 //        NSLog(@"====%d", i);
-        if([elem conformsToProtocol:@protocol(MTLBuffer)])
+        if([elem conformsToProtocol:@protocol(MTLBuffer)] || elem == nil)
         {
             [computeEncoder setBuffer:elem offset:0 atIndex:bufferid++];
         }
