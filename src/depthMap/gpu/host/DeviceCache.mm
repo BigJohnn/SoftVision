@@ -327,13 +327,13 @@ void DeviceCache::addMipmapImage(int camId,
     // get image buffer
 //    mvsUtils::ImagesCache<image::Image<image::RGBAfColor>>::ImgSharedPtr img = imageCache.getImg_sync(camId);
     // allocate the full size host-sided image buffer
-    MTLSize imgSize = MTLSizeMake(mp.getWidth(camId) * 4, mp.getHeight(camId), 1);
+    MTLSize imgSize = MTLSizeMake(mp.getWidth(camId), mp.getHeight(camId), 1);
     
 //    DeviceTexture* imgTexture = [DeviceTexture new];
 //    [_vCamTexturesCache insertObject:[imgTexture initWithSize:imgSize] atIndex:camId];
     
     DeviceBuffer* img_hmh = [DeviceBuffer new];
-    [img_hmh initWithBytes:mp.imageBuffersCache[camId].data() size:imgSize elemSizeInBytes:sizeof(float)];
+    [img_hmh initWithBytes:mp.imageBuffersCache[camId].data() size:imgSize elemSizeInBytes:sizeof(simd_uchar4)];
     
     
     // copy image from imageCache to CUDA host-side image buffer
@@ -387,40 +387,11 @@ void DeviceCache::addCameraParams(int camId, int downscale, const mvsUtils::Mult
 
     LOG_X("Add camera parameters on device cache (id: " << camId << ", view id: " << viewId << ", downscale: " << downscale << ").");
 
-    // build host-side device camera parameters struct
-//    DeviceCameraParams* cameraParameters_h = nullptr;
-
-    //TODO: check AAA
     {
-//        id<MTLDevice> device = MTLCreateSystemDefaultDevice();
-//        id<MTLBuffer> _cameraParametersBuffer = [device newBufferWithLength:sizeof(DeviceCameraParams)
-//                                            options:MTLResourceStorageModeShared];
-//
-//        _cameraParametersBuffer.label = @"CameraParametersBuffer";
-
         DeviceCameraParams params;
         fillCameraParameters(params,camId, downscale, mp);
         _vCamParams.emplace_back(params);
-//        if(!_vCamParamsBuffer) {
-//            _vCamParamsBuffer = [NSMutableArray new];
-//        }
-        
-//        [_vCamParamsBuffer insertObject:_cameraParametersBuffer atIndex:deviceCameraParamsId];
     }
-    
-    // fill the host-side camera parameters from multi-view parameters.
-//    fillHostCameraParameters(*cameraParameters_h, camId, downscale, mp);
-
-    // copy host-side device camera parameters struct to device-side camera parameters array
-    // note: device-side camera parameters array is in constant memory
-//    fillDeviceCameraParameters(*cameraParameters_h, deviceCameraParamsId);
-
-    // free host-side device camera parameters struct
-//    free(cameraParameters_h);
-//    CHECK_CUDA_RETURN_ERROR(cudaFreeHost(cameraParameters_h));
-
-    // check last error
-//    CHECK_CUDA_ERROR();
 }
 
 const DeviceMipmapImage& DeviceCache::requestMipmapImage(int camId, const mvsUtils::MultiViewParams& mp)

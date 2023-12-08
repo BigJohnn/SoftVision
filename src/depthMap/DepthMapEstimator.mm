@@ -353,11 +353,6 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
             }
         }
 
-        // wait for camera loading in device cache
-//        cudaDeviceSynchronize();
-        //id <MTLBlitCommandEncoder> _cmdEncoder
-//        _cmdEncoder->makeFence();
-
         // compute each batch tile
         for(int i = firstTileIndex; i < lastTileIndex; ++i)
         {
