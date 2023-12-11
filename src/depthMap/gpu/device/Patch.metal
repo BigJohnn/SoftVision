@@ -121,6 +121,10 @@ inline void computeRotCS(thread float3& xax, thread float3& yax, thread float3& 
     yax = cross(n, xax);
 }
 
+/*
+ * @param rcDeviceCamParams: the reference camera
+ * @param tcDeviceCamParams: the target camera
+ */
 inline void computeRotCSEpip(thread Patch& ptch,
                              constant DeviceCameraParams& rcDeviceCamParams,
                              constant DeviceCameraParams& tcDeviceCamParams)
@@ -599,7 +603,7 @@ inline float compNCCby3DptsYK(constant DeviceCameraParams& rcDeviceCamParams,
                               constant float& invGammaC,
                               constant float& invGammaP,
                               constant bool& useConsistentScale,
-                              thread bool TInvertAndFilter,
+                              thread bool& TInvertAndFilter,
                               thread           const Patch& patch)
 {
     // get R and T image 2d coordinates from patch center 3d point

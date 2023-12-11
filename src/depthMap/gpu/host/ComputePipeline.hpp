@@ -15,7 +15,8 @@
 +(instancetype)createPipeline;
 
 -(void) Exec:(MTLSize)gridSize ThreadgroupSize:(MTLSize)threadgroupSize KernelFuncName:(NSString*)kernelFuncName Args:(NSArray*)args;
-
+-(void) startDebug;
+-(void) endDebug;
 @end
 
 #endif /* ComputePipeline_hpp */

@@ -212,43 +212,48 @@ void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
     Range_d depthRange_d;
     depthRange_d.begin = depthRange.begin;
     depthRange_d.end = depthRange.end;
-    ROI_d roi_d;//(roi.x.begin, roi.y.begin, roi.x.end, roi.y.end);
+    ROI_d roi_d;
     roi_d.lt = simd_make_float2(roi.x.begin, roi.y.begin);
     roi_d.rb = simd_make_float2(roi.x.end, roi.y.end);
     NSArray* args = @[
-        [out_volBestSim_dmp getBuffer],
-        @([out_volBestSim_dmp getBytesUpToDim:1]), //1024*256
-        @([out_volBestSim_dmp getBytesUpToDim:0]), // 1024
+        [out_volBestSim_dmp getBuffer], //256x256x1500 uchar
+        @([out_volBestSim_dmp getBytesUpToDim:1]), //256*256
+        @([out_volBestSim_dmp getBytesUpToDim:0]), // 256
         [out_volSecBestSim_dmp getBuffer],
-        @([out_volSecBestSim_dmp getBytesUpToDim:1]), //1024*256
-        @([out_volSecBestSim_dmp getBytesUpToDim:0]), // 1024
+        @([out_volSecBestSim_dmp getBytesUpToDim:1]), //256*256
+        @([out_volSecBestSim_dmp getBytesUpToDim:0]), // 256
         [in_depths_dmp getBuffer],
-        @([in_depths_dmp getBytesUpToDim:0]), // 1024
+        @([in_depths_dmp getBytesUpToDim:0]), // 6000
         [NSData dataWithBytes:&rcDeviceCameraParams length:sizeof(rcDeviceCameraParams)],
         [NSData dataWithBytes:&tcDeviceCameraParams length:sizeof(rcDeviceCameraParams)],
         rcDeviceMipmapImage.getTextureObject(),
         tcDeviceMipmapImage.getTextureObject(),
-        @((unsigned)rcLevelDim.width),
-        @((unsigned)rcLevelDim.height),
-        @((unsigned)tcLevelDim.width),
-        @((unsigned)tcLevelDim.height),
-        @(rcMipmapLevel),
+        @((unsigned)rcLevelDim.width),//180
+        @((unsigned)rcLevelDim.height),//320
+        @((unsigned)tcLevelDim.width),//180
+        @((unsigned)tcLevelDim.height),//320
+        @(rcMipmapLevel),//1
         @(sgmParams.stepXY),
         @(sgmParams.wsh),
         
         @(1.f / float(sgmParams.gammaC)),
         @(1.f / float(sgmParams.gammaP)),
         
-        @(sgmParams.useConsistentScale),
-        @(sgmParams.useCustomPatchPattern),
+        @(sgmParams.useConsistentScale), //false
+        @(sgmParams.useCustomPatchPattern), //false
         
         [NSData dataWithBytes:&depthRange_d length:sizeof(Range_d)],
         [NSData dataWithBytes:&roi_d length:sizeof(ROI_d)]
     ];
     
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
+//    sleep(5);
+    
+    [pipeline startDebug];
     [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_computeSimilarity_kernel" Args:args];
+    [pipeline endDebug];
 
+    void(0);
     // kernel execution
 //    volume_computeSimilarity_kernel<<<grid, block, 0, stream>>>(
 //        out_volBestSim_dmp.getBuffer(),

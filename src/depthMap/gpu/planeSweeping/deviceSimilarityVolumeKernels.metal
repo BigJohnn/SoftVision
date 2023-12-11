@@ -135,22 +135,17 @@ kernel void volume_computeSimilarity_kernel(device TSim* out_volume1st_d, consta
     const unsigned int roiY = index.y;
     const unsigned int roiZ = index.z;
 
-//    roi->lt.
     unsigned int roiWidth = roi.rb.x - roi.lt.x;
     unsigned int roiHeight = roi.rb.y - roi.lt.y;
     if(roiX >= roiWidth || roiY >= roiHeight) // no need to check roiZ
         return;
-
-    // R and T camera parameters
-//    const DeviceCameraParams& rcDeviceCamParams = constantCameraParametersArray_d[rcDeviceCameraParamsId];
-//    const DeviceCameraParams& tcDeviceCamParams = constantCameraParametersArray_d[tcDeviceCameraParamsId];
 
     // corresponding volume coordinates
     const unsigned int vx = roiX;
     const unsigned int vy = roiY;
     const unsigned int vz = depthRange.begin + roiZ;
 
-    // corresponding image coordinates
+    // corresponding image coordinates, discrete sample
     const float x = float(roi.lt.x + vx) * float(stepXY);
     const float y = float(roi.lt.y + vy) * float(stepXY);
 

@@ -13,11 +13,18 @@
 @interface ComputePipeline()
 @end
 
+static const NSUInteger kMaxBuffersInFlight = 3;
+
 @implementation ComputePipeline
 {
+    dispatch_semaphore_t _inFlightSemaphore;
     id<MTLDevice> device;
     id<MTLCommandQueue> commandQueue;
     id <MTLLibrary> defaultLibrary;
+    
+    /// for debug
+    id<MTLCaptureScope> scope;
+    MTLCaptureDescriptor *descriptor;
 }
 
 + (instancetype)createPipeline
@@ -28,6 +35,8 @@
         pipeline = [[ComputePipeline alloc] init];
         // Do any other initialisation stuff here
         id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+        
+        
         
         NSString* libraryName = @"sgm";
 
@@ -56,6 +65,30 @@
         pipeline->defaultLibrary = defaultLibrary;
         pipeline->commandQueue = commandQueue;
         pipeline->device = device;
+        pipeline->_inFlightSemaphore = dispatch_semaphore_create(kMaxBuffersInFlight);
+        
+        pipeline->scope = [MTLCaptureManager.sharedCaptureManager newCaptureScopeWithCommandQueue:commandQueue];
+        pipeline->scope.label = @"GoodScope";
+        MTLCaptureManager.sharedCaptureManager.defaultCaptureScope = pipeline->scope;
+        
+        
+//        do {
+//        NSError* error = nil;
+//        [captureManager startCaptureWithDescriptor:captureDescriptor error:&error];
+        
+//        void(0);
+//        }
+//        catch {
+//             
+//         }
+//        let captureManager = MTLCaptureManager.shared()
+//            let captureDescriptor = MTLCaptureDescriptor()
+//            captureDescriptor.captureObject = captureScope
+//            do {
+//                try captureManager.startCapture(with: captureDescriptor)
+//            } catch {
+//                fatalError("error when trying to capture: \(error)")
+//            }
         
     });
     return pipeline;
@@ -80,8 +113,15 @@
         NSLog(@"Failed to created pipeline state object, error %@.", error);
     }
     
+//    [self startDebug];
+    
     id<MTLCommandBuffer> commandBuffer = [commandQueue commandBuffer];
     assert(commandBuffer != nil);
+    __block dispatch_semaphore_t block_sema = _inFlightSemaphore;
+    [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer)
+    {
+        dispatch_semaphore_signal(block_sema);
+    }];
     
     // Start a compute pass.
     id<MTLComputeCommandEncoder> computeEncoder = [commandBuffer computeCommandEncoder];
@@ -152,7 +192,47 @@
     
     // Normally, you want to do other work in your app while the GPU is running,
     // but in this example, the code simply blocks until the calculation is complete.
-    [commandBuffer waitUntilCompleted];
+//    [commandBuffer waitUntilCompleted];
+    
+//    [self endDebug];
+}
+
+-(void) startDebug
+{
+    dispatch_semaphore_wait(_inFlightSemaphore, DISPATCH_TIME_NOW);
+    
+    descriptor = [[MTLCaptureDescriptor alloc] init];
+    if ([MTLCaptureManager.sharedCaptureManager supportsDestination:MTLCaptureDestinationDeveloperTools]) {
+        NSLog(@"+++++++MTLCaptureDestinationDeveloperTools");
+        descriptor.destination = MTLCaptureDestinationDeveloperTools;
+    }
+    else if([MTLCaptureManager.sharedCaptureManager supportsDestination:MTLCaptureDestinationGPUTraceDocument]){
+        NSLog(@"------MTLCaptureDestinationGPUTraceDocument");
+        descriptor.destination = MTLCaptureDestinationGPUTraceDocument;
+    }
+    else {
+        NSLog(@"ERROR: no destination!!");
+    }
+    
+    descriptor.captureObject = scope;
+    NSError *error = nil;
+    BOOL success = [MTLCaptureManager.sharedCaptureManager startCaptureWithDescriptor:descriptor
+                                                                                error:&error];
+
+    if (!success) {
+        NSLog(@"metal debug capture failed!!");
+        descriptor = nil;
+    }
+    
+    [scope beginScope];
+    
+}
+-(void) endDebug
+{
+    [scope endScope];
+    [MTLCaptureManager.sharedCaptureManager stopCapture];
+    
+    descriptor = nil;
 }
 
 @end
