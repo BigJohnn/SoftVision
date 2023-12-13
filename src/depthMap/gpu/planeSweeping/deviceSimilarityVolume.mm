@@ -78,8 +78,10 @@ void volumeInitialize(DeviceBuffer* inout_volume_dmp, TSim value)
         @((unsigned char)value)
     ];
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
-    [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_init_kernel" Args:args];
     
+    [pipeline startDebug];
+    [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_init_kernel" Args:args];
+    [pipeline endDebug];
 //    auto* p = [inout_volume_dmp getBufferPtr];
 //    NSLog(@"inout_volume_dmp addr==%p", p);
 //    volume_init_kernel<TSim><<<grid, block, 0, stream>>>(

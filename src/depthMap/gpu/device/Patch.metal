@@ -794,10 +794,11 @@ inline float compNCCby3DptsYK_customPatchPattern(constant DeviceCameraParams& rc
     }
 
     // output similarity initialization
-    float fsim = 0.f;
-    float wsum = 0.f;
+    
 
 #if 0
+    float fsim = 0.f;
+    float wsum = 0.f;
     for(int s = 0; s < constantPatchPattern_d.nbSubparts; ++s)
     {
         // create and initialize patch subpart SimStat

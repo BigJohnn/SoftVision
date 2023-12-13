@@ -19,6 +19,7 @@ static const NSUInteger kMaxBuffersInFlight = 3;
 {
     dispatch_semaphore_t _inFlightSemaphore;
     id<MTLDevice> device;
+    
     id<MTLCommandQueue> commandQueue;
     id <MTLLibrary> defaultLibrary;
     
@@ -113,10 +114,11 @@ static const NSUInteger kMaxBuffersInFlight = 3;
         NSLog(@"Failed to created pipeline state object, error %@.", error);
     }
     
-//    [self startDebug];
-    
     id<MTLCommandBuffer> commandBuffer = [commandQueue commandBuffer];
     assert(commandBuffer != nil);
+
+    commandBuffer.label = @"mtlCmdBuffer";
+    
     __block dispatch_semaphore_t block_sema = _inFlightSemaphore;
     [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer)
     {
@@ -135,7 +137,6 @@ static const NSUInteger kMaxBuffersInFlight = 3;
     for(int i=0;i<args.count; ++i) {
         id elem = args[i];
         
-//        NSLog(@"====%d", i);
         if([elem conformsToProtocol:@protocol(MTLBuffer)] || elem == nil)
         {
             [computeEncoder setBuffer:elem offset:0 atIndex:bufferid++];
@@ -193,28 +194,41 @@ static const NSUInteger kMaxBuffersInFlight = 3;
     // Normally, you want to do other work in your app while the GPU is running,
     // but in this example, the code simply blocks until the calculation is complete.
 //    [commandBuffer waitUntilCompleted];
-    
-//    [self endDebug];
 }
 
 -(void) startDebug
 {
-    dispatch_semaphore_wait(_inFlightSemaphore, DISPATCH_TIME_NOW);
+    dispatch_semaphore_wait(_inFlightSemaphore, DISPATCH_TIME_FOREVER);
     
-    descriptor = [[MTLCaptureDescriptor alloc] init];
-    if ([MTLCaptureManager.sharedCaptureManager supportsDestination:MTLCaptureDestinationDeveloperTools]) {
-        NSLog(@"+++++++MTLCaptureDestinationDeveloperTools");
-        descriptor.destination = MTLCaptureDestinationDeveloperTools;
-    }
-    else if([MTLCaptureManager.sharedCaptureManager supportsDestination:MTLCaptureDestinationGPUTraceDocument]){
-        NSLog(@"------MTLCaptureDestinationGPUTraceDocument");
-        descriptor.destination = MTLCaptureDestinationGPUTraceDocument;
-    }
-    else {
-        NSLog(@"ERROR: no destination!!");
+    if(nil == descriptor) {
+        descriptor = [[MTLCaptureDescriptor alloc] init];
+        if ([MTLCaptureManager.sharedCaptureManager supportsDestination:MTLCaptureDestinationDeveloperTools]) {
+            NSLog(@"+++++++MTLCaptureDestinationDeveloperTools");
+            descriptor.destination = MTLCaptureDestinationDeveloperTools;
+        }
+        else if([MTLCaptureManager.sharedCaptureManager supportsDestination:MTLCaptureDestinationGPUTraceDocument]){
+            NSLog(@"------MTLCaptureDestinationGPUTraceDocument");
+            descriptor.destination = MTLCaptureDestinationGPUTraceDocument;
+            NSURL* traceFileUrl = [NSURL URLWithString:[NSString stringWithFormat:@"file://%@/X.gputrace", [NSFileManager.defaultManager temporaryDirectory].path]];
+            descriptor.outputURL = traceFileUrl;
+            
+    //        descriptor.outputURL = [NSURL URLWithString:@"X.gputrace" relativeToURL:[NSFileManager.defaultManager temporaryDirectory]];
+            if([NSFileManager.defaultManager fileExistsAtPath:traceFileUrl.path]){
+                NSError* err = nil;
+                BOOL success = [NSFileManager.defaultManager removeItemAtPath:descriptor.outputURL.path error:&err];
+                if(success) {
+                    NSLog(@"%@ removed!",descriptor.outputURL.path);
+                }
+            }
+            
+        }
+        else {
+            NSLog(@"ERROR: no destination!!");
+        }
+        
+        descriptor.captureObject = scope;
     }
     
-    descriptor.captureObject = scope;
     NSError *error = nil;
     BOOL success = [MTLCaptureManager.sharedCaptureManager startCaptureWithDescriptor:descriptor
                                                                                 error:&error];
@@ -223,7 +237,7 @@ static const NSUInteger kMaxBuffersInFlight = 3;
         NSLog(@"metal debug capture failed!!");
         descriptor = nil;
     }
-    
+
     [scope beginScope];
     
 }
@@ -231,6 +245,7 @@ static const NSUInteger kMaxBuffersInFlight = 3;
 {
     [scope endScope];
     [MTLCaptureManager.sharedCaptureManager stopCapture];
+        
     
     descriptor = nil;
 }
