@@ -71,26 +71,6 @@ static const NSUInteger kMaxBuffersInFlight = 3;
         pipeline->scope = [MTLCaptureManager.sharedCaptureManager newCaptureScopeWithCommandQueue:commandQueue];
         pipeline->scope.label = @"GoodScope";
         MTLCaptureManager.sharedCaptureManager.defaultCaptureScope = pipeline->scope;
-        
-        
-//        do {
-//        NSError* error = nil;
-//        [captureManager startCaptureWithDescriptor:captureDescriptor error:&error];
-        
-//        void(0);
-//        }
-//        catch {
-//             
-//         }
-//        let captureManager = MTLCaptureManager.shared()
-//            let captureDescriptor = MTLCaptureDescriptor()
-//            captureDescriptor.captureObject = captureScope
-//            do {
-//                try captureManager.startCapture(with: captureDescriptor)
-//            } catch {
-//                fatalError("error when trying to capture: \(error)")
-//            }
-        
     });
     return pipeline;
 }
@@ -209,10 +189,13 @@ static const NSUInteger kMaxBuffersInFlight = 3;
         else if([MTLCaptureManager.sharedCaptureManager supportsDestination:MTLCaptureDestinationGPUTraceDocument]){
             NSLog(@"------MTLCaptureDestinationGPUTraceDocument");
             descriptor.destination = MTLCaptureDestinationGPUTraceDocument;
-            NSURL* traceFileUrl = [NSURL URLWithString:[NSString stringWithFormat:@"file://%@/X.gputrace", [NSFileManager.defaultManager temporaryDirectory].path]];
+
+            NSURL* url = [NSFileManager.defaultManager URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].lastObject;
+            NSURL* traceFileUrl = [NSURL URLWithString:@"X.gputrace" relativeToURL:url];
+//            NSURL* traceFileUrl = [NSURL URLWithString:@"X.gputrace" relativeToURL:[NSFileManager.defaultManager temporaryDirectory]];
+            
             descriptor.outputURL = traceFileUrl;
             
-    //        descriptor.outputURL = [NSURL URLWithString:@"X.gputrace" relativeToURL:[NSFileManager.defaultManager temporaryDirectory]];
             if([NSFileManager.defaultManager fileExistsAtPath:traceFileUrl.path]){
                 NSError* err = nil;
                 BOOL success = [NSFileManager.defaultManager removeItemAtPath:descriptor.outputURL.path error:&err];
@@ -245,8 +228,7 @@ static const NSUInteger kMaxBuffersInFlight = 3;
 {
     [scope endScope];
     [MTLCaptureManager.sharedCaptureManager stopCapture];
-        
-    
+
     descriptor = nil;
 }
 

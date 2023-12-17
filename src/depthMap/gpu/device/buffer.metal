@@ -2,7 +2,7 @@
 
 //#include <depthMap/gpu/device/DeviceCameraParams.hpp>
 #include "DeviceCameraParams.hpp"
-
+#include "../planeSweeping/similarity.hpp"
 //#include <depthMap/gpu/device/BufPtr.metal>
 //#include <depthMap/BufPtr.hpp>
 
@@ -26,28 +26,32 @@ namespace depthMap {
 * @return
 */
 template <typename T>
-inline device T* get3DBufferAt(device T* ptr, int spitch, int pitch, unsigned x, unsigned y, unsigned z)
+device T* get3DBufferAt(device T* ptr, constant int& spitch, constant int& pitch, unsigned x, unsigned y, unsigned z)
 {
-    return ((device T*)(((device char*)ptr) + z * spitch + y * pitch)) + x;
+    return ((device T*)(((device unsigned char*)ptr) + z * spitch + y * pitch)) + x;
 }
+template device TSim* get3DBufferAt(device TSim* ptr, constant int& spitch, constant int& pitch, unsigned x, unsigned y, unsigned z);
 
 //template <typename T>
-//inline const thread T* get3DBufferAt(const device T* ptr, int spitch, int pitch, int x, int y, int z)
+//const device T* get3DBufferAt(const device T* ptr, int spitch, int pitch, int x, int y, int z)
 //{
-//    return ((const thread T*)(((const device char*)ptr) + z * spitch + y * pitch)) + x;
+//    return ((const device T*)(((const device unsigned char*)ptr) + z * spitch + y * pitch)) + x;
 //}
+//template const device TSim* get3DBufferAt(device const TSim* ptr, int spitch, int pitch, unsigned x, unsigned y, unsigned z);
 
 template <typename T>
-inline device T* get3DBufferAt(device T* ptr, int spitch, int pitch, const device int3& v)
+device T* get3DBufferAt(device T* ptr, constant int& spitch, constant int& pitch, thread int3& v)
 {
     return get3DBufferAt(ptr, spitch, pitch, v.x, v.y, v.z);
 }
-
-template <typename T>
-inline const device T* get3DBufferAt(const device T* ptr, int spitch, int pitch, thread int3& v)
-{
-    return get3DBufferAt(ptr, spitch, pitch, v.x, v.y, v.z);
-}
+template device TSim* get3DBufferAt(device TSim* ptr, constant int& spitch, constant int& pitch, thread int3& v);
+    
+//template <typename T>
+//inline const device T* get3DBufferAt(const device T* ptr, int spitch, int pitch, thread int3& v)
+//{
+//    return get3DBufferAt(ptr, spitch, pitch, v.x, v.y, v.z);
+//}
+//inline const device TSim* get3DBufferAt(const device TSim* ptr, int spitch, int pitch, thread int3& v);
 
 inline float multi_fminf(float a, float b, float c)
 {

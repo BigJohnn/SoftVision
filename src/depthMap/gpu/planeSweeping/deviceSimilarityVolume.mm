@@ -78,10 +78,9 @@ void volumeInitialize(DeviceBuffer* inout_volume_dmp, TSim value)
         @((unsigned char)value)
     ];
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
-    
-    [pipeline startDebug];
+
     [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_init_kernel" Args:args];
-    [pipeline endDebug];
+
 //    auto* p = [inout_volume_dmp getBufferPtr];
 //    NSLog(@"inout_volume_dmp addr==%p", p);
 //    volume_init_kernel<TSim><<<grid, block, 0, stream>>>(
@@ -249,13 +248,9 @@ void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
     ];
     
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
-//    sleep(5);
-    
-    [pipeline startDebug];
-    [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_computeSimilarity_kernel" Args:args];
-    [pipeline endDebug];
 
-    void(0);
+    [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_computeSimilarity_kernel" Args:args];
+
     // kernel execution
 //    volume_computeSimilarity_kernel<<<grid, block, 0, stream>>>(
 //        out_volBestSim_dmp.getBuffer(),

@@ -598,21 +598,23 @@ kernel void volume_refineBestDepth_kernel(device float2* out_refineDepthSimMap_d
 }
 
 //template <typename T>
-kernel void volume_initVolumeYSlice_kernel(device TSim* volume_d, constant int& volume_s, constant int& volume_p, constant int3& volDim, constant int3& axisT, constant int& y, constant TSim& cst,
+kernel void volume_initVolumeYSlice_kernel(device TSim* volume_d, constant int& volume_s, constant int& volume_p, constant int3& volDim/*256,256,67*/, constant int3& axisT, constant int& y, constant TSim& cst,
                                            uint3 index [[thread_position_in_grid]])
 {
-    const int x = index.x;
-    const int z = index.y;
+    const int x = index.x; //0~255
+    const int z = index.y; //0~66
 
-    int3 v;
-    v[axisT.x] = x;
-    v[axisT.y] = y;
-    v[axisT.z] = z;
+    uint3 v;
+    v[axisT.x] = x; //0~255
+    v[axisT.y] = y; //0
+    v[axisT.z] = z; //0~66
 
     if ((x >= 0) && (x < volDim[axisT.x]) && (z >= 0) && (z < volDim[axisT.z]))
     {
-        device TSim* volume_zyx = get3DBufferAt<TSim>(volume_d, volume_s, volume_p, v.x, v.y, v.z);
-        *volume_zyx = cst;
+        *get3DBufferAt(volume_d, volume_s, volume_p, v.x, v.y, v.z) = (TSim)255;//ok
+//        TSim cc = cst;//ok
+//        *o = cc; //error
+//        *o = (TSim)255; //ok
     }
 }
 
@@ -633,7 +635,7 @@ kernel void volume_getVolumeXZSlice_kernel(device TSimAcc* slice_d, constant int
     if (x >= volDim[axisT.x] || z >= volDim[axisT.z])
       return;
 
-    const device TSim* volume_xyz = get3DBufferAt<TSim>(volume_d, volume_s, volume_p, v);
+    device TSim* volume_xyz = get3DBufferAt(volume_d, volume_s, volume_p, v);
     device TSimAcc* slice_xz = get2DBufferAt<TSimAcc>(slice_d, slice_p, x, z);
     *slice_xz = (TSimAcc)(*volume_xyz);
 }
