@@ -38,21 +38,21 @@ Refine::Refine(const mvsUtils::MultiViewParams& mp,
     MTLSize depthSimMapDim = MTLSizeMake(maxTileWidth, maxTileHeight, 1);
 
     // allocate depth/sim maps in device memory
-    _sgmDepthPixSizeMap_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(simd_float2)];
-    _refinedDepthSimMap_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(simd_float2)];
-    _optimizedDepthSimMap_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(simd_float2)];
+    _sgmDepthPixSizeMap_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(simd_float2) elemType:@"float2"];
+    _refinedDepthSimMap_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(simd_float2) elemType:@"float2"];
+    _optimizedDepthSimMap_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(simd_float2) elemType:@"float2"];
 //    _sgmDepthPixSizeMap_dmp.allocate(depthSimMapDim);
 //    _refinedDepthSimMap_dmp.allocate(depthSimMapDim);
 //    _optimizedDepthSimMap_dmp.allocate(depthSimMapDim);
 
     // allocate SGM upscaled normal map in device memory
     if(_refineParams.useSgmNormalMap)
-        _sgmNormalMap_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(simd_float3)];
+        _sgmNormalMap_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(simd_float3) elemType:@"float3"];
 //        _sgmNormalMap_dmp.allocate(depthSimMapDim);
 
     // allocate normal map in device memory
     if(_refineParams.exportIntermediateNormalMaps)
-        _normalMap_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(simd_float3)];
+        _normalMap_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(simd_float3) elemType:@"float3"];
 //        _normalMap_dmp.allocate(depthSimMapDim);
 
     // compute volume maximum dimensions
@@ -61,14 +61,14 @@ Refine::Refine(const mvsUtils::MultiViewParams& mp,
     MTLSize volDim = MTLSizeMake(maxTileWidth, maxTileHeight, nbDepthsToRefine);
 
     // allocate refine volume in device memory
-    _volumeRefineSim_dmp = [DeviceBuffer allocate:volDim elemSizeInBytes:sizeof(TSimRefine)];
+    _volumeRefineSim_dmp = [DeviceBuffer allocate:volDim elemSizeInBytes:sizeof(TSimRefine) elemType:@"TSimRefine"];
 //    _volumeRefineSim_dmp.allocate(volDim);
 
     // allocate depth/sim map optimization buffers
     if(_refineParams.useColorOptimization)
     {
-        _optTmpDepthMap_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(float)];
-        _optImgVariance_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(float)];
+        _optTmpDepthMap_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(float) elemType:@"float"];
+        _optImgVariance_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(float) elemType:@"float"];
 //        _optTmpDepthMap_dmp.allocate(depthSimMapDim);
 //        _optImgVariance_dmp.allocate(depthSimMapDim);
     }

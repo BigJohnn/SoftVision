@@ -289,10 +289,10 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
         {
           if(_depthMapParams.useRefine)
 //              [depthSimMapTile allocate:<#(MTLSize)#> elemSizeInBytes:<#(int)#>]
-              [depthSimMapTile allocate:[refinePerStream.front().getDeviceDepthSimMap() getSize] elemSizeInBytes:sizeof(simd_float2)];
+              [depthSimMapTile allocate:[refinePerStream.front().getDeviceDepthSimMap() getSize] elemSizeInBytes:sizeof(simd_float2) elemType:@"float2"];
 //            depthSimMapTiles.at(j).allocate(refinePerStream.front().getDeviceDepthSimMap().getSize());
           else // final depth/similarity map is SGM only
-              [depthSimMapTile allocate:[sgmPerStream.front().getDeviceDepthSimMap() getSize] elemSizeInBytes:sizeof(simd_float2)];
+              [depthSimMapTile allocate:[sgmPerStream.front().getDeviceDepthSimMap() getSize] elemSizeInBytes:sizeof(simd_float2) elemType:@"float2"];
 //            depthSimMapTiles.at(j).allocate(sgmPerStream.front().getDeviceDepthSimMap().getSize());
             
             [depthSimMapTiles insertObject:depthSimMapTile atIndex:j];

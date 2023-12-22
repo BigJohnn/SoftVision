@@ -49,29 +49,29 @@ Sgm::Sgm(const mvsUtils::MultiViewParams& mp,
 
 //        _depths_hmh.allocate(depthsDim);
 //        _depths_dmp.allocate(depthsDim);
-        _depths_dmp = [DeviceBuffer allocate:depthsDim elemSizeInBytes:sizeof(float)];
+        _depths_dmp = [DeviceBuffer allocate:depthsDim elemSizeInBytes:sizeof(float) elemType:@"float"];
     }
 
     // allocate depth thickness map in device memory
 //    _depthThicknessMap_dmp.allocate(mapDim);
-    _depthThicknessMap_dmp = [DeviceBuffer allocate:mapDim elemSizeInBytes:sizeof(simd_float2)];
+    _depthThicknessMap_dmp = [DeviceBuffer allocate:mapDim elemSizeInBytes:sizeof(simd_float2) elemType:@"float2"];
 
     // allocate depth/sim map in device memory
     if(_computeDepthSimMap)
-        _depthSimMap_dmp = [DeviceBuffer allocate:mapDim elemSizeInBytes:sizeof(simd_float2)];
+        _depthSimMap_dmp = [DeviceBuffer allocate:mapDim elemSizeInBytes:sizeof(simd_float2) elemType:@"float2"];
 //        _depthSimMap_dmp.allocate(mapDim);
 
     // allocate normal map in device memory
     if(_computeNormalMap)
-        _normalMap_dmp = [DeviceBuffer allocate:mapDim elemSizeInBytes:sizeof(simd_float3)];
+        _normalMap_dmp = [DeviceBuffer allocate:mapDim elemSizeInBytes:sizeof(simd_float3) elemType:@"float3"];
 //        _normalMap_dmp.allocate(mapDim);
 
     // allocate similarity volumes in device memory
     {
         MTLSize volDim = MTLSizeMake(maxTileWidth, maxTileHeight, _sgmParams.maxDepths);
 
-        _volumeBestSim_dmp = [DeviceBuffer allocate:volDim elemSizeInBytes:sizeof(uint8_t)];
-        _volumeSecBestSim_dmp = [DeviceBuffer allocate:volDim elemSizeInBytes:sizeof(uint8_t)];
+        _volumeBestSim_dmp = [DeviceBuffer allocate:volDim elemSizeInBytes:sizeof(TSim) elemType:@"TSim"];
+        _volumeSecBestSim_dmp = [DeviceBuffer allocate:volDim elemSizeInBytes:sizeof(TSim) elemType:@"TSim"];
 //        _volumeBestSim_dmp.allocate(volDim);
 //        _volumeSecBestSim_dmp.allocate(volDim);
     }
@@ -82,12 +82,12 @@ Sgm::Sgm(const mvsUtils::MultiViewParams& mp,
         const size_t maxTileSide = std::max(maxTileWidth, maxTileHeight);
 
         MTLSize sliceAccSz = MTLSizeMake(maxTileSide, _sgmParams.maxDepths, 1);
-        _volumeSliceAccA_dmp = [DeviceBuffer allocate:sliceAccSz elemSizeInBytes:sizeof(unsigned)];
-        _volumeSliceAccB_dmp = [DeviceBuffer allocate:sliceAccSz elemSizeInBytes:sizeof(unsigned)];
+        _volumeSliceAccA_dmp = [DeviceBuffer allocate:sliceAccSz elemSizeInBytes:sizeof(TSimAcc) elemType:@"TSimAcc"];
+        _volumeSliceAccB_dmp = [DeviceBuffer allocate:sliceAccSz elemSizeInBytes:sizeof(TSimAcc) elemType:@"TSimAcc"];
 //        _volumeSliceAccA_dmp.allocate(CudaSize<2>(maxTileSide, _sgmParams.maxDepths));
 //        _volumeSliceAccB_dmp.allocate(CudaSize<2>(maxTileSide, _sgmParams.maxDepths));
         MTLSize axisAccSz = MTLSizeMake(maxTileSide, 1, 1);
-        _volumeAxisAcc_dmp = [DeviceBuffer allocate:axisAccSz elemSizeInBytes:sizeof(unsigned)];
+        _volumeAxisAcc_dmp = [DeviceBuffer allocate:axisAccSz elemSizeInBytes:sizeof(TSimAcc) elemType:@"TSimAcc"];
     }
 }
 

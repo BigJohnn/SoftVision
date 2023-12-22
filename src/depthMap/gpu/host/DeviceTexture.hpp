@@ -8,7 +8,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 -(id<MTLTexture>) initWithSize:(MTLSize)size;
 -(id<MTLTexture>) initWithBuffer:(DeviceBuffer*)buffer;
+
 +(id<MTLTexture>) initWithFloatBuffer:(DeviceBuffer*)buffer;
++(id<MTLTexture>) initWithBuffer:(DeviceBuffer*)buffer;
++(id<MTLTexture>) initWithUint8Buffer:(DeviceBuffer*)buffer;
++(id<MTLTexture>) initWithUint32Buffer:(DeviceBuffer*)buffer;
++(id<MTLTexture>) initWithBuffer:(DeviceBuffer*)buffer pixelFormat:(NSString*)format;
 
 @end
 

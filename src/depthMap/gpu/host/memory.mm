@@ -6,6 +6,8 @@
 //
 
 #import <depthMap/gpu/host/memory.hpp>
+#import <depthMap/gpu/host/DeviceTexture.hpp>
+#include <SoftVisionLog.h>
 
 @implementation DeviceBuffer
 {
@@ -14,36 +16,41 @@
     int elemSizeInBytes;
     int nBytesPerRow;
     int bufferLengthInBytes;
+    NSString* elemType;
 }
 
 -(void) copyFrom:(DeviceBuffer*)src
 {
-//    id<MTLBlitCommandEncoder> encoder;
-//    [encoder copyFromBuffer:[src getBuffer] sourceOffset:0 toBuffer:buffer destinationOffset:0 size:[src getBufferLength]];
+    //    id<MTLBlitCommandEncoder> encoder;
+    //    [encoder copyFromBuffer:[src getBuffer] sourceOffset:0 toBuffer:buffer destinationOffset:0 size:[src getBufferLength]];
     
     buffer = [src getBuffer]; // shallow copy
     sz = [src getSize];
     elemSizeInBytes = [src getElemSize];
     nBytesPerRow = [src getBytesUpToDim:0];
     bufferLengthInBytes = [src getBufferLength];
+    elemType = src->elemType;
 }
 
-+(DeviceBuffer*) allocate:(MTLSize)size elemSizeInBytes:(int)nBytes
++(DeviceBuffer*) allocate:(MTLSize)size elemSizeInBytes:(int)nBytes elemType:(NSString*)type
 {
     DeviceBuffer* buf = [DeviceBuffer new];
-//    buf->buffer
+    //    buf->buffer
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
-           
+    
     buf->nBytesPerRow = static_cast<int>(size.width) * nBytes;
     
     buf->bufferLengthInBytes = buf->nBytesPerRow * size.height * size.depth;
     
     buf->buffer = [device newBufferWithLength:buf->bufferLengthInBytes
-                                         options:MTLResourceStorageModeShared];
+                                      options:MTLResourceStorageModeShared];
     
     buf->sz = size;
     
     buf->elemSizeInBytes = nBytes;
+    
+    buf->elemType = type;
+    
     return buf;
 }
 
@@ -52,38 +59,55 @@
     return buffer;
 }
 
--(id<MTLBuffer>) allocate:(MTLSize)size elemSizeInBytes:(int)nBytes
+-(id<MTLBuffer>) allocate:(MTLSize)size elemSizeInBytes:(int)nBytes elemType:(NSString*)type
 {
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
-
+    
     nBytesPerRow = static_cast<int>(size.width) * nBytes;
-
+    
     bufferLengthInBytes = nBytesPerRow * size.height * size.depth;
-
+    
     buffer = [device newBufferWithLength:bufferLengthInBytes
-                                         options:MTLResourceStorageModeShared];
-
+                                 options:MTLResourceStorageModeShared];
+    
     sz = size;
-
+    
     elemSizeInBytes = nBytes;
+    
+    elemType = type;
+    
     return buffer;
 }
 
--(id<MTLBuffer>) initWithBytes:(nonnull const void*)bytes size:(MTLSize)size elemSizeInBytes:(int)nBytes
+-(id<MTLBuffer>) initWithBytes:(nonnull const void*)bytes size:(MTLSize)size elemSizeInBytes:(int)nBytes elemType:(NSString*)type
 {
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
-
+    
     nBytesPerRow = static_cast<int>(size.width) * nBytes;
-
+    
     bufferLengthInBytes = nBytesPerRow * size.height * size.depth;
     
     buffer = [device newBufferWithBytes:bytes length:bufferLengthInBytes options:MTLResourceStorageModeShared];
     
     sz = size;
-
+    
     elemSizeInBytes = nBytes;
     
+    elemType = type;
+    
     return buffer;
+}
+
+-(NSString*) getElemType
+{
+    return elemType;
+}
+
++(DeviceBuffer*) initWithBytes:(nonnull const void*)bytes size:(MTLSize)size elemSizeInBytes:(int)nBytes elemType:(NSString*)type
+{
+    DeviceBuffer* buf = [DeviceBuffer new];
+    [buf initWithBytes:bytes size:size elemSizeInBytes:nBytes elemType:type];
+    return buf;
 }
 
 -(simd_float2) getVec2f:(int)x y:(int)y
@@ -134,6 +158,21 @@
 -(MTLSize) getSize
 {
     return sz;
+}
+
+-(id<MTLTexture>) getDebugTexture:(int)sliceAlongZ
+{
+    if(sliceAlongZ >= sz.depth) {
+        LOG_ERROR("z index out of range!");
+        return nil;
+    }
+    DeviceBuffer* buff = [DeviceBuffer initWithBytes:((uint8_t*)buffer.contents + sz.width * sz.height * sliceAlongZ * elemSizeInBytes) size:MTLSizeMake(sz.width, sz.height, 1) elemSizeInBytes:elemSizeInBytes elemType:elemType];
+    return [DeviceTexture initWithBuffer:buff pixelFormat:elemType];
+}
+
+-(id<MTLTexture>) getDebugTexture
+{
+    return [self getDebugTexture:0];
 }
 
 @end

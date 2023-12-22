@@ -5,12 +5,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface DeviceBuffer : NSObject
 
-+(DeviceBuffer*) allocate:(MTLSize)size elemSizeInBytes:(int)nBytes;
++(DeviceBuffer*) allocate:(MTLSize)size elemSizeInBytes:(int)nBytes elemType:(NSString*)type;
++(DeviceBuffer*) initWithBytes:(nonnull const void*)bytes size:(MTLSize)size elemSizeInBytes:(int)nBytes elemType:(NSString*)type;
 
 -(void) copyFrom:(DeviceBuffer*)src;
 -(id<MTLBuffer>) getBuffer;
--(id<MTLBuffer>) allocate:(MTLSize)size elemSizeInBytes:(int)nBytes;
--(id<MTLBuffer>) initWithBytes:(nonnull const void*)bytes size:(MTLSize)size elemSizeInBytes:(int)nBytes;
+-(id<MTLBuffer>) allocate:(MTLSize)size elemSizeInBytes:(int)nBytes elemType:(NSString*)type;
+-(id<MTLBuffer>) initWithBytes:(nonnull const void*)bytes size:(MTLSize)size elemSizeInBytes:(int)nBytes elemType:(NSString*)type;
 -(void*) getBufferPtr;
 -(MTLSize) getSize;
 -(int) getBufferLength;
@@ -22,6 +23,9 @@ NS_ASSUME_NONNULL_BEGIN
 -(void) setVec1f:(float)val x:(int)x y:(int)y;
 
 -(int) getBytesUpToDim:(int)dim;
+-(NSString*) getElemType;
+-(id<MTLTexture>) getDebugTexture:(int)sliceAlongZ;
+-(id<MTLTexture>) getDebugTexture;
 
 @end
 

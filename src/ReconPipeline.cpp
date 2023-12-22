@@ -145,7 +145,7 @@ void ReconPipeline::AppendSfMData(uint32_t viewId,
     const int buffer_n_bytes = width * height * 4;
     
     std::vector<uint8_t> buf(buffer_n_bytes, 0);
-    m_cachedBuffers.push_back(buf); //TODO: check??
+    
     memcpy(buf.data(), bufferData, buffer_n_bytes);
     
     int width_new, height_new;
@@ -163,6 +163,9 @@ void ReconPipeline::AppendSfMData(uint32_t viewId,
 //        image::Image<image::RGBAColor> imageRGBA_flipY;
 //        uint8_t *buffer_flipY  = new uint8_t[view.getWidth() * view.getHeight() * 4];
         FlipY(width_new, height_new, buffer, buf.data());
+        
+        m_cachedBuffers.push_back(buf); //TODO: check??
+        
         delete buffer;
     }
     

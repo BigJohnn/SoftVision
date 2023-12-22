@@ -327,13 +327,15 @@ void DeviceCache::addMipmapImage(int camId,
     // get image buffer
 //    mvsUtils::ImagesCache<image::Image<image::RGBAfColor>>::ImgSharedPtr img = imageCache.getImg_sync(camId);
     // allocate the full size host-sided image buffer
-    MTLSize imgSize = MTLSizeMake(mp.getWidth(camId), mp.getHeight(camId), 1);
+    MTLSize imgSize = MTLSizeMake(mp.getOriginalWidth(camId), mp.getOriginalHeight(camId), 1);
     
 //    DeviceTexture* imgTexture = [DeviceTexture new];
 //    [_vCamTexturesCache insertObject:[imgTexture initWithSize:imgSize] atIndex:camId];
     
     DeviceBuffer* img_hmh = [DeviceBuffer new];
-    [img_hmh initWithBytes:mp.imageBuffersCache[camId].data() size:imgSize elemSizeInBytes:sizeof(simd_uchar4)];
+    
+    assert(mp.imageBuffersCache[camId].size() == imgSize.width * imgSize.height * 4);
+    [img_hmh initWithBytes:mp.imageBuffersCache[camId].data() size:imgSize elemSizeInBytes:sizeof(simd_uchar4)  elemType:@"uchar4"];
     
     
     // copy image from imageCache to CUDA host-side image buffer

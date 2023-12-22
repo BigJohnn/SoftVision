@@ -42,18 +42,24 @@ static const NSUInteger kMaxBuffersInFlight = 3;
         NSString* libraryName = @"sgm";
 
         NSBundle *bundle = [NSBundle bundleForClass:self.classForCoder];
-        NSURL *bundleURL = [[bundle resourceURL] URLByAppendingPathComponent:@"metalshaders.bundle"];
+        NSURL *bundleURL = [[bundle resourceURL] URLByAppendingPathComponent:@"Frameworks/mtlkernels.framework"];
+//        NSURL *bundleURL = [bundle resourceURL];
         NSBundle *resourceBundle = [NSBundle bundleWithURL:bundleURL];
-        NSURL *libraryURL = [resourceBundle URLForResource:libraryName
+//        NSURL *libraryURL = [resourceBundle URLForResource:libraryName
+//                                                        withExtension:@"metallib"];
+        
+        NSURL *libraryURL = [resourceBundle URLForResource:@"default"
                                                         withExtension:@"metallib"];
+        
 
         NSError *libraryError = nil;
 
         id <MTLLibrary> defaultLibrary = [device newLibraryWithURL:libraryURL
                                                       error:&libraryError];
         
-    //    id <MTLLibrary> defaultLibrary = [device newDefaultLibrary];
-        
+//        id <MTLLibrary> defaultLibrary = [device newDefaultLibraryWithBundle:bundle error:&libraryError];
+//        id <MTLLibrary> defaultLibrary = [device newDefaultLibrary];
+                                          
         if (defaultLibrary == nil)
         {
             NSLog(@"Failed to find the default library.");
@@ -73,6 +79,11 @@ static const NSUInteger kMaxBuffersInFlight = 3;
         MTLCaptureManager.sharedCaptureManager.defaultCaptureScope = pipeline->scope;
     });
     return pipeline;
+}
+
+-(id<MTLCommandQueue>) getCommandQueue
+{
+    return commandQueue;
 }
 
 -(void) Exec:(MTLSize)threadsSize ThreadgroupSize:(MTLSize)threadgroupSize KernelFuncName:(NSString*)kernelFuncName Args:(NSArray*)args
@@ -173,7 +184,7 @@ static const NSUInteger kMaxBuffersInFlight = 3;
     
     // Normally, you want to do other work in your app while the GPU is running,
     // but in this example, the code simply blocks until the calculation is complete.
-//    [commandBuffer waitUntilCompleted];
+    [commandBuffer waitUntilCompleted];
 }
 
 -(void) startDebug

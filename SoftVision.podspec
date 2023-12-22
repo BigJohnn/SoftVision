@@ -205,7 +205,7 @@ Pod::Spec.new do |spec|
   end
   
   spec.subspec 'depthMap' do |ss|
-      ss.source_files = "src/depthMap/**/*.{hpp,mm,cpp,metal}"#
+      ss.source_files = "src/depthMap/**/*.{hpp,mm,cpp}"#,metal
   end
   
   spec.subspec 'gpu' do |ss|
@@ -273,12 +273,12 @@ Pod::Spec.new do |spec|
   spec.dependency "cJSON"
   
   
-  spec.public_header_files = 'src/*.h','src/depthMap/gpu/**/*.metal','src/*.hpp' #
+  spec.public_header_files = 'src/*.h','src/*.hpp' #,'src/depthMap/gpu/**/*.metal'
   
   spec.libraries             = 'stdc++'
   
-  spec.ios.resource_bundle = { 'vocabulary' => 'voc', 'metalshaders' => ['src/depthMap/gpu/*.metallib'] }#,'src/depthMap/gpu/**/*.metal'
+  spec.ios.resource_bundle = { 'vocabulary' => 'voc' }#,'src/depthMap/gpu/**/*.metal' , 'metalshaders' => ['src/depthMap/gpu/*.metallib']
   
-  spec.static_framework = false
+  spec.static_framework = true
 
 end

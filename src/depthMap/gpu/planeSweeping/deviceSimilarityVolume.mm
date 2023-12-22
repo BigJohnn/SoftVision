@@ -4,6 +4,7 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 #import <depthMap/gpu/host/ComputePipeline.hpp>
+#import <depthMap/gpu/host/DeviceTexture.hpp>
 
 #include "deviceSimilarityVolume.hpp"
 
@@ -251,6 +252,11 @@ void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
 
     [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_computeSimilarity_kernel" Args:args];
 
+    
+    id<MTLTexture> texture_d1 = [out_volBestSim_dmp getDebugTexture:2];
+    id<MTLTexture> texture_d2 = [out_volSecBestSim_dmp getDebugTexture:2];
+    
+    void(0);
     // kernel execution
 //    volume_computeSimilarity_kernel<<<grid, block, 0, stream>>>(
 //        out_volBestSim_dmp.getBuffer(),
@@ -543,7 +549,7 @@ void volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
                 @([out_volAgr_dmp getBytesUpToDim:0]), // wbytes
                 [NSData dataWithBytes:&volDim_ length:sizeof(volDim_)],
                 [NSData dataWithBytes:&axisT_ length:sizeof(axisT_)],
-                @(sgmParams.stepXY),
+                @(sgmParams.stepXY*1.0f),
                 @(y),
                 @(sgmParams.p1),
                 @(sgmParams.p2Weighting),
@@ -553,6 +559,16 @@ void volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
             ];
             
             [pipeline Exec:gridVolSlide ThreadgroupSize:blockVolSlide KernelFuncName:@"depthMap::volume_agregateCostVolumeAtXinSlices_kernel" Args:args];
+
+//            {
+//                id<MTLTexture> texture_d = [xzSliceForY_dmpPtr getDebugTexture];
+//                
+//                
+//                NSLog(@"xxx");
+//            }
+            
+            
+            
         }
         
 //        volume_agregateCostVolumeAtXinSlices_kernel<<<gridVolSlide, blockVolSlide, 0, stream>>>(
@@ -579,6 +595,17 @@ void volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
 
         std::swap(xzSliceForYm1_dmpPtr, xzSliceForY_dmpPtr);
     }
+    
+    {
+        
+//        id<MTLTexture> texture_dx = [xzSliceForY_dmpPtr getDebugTexture];
+//        
+//        id<MTLTexture> texture_d = [out_volAgr_dmp getDebugTexture:0];
+//        id<MTLTexture> texture_d1 = [out_volAgr_dmp getDebugTexture:1];
+//        id<MTLTexture> texture_d2 = [out_volAgr_dmp getDebugTexture:2];
+//        id<MTLTexture> texture_d3 = [out_volAgr_dmp getDebugTexture:3];
+//        NSLog(@"xxx");
+    }
 //
 //    // check cuda last error
 //    CHECK_CUDA_ERROR();
@@ -595,8 +622,8 @@ void volumeOptimize(DeviceBuffer* out_volSimFiltered_dmp,
                                   const ROI& roi)
 {
     // get R mipmap image level and dimensions
-    const float rcMipmapLevel = rcDeviceMipmapImage.getLevel(sgmParams.scale);
-    MTLSize rcLevelDim = rcDeviceMipmapImage.getDimensions(sgmParams.scale);
+    const float rcMipmapLevel = rcDeviceMipmapImage.getLevel(sgmParams.scale * 2); //check:
+    MTLSize rcLevelDim = rcDeviceMipmapImage.getDimensions(sgmParams.scale * 2);
 
     // update aggregation volume
     int npaths = 0;

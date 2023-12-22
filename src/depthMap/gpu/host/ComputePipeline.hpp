@@ -15,6 +15,7 @@
 +(instancetype)createPipeline;
 
 -(void) Exec:(MTLSize)gridSize ThreadgroupSize:(MTLSize)threadgroupSize KernelFuncName:(NSString*)kernelFuncName Args:(NSArray*)args;
+-(id<MTLCommandQueue>) getCommandQueue;
 -(void) startDebug;
 -(void) endDebug;
 @end
