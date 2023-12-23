@@ -12,7 +12,7 @@
 #include <SoftVisionLog.h>
 #include <depthMap/gpu/host/utils.hpp>
 #include <depthMap/gpu/device/DeviceCameraParams.hpp>
-#include <depthMap/gpu/imageProcessing/deviceGaussianFilter.hpp>
+//#include <depthMap/gpu/imageProcessing/deviceGaussianFilter.hpp>
 
 
 #include <simd/simd.h>

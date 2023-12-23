@@ -58,7 +58,7 @@ Pod::Spec.new do |spec|
   #  the deployment target. You can optionally include the target after the platform.
   #
 
-  spec.ios.deployment_target = "12.0"
+  spec.ios.deployment_target = "13.0"
   spec.source       = { :git => "https://github.com/BigJohnn/SoftVision.git", :tag => "#{spec.version}"}
 
 
@@ -71,7 +71,7 @@ Pod::Spec.new do |spec|
   #  Not including the public_header_files will make all headers public.
   #
 
-  spec.source_files  = "src/*.{cpp}","src/*.{hpp}","src/*.{h}" #,metal
+  spec.source_files  = "src/*.{cpp}","src/*.{hpp}","src/*.{h,metal}" #,metal
                         
 #  spec.source_files  = "Classes", "Classes/**/*.{h,cpp}"
 #  spec.exclude_files = "src/*test.{h,hpp,cpp}"
@@ -273,7 +273,7 @@ Pod::Spec.new do |spec|
   spec.dependency "cJSON"
   
   
-  spec.public_header_files = 'src/*.h','src/*.hpp' #,'src/depthMap/gpu/**/*.metal'
+  spec.public_header_files = 'src/*.h','src/*.hpp','src/depthMap/gpu/**/*.metal' #,'src/depthMap/gpu/**/*.metal'
   
   spec.libraries             = 'stdc++'
   
