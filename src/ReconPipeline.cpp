@@ -142,16 +142,14 @@ void ReconPipeline::AppendSfMData(uint32_t viewId,
     
     std::map<std::string, std::string> metadata_; //TODO: fill this
     
-    const int buffer_n_bytes = width * height * 4;
+    const int buffer_n_bytes = width * height;//width/2 * height/2 * 4 , downscale by 2
     
     std::vector<uint8_t> buf(buffer_n_bytes, 0);
     
-    memcpy(buf.data(), bufferData, buffer_n_bytes);
-    
     int width_new, height_new;
     {
-        auto* buffer = new uint8_t[width * height * 4];
-        Convert2Portrait(width, height, buf.data(), width_new, height_new, buffer);
+        auto* buffer = new uint8_t[buffer_n_bytes];
+        Convert2Portrait(width, height, bufferData, width_new, height_new, buffer);
         
         if(m_outputFolder.empty()) {
             LOG_ERROR("OUTPUT DIR NOT SET!!");
@@ -1171,7 +1169,7 @@ int ReconPipeline::DepthMapEstimation()
     int rangeSize = -1;
 
     // global image downscale factor
-    int downscale = 2;
+    int downscale = 1;
 
     // min / max view angle
     float minViewAngle = 2.0f;

@@ -13,8 +13,8 @@ using namespace libyuv;
 void Convert2Portrait(int in_w, int in_h, const uint8_t* in_buffer,
                      int &out_w, int &out_h, uint8_t*out_buffer)
 {
-    out_w = in_h;
-    out_h = in_w;
+    out_w = in_h/2;
+    out_h = in_w/2;
     
     int sz = in_w * in_h;
     auto* i420_y = new uint8_t[sz];
@@ -30,7 +30,13 @@ void Convert2Portrait(int in_w, int in_h, const uint8_t* in_buffer,
     I420Mirror(i420_y_rot90, in_h, i420_u_rot90, in_h/2, i420_v_rot90, in_h/2,
                i420_y, in_h, i420_u, in_h/2, i420_v, in_h/2, in_h, in_w);
     
-    I420ToARGB(i420_y, in_h, i420_u, in_h/2, i420_v, in_h/2, out_buffer, in_h * 4, in_h, in_w);
+    auto* i420_y_2 = new uint8_t[sz/2];
+    auto* i420_u_2 = new uint8_t[sz/8];
+    auto* i420_v_2 = new uint8_t[sz/8];
+    I420Scale(i420_y, in_h, i420_u, in_h/2, i420_v, in_h/2, in_h, in_w, i420_y_2, in_h/2, i420_u_2, in_h/4, i420_v_2, in_h/4, in_h/2, in_w/2, kFilterBox);
+    
+//    I420ToARGB(i420_y, in_h, i420_u, in_h/2, i420_v, in_h/2, out_buffer, in_h * 4, in_h, in_w);
+    I420ToARGB(i420_y_2, in_h/2, i420_u_2, in_h/4, i420_v_2, in_h/4, out_buffer, in_h * 2, out_w, out_h);
     
     delete i420_y;
     delete i420_u;
@@ -39,6 +45,10 @@ void Convert2Portrait(int in_w, int in_h, const uint8_t* in_buffer,
     delete i420_y_rot90;
     delete i420_u_rot90;
     delete i420_v_rot90;
+    
+    delete i420_y_2;
+    delete i420_u_2;
+    delete i420_v_2;
 }
 
 void FlipY(int in_w, int in_h, const uint8_t* in_buffer, uint8_t*out_buffer)

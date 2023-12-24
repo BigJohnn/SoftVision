@@ -165,9 +165,8 @@ static const NSUInteger kMaxBuffersInFlight = 3;
         }
         else if([elem isKindOfClass:[NSData class]]) {
 //            NSLog(@"[elem length] %lu",[elem length] );
-            [computeEncoder setBytes:&elem length:[elem length] atIndex:bufferid++];
+            [computeEncoder setBytes:[elem bytes] length:[elem length] atIndex:bufferid++]; //TODO: ///
         }
-        
     }
     
     // Encode the compute command.

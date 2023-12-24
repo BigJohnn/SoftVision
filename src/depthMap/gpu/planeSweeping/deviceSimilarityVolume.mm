@@ -211,9 +211,10 @@ void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
     // kernel execution
     
 //    [inout_volume_dmp allocate:volDim elemSizeInBytes:sizeof(float)];
-    Range_d depthRange_d;
-    depthRange_d.begin = depthRange.begin;
-    depthRange_d.end = depthRange.end;
+    simd_uint2 depthRange_d = simd_make_uint2(depthRange.begin, depthRange.end);
+//    depthRange_d.begin = depthRange.begin;
+//    depthRange_d.end = depthRange.end;
+    
     ROI_d roi_d;
     roi_d.lt = simd_make_float2(roi.x.begin, roi.y.begin);
     roi_d.rb = simd_make_float2(roi.x.end, roi.y.end);
@@ -244,7 +245,7 @@ void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
         @(sgmParams.useConsistentScale), //false
         @(sgmParams.useCustomPatchPattern), //false
         
-        [NSData dataWithBytes:&depthRange_d length:sizeof(Range_d)],
+        [NSData dataWithBytes:&depthRange_d length:sizeof(depthRange_d)],
         [NSData dataWithBytes:&roi_d length:sizeof(ROI_d)]
     ];
     
@@ -253,10 +254,10 @@ void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
     [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_computeSimilarity_kernel" Args:args];
 
     
-    id<MTLTexture> texture_d1 = [out_volBestSim_dmp getDebugTexture:2];
-    id<MTLTexture> texture_d2 = [out_volSecBestSim_dmp getDebugTexture:2];
+    id<MTLTexture> texture_d1 = [out_volBestSim_dmp getDebugTexture:depthRange_d[0]];
+    id<MTLTexture> texture_d2 = [out_volSecBestSim_dmp getDebugTexture:depthRange_d[0]];
     
-    void(0);
+    NSLog(@"debug pause");//
     // kernel execution
 //    volume_computeSimilarity_kernel<<<grid, block, 0, stream>>>(
 //        out_volBestSim_dmp.getBuffer(),
@@ -311,9 +312,9 @@ extern void volumeRefineSimilarity(DeviceBuffer* inout_volSim_dmp,
     const MTLSize block = MTLSizeMake(32, 32, 1);
     const MTLSize threads = MTLSizeMake(roi.width(), roi.height(), depthRange.size());
     
-    Range_d depthRange_d;
-    depthRange_d.begin = depthRange.begin;
-    depthRange_d.end = depthRange.end;
+    simd_uint2 depthRange_d = simd_make_uint2(depthRange.begin, depthRange.end);
+//    depthRange_d.begin = depthRange.begin;
+//    depthRange_d.end = depthRange.end;
     ROI_d roi_d;
     roi_d.lt = simd_make_float2(roi.x.begin, roi.y.begin);
     roi_d.rb = simd_make_float2(roi.x.end, roi.y.end);
