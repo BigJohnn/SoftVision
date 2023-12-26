@@ -48,7 +48,7 @@ extern void cuda_volumeAdd(DeviceBuffer* inout_volume_dmp, DeviceBuffer* in_volu
  * @param[out] inout_volSecBestSim_dmp the second best similarity volume in device memory
  * @param[in] stream the stream for gpu execution
  */
-extern void cuda_volumeUpdateUninitializedSimilarity(DeviceBuffer* in_volBestSim_dmp, DeviceBuffer* inout_volSecBestSim_dmp);
+extern void volumeUpdateUninitializedSimilarity(DeviceBuffer* in_volBestSim_dmp, DeviceBuffer* inout_volSecBestSim_dmp);
 
 /**
  * @brief Compute the best / second best similarity volume for the given RC / TC.
@@ -134,11 +134,11 @@ extern void volumeOptimize(DeviceBuffer* out_volSimFiltered_dmp,
  * @param[in] roi the 2d region of interest
  * @param[in] stream the stream for gpu execution
  */
-extern void cuda_volumeRetrieveBestDepth(DeviceBuffer* out_sgmDepthThicknessMap_dmp,
+extern void volumeRetrieveBestDepth(DeviceBuffer* out_sgmDepthThicknessMap_dmp,
                                          DeviceBuffer* out_sgmDepthSimMap_dmp,
                                          DeviceBuffer* in_depths_dmp,
                                          DeviceBuffer* in_volSim_dmp, 
-                                         const int rcDeviceCameraParamsId,
+                                         const DeviceCameraParams& rcDeviceCameraParams,
                                          const SgmParams& sgmParams, 
                                          const Range& depthRange,
                                          const ROI& roi);

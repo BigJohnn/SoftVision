@@ -218,8 +218,14 @@
     else if([format isEqualToString:@"TSimAcc"]) {
         descriptor.pixelFormat = MTLPixelFormatR32Uint;
     }
-    else if([format isEqualToString:@"float"]) {
+    else if([format isEqualToString:@"float"] || [format isEqualToString:@"TSimRefine"]) {
         descriptor.pixelFormat = MTLPixelFormatR32Float;
+    }
+    else if([format isEqualToString:@"float2"]) {
+        descriptor.pixelFormat = MTLPixelFormatRG32Float;
+    }
+    else if([format isEqualToString:@"float3"]) {
+        descriptor.pixelFormat = MTLPixelFormatBC6H_RGBFloat;
     }
     
     descriptor.textureType      = MTLTextureType2D;

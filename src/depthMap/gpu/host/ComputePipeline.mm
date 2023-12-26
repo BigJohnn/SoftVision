@@ -9,6 +9,7 @@
 #import <objc/runtime.h>
 
 #include <depthMap/gpu/host/utils.hpp>
+#include <SoftVisionLog.h>
 
 @interface ComputePipeline()
 @end
@@ -166,6 +167,11 @@ static const NSUInteger kMaxBuffersInFlight = 3;
         else if([elem isKindOfClass:[NSData class]]) {
 //            NSLog(@"[elem length] %lu",[elem length] );
             [computeEncoder setBytes:[elem bytes] length:[elem length] atIndex:bufferid++]; //TODO: ///
+        }
+        else {
+            LOG_ERROR("elem undef...");
+//            [computeEncoder setBuffer:nil offset:0 atIndex:bufferid++];
+//            bufferid++;
         }
     }
     

@@ -57,7 +57,7 @@ Sgm::Sgm(const mvsUtils::MultiViewParams& mp,
     _depthThicknessMap_dmp = [DeviceBuffer allocate:mapDim elemSizeInBytes:sizeof(simd_float2) elemType:@"float2"];
 
     // allocate depth/sim map in device memory
-    if(_computeDepthSimMap)
+//    if(_computeDepthSimMap)
         _depthSimMap_dmp = [DeviceBuffer allocate:mapDim elemSizeInBytes:sizeof(simd_float2) elemType:@"float2"];
 //        _depthSimMap_dmp.allocate(mapDim);
 
@@ -278,7 +278,7 @@ void Sgm::computeSimilarityVolumes(const Tile& tile, const SgmDepthList& tileDep
     {
         LOG_X(tile << "SGM Update uninitialized similarity volume values from best similarity volume.");
 
-        cuda_volumeUpdateUninitializedSimilarity(_volumeBestSim_dmp, _volumeSecBestSim_dmp);
+        volumeUpdateUninitializedSimilarity(_volumeBestSim_dmp, _volumeSecBestSim_dmp);
     }
     
     LOG_X(tile << "SGM Compute similarity volume done.");
@@ -321,12 +321,13 @@ void Sgm::retrieveBestDepth(const Tile& tile, const SgmDepthList& tileDepthList)
     // get R device camera parameters id from cache
     DeviceCache& deviceCache = DeviceCache::getInstance();
     const int rcDeviceCameraParamsId = deviceCache.requestCameraParamsId(tile.rc, 1, _mp);
+    const DeviceCameraParams& rcDeviceCameraParams = deviceCache.requestCameraParamsBuffer(tile.rc, 1, _mp);
 
-    cuda_volumeRetrieveBestDepth(_depthThicknessMap_dmp, // output depth thickness map
+    volumeRetrieveBestDepth(_depthThicknessMap_dmp, // output depth thickness map
                                  _depthSimMap_dmp,      // output depth/sim map (or empty)
                                  _depths_dmp,           // rc depth
                                  _volumeBestSim_dmp,    // second best sim volume optimized in best sim volume
-                                 rcDeviceCameraParamsId,
+                                 rcDeviceCameraParams,
                                  _sgmParams,
                                  depthRange,
                                  downscaledRoi);

@@ -84,7 +84,7 @@ void normalMapUpscale(DeviceBuffer* out_upscaledMap_dmp,
 
     // kernel execution
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
-    [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"mapUpscale_kernel" Args:args];
+    [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::mapUpscale_kernel" Args:args];
     
 //    mapUpscale_kernel<float3><<<grid, block, 0, stream>>>(
 //        out_upscaledMap_dmp.getBuffer(),
@@ -240,6 +240,10 @@ void computeSgmUpscaledDepthPixSizeMap(DeviceBuffer* out_upscaledDepthPixSizeMap
         ];
 
         [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel" Args:args];
+        
+        DeviceTexture* texture_in = [in_sgmDepthThicknessMap_dmp getDebugTexture];
+        DeviceTexture* texture = [out_upscaledDepthPixSizeMap_dmp getDebugTexture];
+        NSLog(@"xxx");
 //        computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel<<<grid, block, 0, stream>>>(
 //            out_upscaledDepthPixSizeMap_dmp.getBuffer(),
 //            out_upscaledDepthPixSizeMap_dmp.getPitch(),
@@ -280,11 +284,14 @@ void depthSimMapComputeNormal(DeviceBuffer* out_normalMap_dmp,
                 @([in_depthSimMap_dmp getBytesUpToDim:0]),
                 [NSData dataWithBytes:&rcDeviceCameraParams length:sizeof(rcDeviceCameraParams)],
                 @(stepXY),
+                @(3),/* wsh */
                 [NSData dataWithBytes:&roi_d length:sizeof(roi_d)]
     ];
 
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
     [pipeline Exec:threads ThreadgroupSize:threadgroupSize KernelFuncName:@"depthMap::depthSimMapComputeNormal_kernel" Args:args];
+    
+    //TODO: check normal...
     
 //    const dim3 block(8, 8, 1);
 //    const dim3 grid(divUp(roi.width(), block.x), divUp(roi.height(), block.y), 1);

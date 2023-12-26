@@ -42,7 +42,7 @@ struct RefineParams
 
   // constant parameters
 
-  const bool useSgmNormalMap = false; // for experimentation purposes
+  const bool useSgmNormalMap = true; // for experimentation purposes
 };
 
 } // namespace depthMap
