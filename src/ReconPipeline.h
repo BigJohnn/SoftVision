@@ -70,6 +70,9 @@ private:
     std::string m_outputFolder;
     std::string m_featureFolder;
     std::string m_matchesFolder;
+    std::string m_imagesUndistortFolder;
+    std::string m_depthMapsFolder;
+    std::string m_depthMapsFilterFolder;
     static std::vector<std::vector<uint8_t>> m_cachedBuffers;
     std::string m_describerTypesName;
     featureEngine::FeatureExtractor* m_extractor = nullptr;

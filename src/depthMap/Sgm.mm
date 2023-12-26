@@ -57,7 +57,7 @@ Sgm::Sgm(const mvsUtils::MultiViewParams& mp,
     _depthThicknessMap_dmp = [DeviceBuffer allocate:mapDim elemSizeInBytes:sizeof(simd_float2) elemType:@"float2"];
 
     // allocate depth/sim map in device memory
-//    if(_computeDepthSimMap)
+    if(_computeDepthSimMap)
         _depthSimMap_dmp = [DeviceBuffer allocate:mapDim elemSizeInBytes:sizeof(simd_float2) elemType:@"float2"];
 //        _depthSimMap_dmp.allocate(mapDim);
 

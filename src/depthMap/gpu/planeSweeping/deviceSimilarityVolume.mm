@@ -13,6 +13,8 @@
 
 #include <map>
 
+#define SOFTVISION_DEBUG
+
 namespace depthMap {
 
 /**
@@ -119,7 +121,7 @@ void volumeInitialize(DeviceBuffer* inout_volume_dmp, TSimRefine value)
         @([inout_volume_dmp getBytesUpToDim:0]), // 1024
         @((unsigned)volDim.width),
         @((unsigned)volDim.height),
-        @255.f
+        @(value)
     ];
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
     [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_init_kernel_refine" Args:args];
@@ -371,9 +373,11 @@ extern void volumeRefineSimilarity(DeviceBuffer* inout_volSim_dmp,
     
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
     [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_refineSimilarity_kernel" Args:args];
-    
+   
+#ifdef SOFTVISION_DEBUG
     DeviceTexture* texture = [inout_volSim_dmp getDebugTexture];
     NSLog(@"...");
+#endif
     // kernel execution
 //    volume_refineSimilarity_kernel<<<grid, block, 0, stream>>>(
 //        inout_volSim_dmp.getBuffer(),
@@ -788,7 +792,7 @@ extern void volumeRefineBestDepth(DeviceBuffer* out_refineDepthSimMap_dmp,
     // kernel launch parameters
 //    const dim3 block = getMaxPotentialBlockSize(volume_refineBestDepth_kernel);
 //    const dim3 grid(divUp(roi.width(), block.x), divUp(roi.height(), block.y), 1);
-    MTLSize const& block = MTLSizeMake(32, 32, 1);//TODO: check
+    MTLSize const& block = MTLSizeMake(16, 16, 1);
     MTLSize const& threads = MTLSizeMake(roi.width(), roi.height(), 1);
     
     // kernel execution
@@ -815,6 +819,12 @@ extern void volumeRefineBestDepth(DeviceBuffer* out_refineDepthSimMap_dmp,
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
     [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_refineBestDepth_kernel" Args:args];
     
+#ifdef SOFTVISION_DEBUG
+    
+    DeviceTexture* texture_in = [in_volSim_dmp getDebugTexture];
+    DeviceTexture* texture = [out_refineDepthSimMap_dmp getDebugTexture];
+    NSLog(@"volumeRefineBestDepth...");
+#endif
 //    volume_refineBestDepth_kernel<<<grid, block, 0, stream>>>(
 //        out_refineDepthSimMap_dmp.getBuffer(),
 //        out_refineDepthSimMap_dmp.getBytesPaddedUpToDim(0),

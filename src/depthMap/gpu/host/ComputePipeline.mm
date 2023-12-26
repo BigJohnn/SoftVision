@@ -44,10 +44,7 @@ static const NSUInteger kMaxBuffersInFlight = 3;
 
         NSBundle *bundle = [NSBundle bundleForClass:self.classForCoder];
         NSURL *bundleURL = [[bundle resourceURL] URLByAppendingPathComponent:@"Frameworks/mtlkernels.framework"];
-//        NSURL *bundleURL = [bundle resourceURL];
         NSBundle *resourceBundle = [NSBundle bundleWithURL:bundleURL];
-//        NSURL *libraryURL = [resourceBundle URLForResource:libraryName
-//                                                        withExtension:@"metallib"];
         
         NSURL *libraryURL = [resourceBundle URLForResource:@"default"
                                                         withExtension:@"metallib"];
@@ -57,15 +54,11 @@ static const NSUInteger kMaxBuffersInFlight = 3;
 
         id <MTLLibrary> defaultLibrary = [device newLibraryWithURL:libraryURL
                                                       error:&libraryError];
-        
-//        id <MTLLibrary> defaultLibrary = [device newDefaultLibraryWithBundle:bundle error:&libraryError];
-//        id <MTLLibrary> defaultLibrary = [device newDefaultLibrary];
                                           
         if (defaultLibrary == nil)
         {
             NSLog(@"Failed to find the default library.");
         }
-        
         
         id<MTLCommandQueue> commandQueue = [device newCommandQueue];
         assert(nil != commandQueue);

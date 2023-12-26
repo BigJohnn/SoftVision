@@ -221,6 +221,9 @@ void ReconPipeline::SetOutputDataDir(const char* directory)
     m_outputFolder = directory;
     m_matchesFolder = m_outputFolder + "matches/";
     m_featureFolder = m_outputFolder + "features/";
+    m_imagesUndistortFolder = m_outputFolder + "imagesUndistort/";
+    m_depthMapsFolder = m_outputFolder + "depthMaps/";
+    m_depthMapsFilterFolder = m_outputFolder + "depthMapsFilter/";
 }
 
 bool ReconPipeline::FeatureExtraction()
@@ -972,6 +975,8 @@ int ReconPipeline::PrepareDenseScene()
     const double medianCameraExposure = sfmData.getMedianCameraExposureSetting().getExposure();
     LOG_X("Median Camera Exposure: " << medianCameraExposure << ", Median EV: " << std::log2(1.0/medianCameraExposure));
     
+    const std::string& imgUndistortDir = m_imagesUndistortFolder;
+    utils::create_directory(imgUndistortDir);
 #pragma omp parallel for num_threads(3)
     for(int i = 0; i < viewIds.size(); ++i)
     {
@@ -986,7 +991,7 @@ int ReconPipeline::PrepareDenseScene()
         // we have a valid view with a corresponding camera & pose
         const std::string baseFilename = std::to_string(viewId);
 
-        const std::string dstColorImage = m_outputFolder + baseFilename + "." + image::EImageFileType_enumToString(outputFileType);
+        const std::string dstColorImage = imgUndistortDir + baseFilename + "." + image::EImageFileType_enumToString(outputFileType);
         if(utils::exists(dstColorImage)) {
             LOG_INFO("dstColorImage %s already exist!", dstColorImage.c_str());
             continue;
@@ -1188,7 +1193,7 @@ int ReconPipeline::DepthMapEstimation()
     depthMap::RefineParams refineParams;
 
     // intermediate results
-    bool exportIntermediateDepthSimMaps = false;
+    bool exportIntermediateDepthSimMaps = true;
     bool exportIntermediateNormalMaps = false;
     bool exportIntermediateVolumes = false;
     bool exportIntermediateCrossVolumes = false;
@@ -1247,8 +1252,13 @@ int ReconPipeline::DepthMapEstimation()
     }
     
     // MultiViewParams initialization
-    auto& imagesFolder = m_outputFolder;
-    mvsUtils::MultiViewParams mp(*m_sfmData, imagesFolder, m_outputFolder, "", false, downscale);
+    auto&& imagesFolder = m_imagesUndistortFolder;
+    auto&& depthMapsFolder = m_depthMapsFolder;
+    auto&& depthMapsFilterFolder = m_depthMapsFilterFolder;
+    utils::create_directory(imagesFolder);
+    utils::create_directory(depthMapsFolder);
+    utils::create_directory(depthMapsFilterFolder);
+    mvsUtils::MultiViewParams mp(*m_sfmData, imagesFolder, depthMapsFolder, depthMapsFilterFolder, false, downscale);
     
     // set MultiViewParams min/max view angle
     mp.setMinViewAngle(minViewAngle);
@@ -1330,7 +1340,7 @@ int ReconPipeline::DepthMapEstimation()
         const int maxSgmBufferWidth  = divideRoundUp(mp.getMaxImageWidth() , sgmParams.scale * sgmParams.stepXY);
         const int maxSgmBufferHeight = divideRoundUp(mp.getMaxImageHeight(), sgmParams.scale * sgmParams.stepXY);
 
-        // update SGM step XY
+        // update SGM step XY , cause "Not enough GPU memory to compute a single tile"
 //        if(!autoSgmScaleStep && // user define SGM scale & stepXY
 //           (sgmParams.stepXY == 2) && // default stepXY
 //           (maxSgmBufferWidth  < tileParams.bufferWidth  * 0.5) &&

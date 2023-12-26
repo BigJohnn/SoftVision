@@ -355,6 +355,9 @@ void depthSimMapOptimizeGradientDescent(DeviceBuffer* out_optimizeDepthSimMap_dm
 
         
         [pipeline Exec:lthreads ThreadgroupSize:lblock KernelFuncName:@"depthMap::optimize_varLofLABtoW_kernel" Args:args];
+        
+        DeviceTexture* texture = [inout_imgVariance_dmp getDebugTexture];
+        NSLog(@"...");
 //        optimize_varLofLABtoW_kernel<<<lgrid, lblock, 0, stream>>>(
 //            inout_imgVariance_dmp.getBuffer(), 
 //            inout_imgVariance_dmp.getPitch(),
