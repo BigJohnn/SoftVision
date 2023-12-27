@@ -66,7 +66,7 @@ static const NSUInteger kMaxBuffersInFlight = 3;
         pipeline->defaultLibrary = defaultLibrary;
         pipeline->commandQueue = commandQueue;
         pipeline->device = device;
-        pipeline->_inFlightSemaphore = dispatch_semaphore_create(kMaxBuffersInFlight);
+//        pipeline->_inFlightSemaphore = dispatch_semaphore_create(kMaxBuffersInFlight);
         
         pipeline->scope = [MTLCaptureManager.sharedCaptureManager newCaptureScopeWithCommandQueue:commandQueue];
         pipeline->scope.label = @"SingleKernelScope";
@@ -104,11 +104,11 @@ static const NSUInteger kMaxBuffersInFlight = 3;
 
     commandBuffer.label = @"mtlCmdBuffer";
     
-    __block dispatch_semaphore_t block_sema = _inFlightSemaphore;
-    [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer)
-    {
-        dispatch_semaphore_signal(block_sema);
-    }];
+//    __block dispatch_semaphore_t block_sema = _inFlightSemaphore;
+//    [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer)
+//    {
+//        dispatch_semaphore_signal(block_sema);
+//    }];
     
     // Start a compute pass.
     id<MTLComputeCommandEncoder> computeEncoder = [commandBuffer computeCommandEncoder];
@@ -187,7 +187,7 @@ static const NSUInteger kMaxBuffersInFlight = 3;
 
 -(void) startDebug
 {
-    dispatch_semaphore_wait(_inFlightSemaphore, DISPATCH_TIME_FOREVER);
+//    dispatch_semaphore_wait(_inFlightSemaphore, DISPATCH_TIME_FOREVER);
     
     if(nil == descriptor) {
         descriptor = [[MTLCaptureDescriptor alloc] init];

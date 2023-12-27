@@ -225,7 +225,7 @@
         descriptor.pixelFormat = MTLPixelFormatRG32Float;
     }
     else if([format isEqualToString:@"float3"]) {
-        descriptor.pixelFormat = MTLPixelFormatBC6H_RGBFloat;
+        descriptor.pixelFormat = MTLPixelFormatRGBA32Float;
     }
     
     descriptor.textureType      = MTLTextureType2D;

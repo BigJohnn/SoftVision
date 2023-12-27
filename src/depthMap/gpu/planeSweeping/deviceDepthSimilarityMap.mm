@@ -291,7 +291,9 @@ void depthSimMapComputeNormal(DeviceBuffer* out_normalMap_dmp,
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
     [pipeline Exec:threads ThreadgroupSize:threadgroupSize KernelFuncName:@"depthMap::depthSimMapComputeNormal_kernel" Args:args];
     
-    //TODO: check normal...
+//    id<MTLTexture> in_depth = [in_depthSimMap_dmp getDebugTexture];
+//    id<MTLTexture> texture = [out_normalMap_dmp getDebugTexture];
+//    NSLog(@"normal map.");
     
 //    const dim3 block(8, 8, 1);
 //    const dim3 grid(divUp(roi.width(), block.x), divUp(roi.height(), block.y), 1);
@@ -383,6 +385,7 @@ void depthSimMapOptimizeGradientDescent(DeviceBuffer* out_optimizeDepthSimMap_dm
 
     for(int iter = 0; iter < refineParams.optimizationNbIterations; ++iter) // default nb iterations is 100
     {
+//        [pipeline startDebug];
         // copy depths values from out_depthSimMapOptimized_dmp to inout_tmpOptDepthMap_dmp
         {
             NSArray* args = @[
@@ -421,10 +424,11 @@ void depthSimMapOptimizeGradientDescent(DeviceBuffer* out_optimizeDepthSimMap_dm
             ];
             [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::optimize_depthSimMap_kernel" Args:args];
             
+//            [pipeline endDebug];
 //            depthTex = nil;
 //            id<MTLTexture> texture1 = [in_sgmDepthPixSizeMap_dmp getDebugTexture];
 //            id<MTLTexture> texture0 = [in_refineDepthSimMap_dmp getDebugTexture];
-//            id<MTLTexture> texture = [out_optimizeDepthSimMap_dmp getDebugTexture];
+//            id<MTLTexture> texture = [out_optimizeDepthSimMap_dmp getDebugTexture]; //TODO: simmap seems Not Okay.
 //            NSLog(@"...");
         }
 //        optimize_depthSimMap_kernel<<<grid, block, 0, stream>>>(

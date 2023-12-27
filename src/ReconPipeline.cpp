@@ -1194,7 +1194,7 @@ int ReconPipeline::DepthMapEstimation()
 
     // intermediate results
     bool exportIntermediateDepthSimMaps = true;
-    bool exportIntermediateNormalMaps = false;
+    bool exportIntermediateNormalMaps = true;
     bool exportIntermediateVolumes = false;
     bool exportIntermediateCrossVolumes = false;
     bool exportIntermediateTopographicCutVolumes = false;

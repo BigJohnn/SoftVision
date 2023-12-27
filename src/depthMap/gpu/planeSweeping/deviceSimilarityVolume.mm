@@ -755,7 +755,10 @@ void volumeRetrieveBestDepth(DeviceBuffer* out_sgmDepthThicknessMap_dmp,
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
     [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_retrieveBestDepth_kernel" Args:args];
     
+//    id<MTLTexture> texture_d3 = [in_depths_dmp getDebugTexture:0];
+//    id<MTLTexture> texture_d4 = [in_volSim_dmp getDebugTexture:10];
 //    id<MTLTexture> texture_d1 = [out_sgmDepthThicknessMap_dmp getDebugTexture:0];
+//    id<MTLTexture> texture_d2 = [out_sgmDepthSimMap_dmp getDebugTexture:0];
 //    NSLog(@"xxx");
 //    volume_retrieveBestDepth_kernel<<<grid, block, 0, stream>>>(
 //        out_sgmDepthThicknessMap_dmp.getBuffer(),
