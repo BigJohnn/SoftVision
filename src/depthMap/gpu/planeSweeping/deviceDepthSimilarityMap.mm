@@ -241,9 +241,9 @@ void computeSgmUpscaledDepthPixSizeMap(DeviceBuffer* out_upscaledDepthPixSizeMap
 
         [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel" Args:args];
         
-        DeviceTexture* texture_in = [in_sgmDepthThicknessMap_dmp getDebugTexture];
-        DeviceTexture* texture = [out_upscaledDepthPixSizeMap_dmp getDebugTexture];
-        NSLog(@"xxx");
+//        DeviceTexture* texture_in = [in_sgmDepthThicknessMap_dmp getDebugTexture];
+//        DeviceTexture* texture = [out_upscaledDepthPixSizeMap_dmp getDebugTexture];
+//        NSLog(@"xxx");
 //        computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel<<<grid, block, 0, stream>>>(
 //            out_upscaledDepthPixSizeMap_dmp.getBuffer(),
 //            out_upscaledDepthPixSizeMap_dmp.getPitch(),
@@ -326,6 +326,7 @@ void depthSimMapOptimizeGradientDescent(DeviceBuffer* out_optimizeDepthSimMap_dm
 
     // initialize depth/sim map optimized with SGM depth/pixSize map
     [out_optimizeDepthSimMap_dmp copyFrom:in_sgmDepthPixSizeMap_dmp];
+//    id<MTLTexture> texture = [out_optimizeDepthSimMap_dmp getDebugTexture];
 //    out_optimizeDepthSimMap_dmp.copyFrom(in_sgmDepthPixSizeMap_dmp, stream);
 
     ROI_d roi_d;
@@ -356,8 +357,8 @@ void depthSimMapOptimizeGradientDescent(DeviceBuffer* out_optimizeDepthSimMap_dm
         
         [pipeline Exec:lthreads ThreadgroupSize:lblock KernelFuncName:@"depthMap::optimize_varLofLABtoW_kernel" Args:args];
         
-        DeviceTexture* texture = [inout_imgVariance_dmp getDebugTexture];
-        NSLog(@"...");
+//        DeviceTexture* texture = [inout_imgVariance_dmp getDebugTexture];
+//        NSLog(@"...");
 //        optimize_varLofLABtoW_kernel<<<lgrid, lblock, 0, stream>>>(
 //            inout_imgVariance_dmp.getBuffer(), 
 //            inout_imgVariance_dmp.getPitch(),
@@ -370,7 +371,7 @@ void depthSimMapOptimizeGradientDescent(DeviceBuffer* out_optimizeDepthSimMap_dm
     }
 
     id<MTLTexture> imgVarianceTex = [DeviceTexture initWithFloatBuffer:inout_imgVariance_dmp];
-    id<MTLTexture> depthTex = [DeviceTexture initWithFloatBuffer:inout_tmpOptDepthMap_dmp];
+//    id<MTLTexture> depthTex = [DeviceTexture initWithFloatBuffer:inout_tmpOptDepthMap_dmp];
 //    CudaTexture<float, false, false> imgVarianceTex(inout_imgVariance_dmp); // neighbor interpolation, without normalized coordinates
 //    CudaTexture<float, false, false> depthTex(inout_tmpOptDepthMap_dmp);    // neighbor interpolation, without normalized coordinates
 
@@ -392,6 +393,8 @@ void depthSimMapOptimizeGradientDescent(DeviceBuffer* out_optimizeDepthSimMap_dm
                             [NSData dataWithBytes:&roi_d length:sizeof(roi_d)]
             ];
             [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::optimize_getOptDeptMapFromOptDepthSimMap_kernel" Args:args];
+            
+//            depthTex = [inout_tmpOptDepthMap_dmp getDebugTexture];
         }
 //        optimize_getOptDeptMapFromOptDepthSimMap_kernel<<<grid, block, 0, stream>>>(
 //            inout_tmpOptDepthMap_dmp.getBuffer(), 
@@ -409,13 +412,20 @@ void depthSimMapOptimizeGradientDescent(DeviceBuffer* out_optimizeDepthSimMap_dm
                             @([in_sgmDepthPixSizeMap_dmp getBytesUpToDim:0]),
                             [in_refineDepthSimMap_dmp getBuffer],
                             @([in_refineDepthSimMap_dmp getBytesUpToDim:0]),
+                            [inout_tmpOptDepthMap_dmp getBuffer],
+                            @([inout_tmpOptDepthMap_dmp getBytesUpToDim:0]),
                             [NSData dataWithBytes:&rcDeviceCameraParams length:sizeof(rcDeviceCameraParams)],
                             imgVarianceTex,
-                            depthTex,
                             @(iter),
                             [NSData dataWithBytes:&roi_d length:sizeof(roi_d)]
             ];
             [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::optimize_depthSimMap_kernel" Args:args];
+            
+//            depthTex = nil;
+//            id<MTLTexture> texture1 = [in_sgmDepthPixSizeMap_dmp getDebugTexture];
+//            id<MTLTexture> texture0 = [in_refineDepthSimMap_dmp getDebugTexture];
+//            id<MTLTexture> texture = [out_optimizeDepthSimMap_dmp getDebugTexture];
+//            NSLog(@"...");
         }
 //        optimize_depthSimMap_kernel<<<grid, block, 0, stream>>>(
 //            out_optimizeDepthSimMap_dmp.getBuffer(),

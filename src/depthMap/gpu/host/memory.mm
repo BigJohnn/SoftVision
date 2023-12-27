@@ -7,6 +7,7 @@
 
 #import <depthMap/gpu/host/memory.hpp>
 #import <depthMap/gpu/host/DeviceTexture.hpp>
+#import <depthMap/gpu/host/ComputePipeline.hpp>
 #include <SoftVisionLog.h>
 
 @implementation DeviceBuffer
@@ -21,14 +22,20 @@
 
 -(void) copyFrom:(DeviceBuffer*)src
 {
-    //    id<MTLBlitCommandEncoder> encoder;
-    //    [encoder copyFromBuffer:[src getBuffer] sourceOffset:0 toBuffer:buffer destinationOffset:0 size:[src getBufferLength]];
-    
-    buffer = [src getBuffer]; // shallow copy
+    ComputePipeline* pipeline = [ComputePipeline createPipeline];
+    id<MTLCommandQueue> queue =  [pipeline getCommandQueue];
+    id<MTLCommandBuffer> cmdbuf = [queue commandBuffer];
+    id <MTLBlitCommandEncoder> encoder = [cmdbuf blitCommandEncoder];
+    [encoder copyFromBuffer:[src getBuffer] sourceOffset:0 toBuffer:buffer destinationOffset:0 size:[src getBufferLength]];
+    [encoder endEncoding];
+    [cmdbuf commit];
+    [cmdbuf waitUntilCompleted];
+
+//    buffer = [src getBuffer]; // shallow copy
     sz = [src getSize];
     elemSizeInBytes = [src getElemSize];
     nBytesPerRow = [src getBytesUpToDim:0];
-    bufferLengthInBytes = [src getBufferLength];
+//    bufferLengthInBytes = [src getBufferLength];
     elemType = src->elemType;
 }
 

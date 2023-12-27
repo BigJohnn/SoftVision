@@ -69,7 +69,7 @@ static const NSUInteger kMaxBuffersInFlight = 3;
         pipeline->_inFlightSemaphore = dispatch_semaphore_create(kMaxBuffersInFlight);
         
         pipeline->scope = [MTLCaptureManager.sharedCaptureManager newCaptureScopeWithCommandQueue:commandQueue];
-        pipeline->scope.label = @"GoodScope";
+        pipeline->scope.label = @"SingleKernelScope";
         MTLCaptureManager.sharedCaptureManager.defaultCaptureScope = pipeline->scope;
     });
     return pipeline;

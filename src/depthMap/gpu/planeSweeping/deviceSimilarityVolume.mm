@@ -375,8 +375,8 @@ extern void volumeRefineSimilarity(DeviceBuffer* inout_volSim_dmp,
     [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_refineSimilarity_kernel" Args:args];
    
 #ifdef SOFTVISION_DEBUG
-    DeviceTexture* texture = [inout_volSim_dmp getDebugTexture];
-    NSLog(@"...");
+//    DeviceTexture* texture = [inout_volSim_dmp getDebugTexture];
+//    NSLog(@"...");
 #endif
     // kernel execution
 //    volume_refineSimilarity_kernel<<<grid, block, 0, stream>>>(
@@ -755,8 +755,8 @@ void volumeRetrieveBestDepth(DeviceBuffer* out_sgmDepthThicknessMap_dmp,
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
     [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_retrieveBestDepth_kernel" Args:args];
     
-    id<MTLTexture> texture_d1 = [out_sgmDepthThicknessMap_dmp getDebugTexture:0];
-    NSLog(@"xxx");
+//    id<MTLTexture> texture_d1 = [out_sgmDepthThicknessMap_dmp getDebugTexture:0];
+//    NSLog(@"xxx");
 //    volume_retrieveBestDepth_kernel<<<grid, block, 0, stream>>>(
 //        out_sgmDepthThicknessMap_dmp.getBuffer(),
 //        out_sgmDepthThicknessMap_dmp.getBytesPaddedUpToDim(0),
@@ -821,9 +821,10 @@ extern void volumeRefineBestDepth(DeviceBuffer* out_refineDepthSimMap_dmp,
     
 #ifdef SOFTVISION_DEBUG
     
-    DeviceTexture* texture_in = [in_volSim_dmp getDebugTexture];
-    DeviceTexture* texture = [out_refineDepthSimMap_dmp getDebugTexture];
-    NSLog(@"volumeRefineBestDepth...");
+//    DeviceTexture* texture_in = [in_volSim_dmp getDebugTexture];
+//    DeviceTexture* texture_depth_pixsize_in = [in_sgmDepthPixSizeMap_dmp getDebugTexture];
+//    DeviceTexture* texture = [out_refineDepthSimMap_dmp getDebugTexture];
+//    NSLog(@"volumeRefineBestDepth...");
 #endif
 //    volume_refineBestDepth_kernel<<<grid, block, 0, stream>>>(
 //        out_refineDepthSimMap_dmp.getBuffer(),
