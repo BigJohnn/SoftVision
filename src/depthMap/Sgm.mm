@@ -361,8 +361,10 @@ void Sgm::exportVolumeInformation(const Tile& tile,
     // copy device similarity volume to host memory
 //    CudaHostMemoryHeap<TSim, 3> volumeSim_hmh(in_volume_dmp.getSize());
 //    volumeSim_hmh.copyFrom(in_volume_dmp);
-
-    LOG_X("TODO: EXPORT ...");
+    DeviceBuffer* volumeSim_hmh = in_volume_dmp;//[DeviceBuffer allocate:[in_volume_dmp getSize] elemSizeInBytes:sizeof(TSim) elemType:@"TSim"];
+    
+//    [volumeSim_hmh copyFrom:in_volume_dmp];
+    
     
     if(_sgmParams.exportIntermediateVolumes)
     {
@@ -370,7 +372,7 @@ void Sgm::exportVolumeInformation(const Tile& tile,
 
         const std::string volumePath = getFileNameFromIndex(_mp, tile.rc, mvsUtils::EFileType::volume, "_" + name, tileBeginX, tileBeginY);
         
-//        exportSimilarityVolume(volumeSim_hmh, tileDepthList.getDepths(), _mp, tile.rc, _sgmParams, volumePath, tile.roi);
+        exportSimilarityVolume(volumeSim_hmh, tileDepthList.getDepths(), _mp, tile.rc, _sgmParams, volumePath, tile.roi);
 
         LOG_X(tile << "Export similarity volume (" << name << ") done.");
     }
@@ -381,7 +383,7 @@ void Sgm::exportVolumeInformation(const Tile& tile,
 
         const std::string volumeCrossPath = getFileNameFromIndex(_mp, tile.rc, mvsUtils::EFileType::volumeCross, "_" + name, tileBeginX, tileBeginY);
 
-//        exportSimilarityVolumeCross(volumeSim_hmh, tileDepthList.getDepths(), _mp, tile.rc, _sgmParams, volumeCrossPath, tile.roi);
+        exportSimilarityVolumeCross(volumeSim_hmh, tileDepthList.getDepths(), _mp, tile.rc, _sgmParams, volumeCrossPath, tile.roi);
 
         LOG_X(tile << "Export similarity volume cross (" << name << ") done.");
     }
@@ -392,7 +394,7 @@ void Sgm::exportVolumeInformation(const Tile& tile,
 
         const std::string volumeCutPath = getFileNameFromIndex(_mp, tile.rc, mvsUtils::EFileType::volumeTopographicCut, "_" + name, tileBeginX, tileBeginY);
 
-//        exportSimilarityVolumeTopographicCut(volumeSim_hmh, tileDepthList.getDepths(), _mp, tile.rc, _sgmParams, volumeCutPath, tile.roi);
+        exportSimilarityVolumeTopographicCut(volumeSim_hmh, tileDepthList.getDepths(), _mp, tile.rc, _sgmParams, volumeCutPath, tile.roi);
 
         LOG_X(tile << "Export similarity volume topographic cut (" << name << ") done.");
     }
@@ -403,7 +405,7 @@ void Sgm::exportVolumeInformation(const Tile& tile,
 
         const std::string stats9Path = getFileNameFromIndex(_mp, tile.rc, mvsUtils::EFileType::stats9p, "_sgm", tileBeginX, tileBeginY);
 
-//        exportSimilaritySamplesCSV(volumeSim_hmh, tileDepthList.getDepths(), name, _sgmParams, stats9Path, tile.roi);
+        exportSimilaritySamplesCSV(volumeSim_hmh, tileDepthList.getDepths(), name, _sgmParams, stats9Path, tile.roi);
 
         LOG_X(tile << "Export similarity volume 9 points CSV (" << name << ") done.");
     }

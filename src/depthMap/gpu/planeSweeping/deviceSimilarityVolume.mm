@@ -137,9 +137,9 @@ void volumeInitialize(DeviceBuffer* inout_volume_dmp, TSimRefine value)
 //        value);
 }
 
-void cuda_volumeAdd(DeviceBuffer* inout_volume_dmp,
-                             DeviceBuffer* in_volume_dmp)
-{
+//void cuda_volumeAdd(DeviceBuffer* inout_volume_dmp,
+//                             DeviceBuffer* in_volume_dmp)
+//{
     // get input/output volume dimensions
 //    const CudaSize<3>& volDim = inout_volume_dmp.getSize();
 //
@@ -160,7 +160,7 @@ void cuda_volumeAdd(DeviceBuffer* inout_volume_dmp,
 //
 //    // check cuda last error
 //    CHECK_CUDA_ERROR();
-}
+//}
 
 void volumeUpdateUninitializedSimilarity(DeviceBuffer* in_volBestSim_dmp,
                                                        DeviceBuffer* inout_volSecBestSim_dmp)
@@ -653,9 +653,6 @@ void volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
 //        id<MTLTexture> texture_d3 = [out_volAgr_dmp getDebugTexture:3];
 //        NSLog(@"xxx");
     }
-//
-//    // check cuda last error
-//    CHECK_CUDA_ERROR();
 }
 
 void volumeOptimize(DeviceBuffer* out_volSimFiltered_dmp,
@@ -755,31 +752,11 @@ void volumeRetrieveBestDepth(DeviceBuffer* out_sgmDepthThicknessMap_dmp,
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
     [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_retrieveBestDepth_kernel" Args:args];
     
-//    id<MTLTexture> texture_d3 = [in_depths_dmp getDebugTexture:0];
-//    id<MTLTexture> texture_d4 = [in_volSim_dmp getDebugTexture:10];
-//    id<MTLTexture> texture_d1 = [out_sgmDepthThicknessMap_dmp getDebugTexture:0];
-//    id<MTLTexture> texture_d2 = [out_sgmDepthSimMap_dmp getDebugTexture:0];
-//    NSLog(@"xxx");
-//    volume_retrieveBestDepth_kernel<<<grid, block, 0, stream>>>(
-//        out_sgmDepthThicknessMap_dmp.getBuffer(),
-//        out_sgmDepthThicknessMap_dmp.getBytesPaddedUpToDim(0),
-//        out_sgmDepthSimMap_dmp.getBuffer(),
-//        out_sgmDepthSimMap_dmp.getBytesPaddedUpToDim(0),
-//        in_depths_dmp.getBuffer(),
-//        in_depths_dmp.getBytesPaddedUpToDim(0),
-//        in_volSim_dmp.getBuffer(),
-//        in_volSim_dmp.getBytesPaddedUpToDim(1),
-//        in_volSim_dmp.getBytesPaddedUpToDim(0),
-//        rcDeviceCameraParamsId,
-//        int(in_volSim_dmp.getSize().z()),
-//        scaleStep,
-//        thicknessMultFactor,
-//        maxSimilarity,
-//        depthRange,
-//        roi);
-//
-//    // check cuda last error
-//    CHECK_CUDA_ERROR();
+    id<MTLTexture> texture_d3 = [in_depths_dmp getDebugTexture:0];
+    id<MTLTexture> texture_d4 = [in_volSim_dmp getDebugTexture:10];
+    id<MTLTexture> texture_d1 = [out_sgmDepthThicknessMap_dmp getDebugTexture:0];
+    id<MTLTexture> texture_d2 = [out_sgmDepthSimMap_dmp getDebugTexture:0];
+    NSLog(@"volumeRetrieveBestDepth");
 }
 
 extern void volumeRefineBestDepth(DeviceBuffer* out_refineDepthSimMap_dmp,

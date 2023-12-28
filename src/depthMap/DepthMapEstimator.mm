@@ -228,7 +228,6 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
     // get maximum number of simultaneous tiles
     // for now, we use one CUDA stream per tile (SGM + Refine)
     const int nbStreams = std::min(getNbSimultaneousTiles(), int(tiles.size()));
-//    DeviceStreamManager deviceStreamManager(nbStreams);
 
     // build device cache
     const int nbTilesPerCamera = _tileRoiList.size();
@@ -424,7 +423,6 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
               // copy Sgm depth/similarity map from device to host
               [tileDepthSimMap_hmh copyFrom:sgm.getDeviceDepthSimMap()];
             }
-            LOG_INFO("TODO: copy Refine depth/similarity map from device to host");
         }
 
         // wait for tiles batch computation

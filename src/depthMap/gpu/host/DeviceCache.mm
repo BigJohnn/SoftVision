@@ -335,7 +335,14 @@ void DeviceCache::addMipmapImage(int camId,
     DeviceBuffer* img_hmh = [DeviceBuffer new];
     
     assert(mp.imageBuffersCache[camId].size() == imgSize.width * imgSize.height * 4);
-    [img_hmh initWithBytes:mp.imageBuffersCache[camId].data() size:imgSize elemSizeInBytes:sizeof(simd_uchar4)  elemType:@"uchar4"];
+    
+    auto* pDataFlipY = new uint8_t[imgSize.width * imgSize.height * 4];
+    for(int i=0;i<imgSize.height; ++i) {
+        int stride = imgSize.width*4;
+        memcpy(pDataFlipY+stride*i, mp.imageBuffersCache[camId].data()+stride*(imgSize.height-i-1), stride);
+    }
+    [img_hmh initWithBytes:pDataFlipY size:imgSize elemSizeInBytes:sizeof(simd_uchar4)  elemType:@"uchar4"];
+    delete [] pDataFlipY;
     
     
     // copy image from imageCache to CUDA host-side image buffer

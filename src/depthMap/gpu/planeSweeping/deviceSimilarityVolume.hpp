@@ -40,7 +40,7 @@ extern void volumeInitialize(DeviceBuffer* inout_volume_dmp, TSimRefine value);
  * @param[in] in_volume_dmp the input similarity volume in device memory
  * @param[in] stream the stream for gpu execution
  */
-extern void cuda_volumeAdd(DeviceBuffer* inout_volume_dmp, DeviceBuffer* in_volume_dmp);
+//extern void cuda_volumeAdd(DeviceBuffer* inout_volume_dmp, DeviceBuffer* in_volume_dmp);
 
 /**
  * @brief Update second best similarity volume uninitialized values with first best volume values.

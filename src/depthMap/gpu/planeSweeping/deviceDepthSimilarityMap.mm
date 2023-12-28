@@ -135,22 +135,8 @@ void depthThicknessSmoothThickness(DeviceBuffer* inout_depthThicknessMap_dmp,
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
     [pipeline Exec:threadsSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthMap::depthThicknessMapSmoothThickness_kernel" Args:args];
     
-    
-    // kernel launch parameters
-//    const int blockSize = 8;
-//    const dim3 block(blockSize, blockSize, 1);
-//    const dim3 grid(divUp(roi.width(), blockSize), divUp(roi.height(), blockSize), 1);
-//
-//    // kernel execution
-//    depthThicknessMapSmoothThickness_kernel<<<grid, block, 0, stream>>>(
-//        inout_depthThicknessMap_dmp.getBuffer(),
-//        inout_depthThicknessMap_dmp.getPitch(),
-//        minThicknessInflate,
-//        maxThicknessInflate,
-//        roi);
-//
-//    // check cuda last error
-//    CHECK_CUDA_ERROR();
+    id<MTLTexture> texture = [inout_depthThicknessMap_dmp getDebugTexture];
+    NSLog(@"depthThicknessSmoothThickness");
 }
 
 void computeSgmUpscaledDepthPixSizeMap(DeviceBuffer* out_upscaledDepthPixSizeMap_dmp,
@@ -206,20 +192,8 @@ void computeSgmUpscaledDepthPixSizeMap(DeviceBuffer* out_upscaledDepthPixSizeMap
 
         [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::computeSgmUpscaledDepthPixSizeMap_bilinear_kernel" Args:args];
 
-//        computeSgmUpscaledDepthPixSizeMap_bilinear_kernel<<<grid, block, 0, stream>>>(
-//            out_upscaledDepthPixSizeMap_dmp.getBuffer(),
-//            out_upscaledDepthPixSizeMap_dmp.getPitch(),
-//            in_sgmDepthThicknessMap_dmp.getBuffer(),
-//            in_sgmDepthThicknessMap_dmp.getPitch(),
-//            rcDeviceCameraParamsId,
-//            rcDeviceMipmapImage.getTextureObject(),
-//            (unsigned int)(rcLevelDim.x()),
-//            (unsigned int)(rcLevelDim.y()),
-//            rcMipmapLevel,
-//            refineParams.stepXY,
-//            refineParams.halfNbDepths,
-//            ratio,
-//            roi);
+//        id<MTLTexture> upscaledDepthPixSizeMap = [out_upscaledDepthPixSizeMap_dmp getDebugTexture];
+//        id<MTLTexture> sgmDepthThicknessMap = [in_sgmDepthThicknessMap_dmp getDebugTexture];
     }
     else
     {
@@ -241,9 +215,9 @@ void computeSgmUpscaledDepthPixSizeMap(DeviceBuffer* out_upscaledDepthPixSizeMap
 
         [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel" Args:args];
         
-//        DeviceTexture* texture_in = [in_sgmDepthThicknessMap_dmp getDebugTexture];
-//        DeviceTexture* texture = [out_upscaledDepthPixSizeMap_dmp getDebugTexture];
-//        NSLog(@"xxx");
+        DeviceTexture* texture_in = [in_sgmDepthThicknessMap_dmp getDebugTexture];
+        DeviceTexture* texture = [out_upscaledDepthPixSizeMap_dmp getDebugTexture];
+        NSLog(@"xxx");
 //        computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel<<<grid, block, 0, stream>>>(
 //            out_upscaledDepthPixSizeMap_dmp.getBuffer(),
 //            out_upscaledDepthPixSizeMap_dmp.getPitch(),
