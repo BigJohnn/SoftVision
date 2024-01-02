@@ -47,6 +47,19 @@ void computeRotCS(Point3d* xax, Point3d* yax, const Point3d* n)
     *yax = cross(*n, *xax);
 }
 
+/**
+    Calculates the line segment pa_pb that is the shortest route
+    between two lines p1_p2 and p3_p4. Calculates also the values of
+    mua and mub where
+    pa = p1 + mua (p2 - p1)
+    pb = p3 + mub (p4 - p3)
+ 
+    @param k Lp1p2的斜率
+    @param l Lp3p4的斜率
+    @param llis Lp1p2 && Lp3p4的空间最短路径lli的中点
+    @param lli1 lli && Lp1p2的交点
+    @param lli2 lli && Lp3p4的交点
+ */
 bool lineLineIntersect(double* k, double* l, Point3d* llis, Point3d* lli1, Point3d* lli2, const Point3d& p1,
                        const Point3d& p2, const Point3d& p3, const Point3d& p4)
 {

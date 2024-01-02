@@ -45,7 +45,7 @@ struct SgmParams
   bool exportIntermediateCrossVolumes = false;
   bool exportIntermediateTopographicCutVolumes = false;
   bool exportIntermediateVolume9pCsv = false;
-  const bool exportDepthsTxtFiles = false;
+  const bool exportDepthsTxtFiles = true;
 
   // constant parameters
 

@@ -176,7 +176,7 @@ void SgmDepthList::computeListRc()
         const float d1 = depthsPerTc.at(c).front();
         const float d2 = depthsPerTc.at(c).back();
 
-        int id1 = indexOfNearestSorted(_depths, d1);
+        int id1 = indexOfNearestSorted(_depths/*27 vals*/, d1);
         int id2 = indexOfNearestSorted(_depths, d2);
 
         if(id1 == -1)
@@ -185,7 +185,7 @@ void SgmDepthList::computeListRc()
         if(id2 == -1)
             id2 = _depths.size() - 1;
 
-        _depthsTcLimits[c] = Pixel(id1, id2 - id1 + 1);
+        _depthsTcLimits[c] = Pixel(id1, id2 - id1 + 1); //index 0 ~ 27
     }
 
     if(_sgmParams.exportDepthsTxtFiles)
@@ -458,7 +458,7 @@ void SgmDepthList::computeRcTcDepths(int tc,
         Matrix3x3 riP;
         _mp.decomposeProjectionMatrix(rC, rR, riR, rK, riK, riP, rP);
 
-        _mp.getPixelFor3DPoint(&tcMidDepthPoint, ((riP * referencePoint) * midDepth) + rC, tP);
+        _mp.getPixelFor3DPoint(&tcMidDepthPoint, ((riP * referencePoint) * midDepth) + rC, tP);//中等深度的点在target cam中的像素坐标。
 
         double zmin;
         double zmax;
@@ -468,7 +468,7 @@ void SgmDepthList::computeRcTcDepths(int tc,
         Point2d tarpix1;
         Point2d tarpix2;
 
-        _mp.getPixelFor3DPoint(&tarpix1, ((riP * referencePoint) * zmin) + rC, tP);
+        _mp.getPixelFor3DPoint(&tarpix1, ((riP * referencePoint) * zmin) + rC, tP); //最小/最大深度点在target cam中的像素坐标
         _mp.getPixelFor3DPoint(&tarpix2, ((riP * referencePoint) * zmax) + rC, tP);
 
         get2dLineImageIntersection(&tcFromPoint, &tcToPoint, tarpix1, tarpix2, _mp, tc);

@@ -22,6 +22,9 @@
 
 namespace mvsUtils {
 
+/**
+ @return 线段所在直线与图像边缘的交点
+ */
 bool get2dLineImageIntersection(Point2d* pFrom, Point2d* pTo, Point2d linePoint1, Point2d linePoint2,
                                 const MultiViewParams& mp, int camId)
 {
@@ -161,11 +164,11 @@ bool triangulateMatch(Point3d& out, const Point2d& refpix, const Point2d& tarpix
 {
     Point3d refvect = mp.iCamArr[refCam] * refpix;
     refvect = refvect.normalize();
-    const Point3d refpoint = refvect + mp.CArr[refCam];
+    const Point3d refpoint = refvect + mp.CArr[refCam]; //ref cam pos
 
     Point3d tarvect = mp.iCamArr[tarCam] * tarpix;
     tarvect = tarvect.normalize();
-    const Point3d tarpoint = tarvect + mp.CArr[tarCam];
+    const Point3d tarpoint = tarvect + mp.CArr[tarCam]; //tar cam pos
 
     double k, l;
     Point3d lli1, lli2;
