@@ -109,7 +109,7 @@
 {
     MTLTextureDescriptor * descriptor = [MTLTextureDescriptor new];
     
-    descriptor.pixelFormat = MTLPixelFormatR16Float;
+    descriptor.pixelFormat = MTLPixelFormatR32Float;
     descriptor.textureType      = MTLTextureType2D;
     
     MTLSize size = [buffer getSize];

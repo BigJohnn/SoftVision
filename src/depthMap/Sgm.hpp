@@ -75,7 +75,7 @@ public:
 //    double getDeviceMemoryConsumptionUnpadded() const;
 
     /**
-     * @brief Compute for a single R camera the Semi-Global Matching.
+     * @brief Compute for a single R(efrence) camera the Semi-Global Matching.
      * @param[in] tile The given tile for SGM computation
      * @param[in] tileDepthList the tile SGM depth list
      */
