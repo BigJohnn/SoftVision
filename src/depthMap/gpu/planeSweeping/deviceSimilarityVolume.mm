@@ -280,7 +280,7 @@ void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
     
 //    id<MTLTexture> texture_d1 = [out_volBestSim_dmp getDebugTexture:depthRange_d[0]];
 //    id<MTLTexture> texture_d2 = [out_volSecBestSim_dmp getDebugTexture:depthRange_d[0]];
-//    
+////    
 //    NSLog(@"debug pause");//
     // kernel execution
 //    volume_computeSimilarity_kernel<<<grid, block, 0, stream>>>(
@@ -505,7 +505,7 @@ void volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
         
         [pipeline Exec:gridVolXZ ThreadgroupSize:blockVolXZ KernelFuncName:@"depthMap::volume_initVolumeYSlice_kernel" Args:args];
         
-//        id<MTLTexture> texture_d1 = [out_volAgr_dmp getDebugTexture:27];
+//        id<MTLTexture> texture_d1 = [out_volAgr_dmp getDebugTexture:16];
 //        
 //        NSLog(@"debug pause");//
     }
@@ -540,7 +540,7 @@ void volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
             [pipeline Exec:gridColZ ThreadgroupSize:blockColZ KernelFuncName:@"depthMap::volume_computeBestZInSlice_kernel" Args:args];
             
 //            id<MTLTexture> texture_d1 = [xzSliceForYm1_dmpPtr getDebugTexture:0];
-//            
+//            id<MTLTexture> texture_d1x = [bestSimInYm1_dmpPtr getDebugTexture:0];
 //            NSLog(@"debug pause");//
         }
 //        volume_computeBestZInSlice_kernel<<<gridColZ, blockColZ, 0, stream>>>(
@@ -606,13 +606,13 @@ void volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
             
             [pipeline Exec:gridVolSlide ThreadgroupSize:blockVolSlide KernelFuncName:@"depthMap::volume_agregateCostVolumeAtXinSlices_kernel" Args:args];
 
-//            {
+            {
 //                id<MTLTexture> texture_d = [xzSliceForY_dmpPtr getDebugTexture];
 //                
 //                
 //                id<MTLTexture> texture_d1 = [out_volAgr_dmp getDebugTexture:y];
 //                NSLog(@"xxx");
-//            }
+            }
             
             
             
@@ -752,11 +752,11 @@ void volumeRetrieveBestDepth(DeviceBuffer* out_sgmDepthThicknessMap_dmp,
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
     [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_retrieveBestDepth_kernel" Args:args];
     
-    id<MTLTexture> texture_d3 = [in_depths_dmp getDebugTexture:0];
-    id<MTLTexture> texture_d4 = [in_volSim_dmp getDebugTexture:10];
-    id<MTLTexture> texture_d1 = [out_sgmDepthThicknessMap_dmp getDebugTexture:0];
-    id<MTLTexture> texture_d2 = [out_sgmDepthSimMap_dmp getDebugTexture:0];
-    NSLog(@"volumeRetrieveBestDepth");
+//    id<MTLTexture> texture_d3 = [in_depths_dmp getDebugTexture:0];
+//    id<MTLTexture> texture_d4 = [in_volSim_dmp getDebugTexture:10];
+//    id<MTLTexture> texture_d1 = [out_sgmDepthThicknessMap_dmp getDebugTexture:0];
+//    id<MTLTexture> texture_d2 = [out_sgmDepthSimMap_dmp getDebugTexture:0];
+//    NSLog(@"volumeRetrieveBestDepth");
 }
 
 extern void volumeRefineBestDepth(DeviceBuffer* out_refineDepthSimMap_dmp,
@@ -806,23 +806,6 @@ extern void volumeRefineBestDepth(DeviceBuffer* out_refineDepthSimMap_dmp,
 //    DeviceTexture* texture = [out_refineDepthSimMap_dmp getDebugTexture];
 //    NSLog(@"volumeRefineBestDepth...");
 #endif
-//    volume_refineBestDepth_kernel<<<grid, block, 0, stream>>>(
-//        out_refineDepthSimMap_dmp.getBuffer(),
-//        out_refineDepthSimMap_dmp.getBytesPaddedUpToDim(0),
-//        in_sgmDepthPixSizeMap_dmp.getBuffer(),
-//        in_sgmDepthPixSizeMap_dmp.getBytesPaddedUpToDim(0),
-//        in_volSim_dmp.getBuffer(),
-//        in_volSim_dmp.getBytesPaddedUpToDim(1),
-//        in_volSim_dmp.getBytesPaddedUpToDim(0),
-//        int(in_volSim_dmp.getSize().z()),
-//        refineParams.nbSubsamples,  // number of samples between two depths
-//        halfNbSamples,              // number of samples (in front and behind mid depth)
-//        refineParams.halfNbDepths,  // number of depths  (in front and behind mid depth)
-//        twoTimesSigmaPowerTwo,
-//        roi);
-//
-//    // check cuda last error
-//    CHECK_CUDA_ERROR();
 }
 
 } // namespace depthMap

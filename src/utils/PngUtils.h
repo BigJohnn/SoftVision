@@ -16,7 +16,8 @@ void loadpng(std::vector<uint8_t>& image_buffer, const char* file_path, int& ima
     FILE *fp = fopen(file_path, "rb");
     if (!fp)
     {
-        LOG_ERROR("PNG file cannot open for read!!");
+        LOG_ERROR("PNG file cannot open for read!! %s",file_path);
+        return;
     }
 
       png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);

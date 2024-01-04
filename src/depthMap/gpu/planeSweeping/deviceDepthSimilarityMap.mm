@@ -135,8 +135,8 @@ void depthThicknessSmoothThickness(DeviceBuffer* inout_depthThicknessMap_dmp,
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
     [pipeline Exec:threadsSize ThreadgroupSize:threadgroupSize KernelFuncName:@"depthMap::depthThicknessMapSmoothThickness_kernel" Args:args];
     
-    id<MTLTexture> texture = [inout_depthThicknessMap_dmp getDebugTexture];
-    NSLog(@"depthThicknessSmoothThickness");
+//    id<MTLTexture> texture = [inout_depthThicknessMap_dmp getDebugTexture];
+//    NSLog(@"depthThicknessSmoothThickness");
 }
 
 void computeSgmUpscaledDepthPixSizeMap(DeviceBuffer* out_upscaledDepthPixSizeMap_dmp,
@@ -191,9 +191,6 @@ void computeSgmUpscaledDepthPixSizeMap(DeviceBuffer* out_upscaledDepthPixSizeMap
         ];
 
         [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::computeSgmUpscaledDepthPixSizeMap_bilinear_kernel" Args:args];
-
-//        id<MTLTexture> upscaledDepthPixSizeMap = [out_upscaledDepthPixSizeMap_dmp getDebugTexture];
-//        id<MTLTexture> sgmDepthThicknessMap = [in_sgmDepthThicknessMap_dmp getDebugTexture];
     }
     else
     {
@@ -215,9 +212,7 @@ void computeSgmUpscaledDepthPixSizeMap(DeviceBuffer* out_upscaledDepthPixSizeMap
 
         [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel" Args:args];
         
-        DeviceTexture* texture_in = [in_sgmDepthThicknessMap_dmp getDebugTexture];
-        DeviceTexture* texture = [out_upscaledDepthPixSizeMap_dmp getDebugTexture];
-        NSLog(@"xxx");
+        
 //        computeSgmUpscaledDepthPixSizeMap_nearestNeighbor_kernel<<<grid, block, 0, stream>>>(
 //            out_upscaledDepthPixSizeMap_dmp.getBuffer(),
 //            out_upscaledDepthPixSizeMap_dmp.getPitch(),
@@ -233,6 +228,10 @@ void computeSgmUpscaledDepthPixSizeMap(DeviceBuffer* out_upscaledDepthPixSizeMap
 //            ratio,
 //            roi);
     }
+    
+//    DeviceTexture* texture_in = [in_sgmDepthThicknessMap_dmp getDebugTexture];
+//    DeviceTexture* texture = [out_upscaledDepthPixSizeMap_dmp getDebugTexture]; //quad 4x4 pixels
+//    NSLog(@"xxx");
 }
 
 void depthSimMapComputeNormal(DeviceBuffer* out_normalMap_dmp,
@@ -371,7 +370,9 @@ void depthSimMapOptimizeGradientDescent(DeviceBuffer* out_optimizeDepthSimMap_dm
             ];
             [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::optimize_getOptDeptMapFromOptDepthSimMap_kernel" Args:args];
             
-//            depthTex = [inout_tmpOptDepthMap_dmp getDebugTexture];
+//            id<MTLTexture> depthTex = [inout_tmpOptDepthMap_dmp getDebugTexture];
+//            id<MTLTexture> optiTex = [out_optimizeDepthSimMap_dmp getDebugTexture];
+//            NSLog(@"...");
         }
 //        optimize_getOptDeptMapFromOptDepthSimMap_kernel<<<grid, block, 0, stream>>>(
 //            inout_tmpOptDepthMap_dmp.getBuffer(), 
@@ -400,11 +401,10 @@ void depthSimMapOptimizeGradientDescent(DeviceBuffer* out_optimizeDepthSimMap_dm
             
 //            [pipeline endDebug];
 //            depthTex = nil;
-//            id<MTLTexture> texture1 = [in_sgmDepthPixSizeMap_dmp getDebugTexture];
-//            id<MTLTexture> texture0 = [in_refineDepthSimMap_dmp getDebugTexture];
-//            id<MTLTexture> texture = [out_optimizeDepthSimMap_dmp getDebugTexture]; //TODO: simmap seems Not Okay.
-//            NSLog(@"...");
+            
         }
+        
+        
 //        optimize_depthSimMap_kernel<<<grid, block, 0, stream>>>(
 //            out_optimizeDepthSimMap_dmp.getBuffer(),
 //            out_optimizeDepthSimMap_dmp.getPitch(),
@@ -418,9 +418,14 @@ void depthSimMapOptimizeGradientDescent(DeviceBuffer* out_optimizeDepthSimMap_dm
 //            iter, 
 //            roi);
     }
-//
-//    // check cuda last error
-//    CHECK_CUDA_ERROR();
+    
+//    id<MTLTexture> texture1 = [in_sgmDepthPixSizeMap_dmp getDebugTexture];
+//    id<MTLTexture> texture0 = [in_refineDepthSimMap_dmp getDebugTexture];
+//    id<MTLTexture> texture2 = [inout_tmpOptDepthMap_dmp getDebugTexture];
+//    
+//    id<MTLTexture> texture = [out_optimizeDepthSimMap_dmp getDebugTexture]; //TODO: simmap seems Not Okay.
+//    NSLog(@"...");
+
 }
 
 } // namespace depthMap
