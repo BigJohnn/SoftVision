@@ -62,6 +62,8 @@
 #include <depthMap/RefineParams.hpp>
 #include <gpu/gpu.hpp>
 
+#include <fuseCut/Fuser.hpp>
+
 std::vector<std::vector<uint8_t>> ReconPipeline::m_cachedBuffers;
 
 #ifdef SOFTVISION_DEBUG
@@ -224,6 +226,11 @@ void ReconPipeline::SetOutputDataDir(const char* directory)
     m_imagesUndistortFolder = m_outputFolder + "imagesUndistort/";
     m_depthMapsFolder = m_outputFolder + "depthMaps/";
     m_depthMapsFilterFolder = m_outputFolder + "depthMapsFilter/";
+}
+
+void ReconPipeline::SetTempDir(const char* directory)
+{
+    utils::temp_directory_path() = directory;
 }
 
 bool ReconPipeline::FeatureExtraction()
@@ -1396,5 +1403,24 @@ int ReconPipeline::DepthMapEstimation()
     depthMap::computeOnMultiGPUs(cams, depthMapEstimator, nbGPUs);
     
     LOG_INFO("DepthMapEstimation Done!");
+    
+    ALICEVISION_LOG_INFO("Filter depth maps.");
+
+    {
+        int minNumOfConsistentCams = 3;
+        int minNumOfConsistentCamsWithLowSimilarity = 4;
+        float pixToleranceFactor = 2.0f;
+        int pixSizeBall = 0;
+        int pixSizeBallWithLowSimilarity = 0;
+        int nNearestCams = 10;
+        bool computeNormalMaps = false;
+        fuseCut::Fuser fs(mp);
+        fs.filterGroups(cams, pixToleranceFactor, pixSizeBall, pixSizeBallWithLowSimilarity, nNearestCams);
+        fs.filterDepthMaps(cams, minNumOfConsistentCams, minNumOfConsistentCamsWithLowSimilarity);
+    }
+    
+    LOG_INFO("DepthMapFiltered!");
+
+    
     return EXIT_SUCCESS;
 }

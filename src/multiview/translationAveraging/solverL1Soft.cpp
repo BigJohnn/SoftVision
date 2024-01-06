@@ -9,7 +9,7 @@
 #include <multiview/translationAveraging/solver.hpp>
 #include <numeric/numeric.hpp>
 #include <common/types.h>
-#include <config.hpp>
+//#include <config.hpp>
 #include <softvision_omp.hpp>
 #include <SoftVisionLog.h>
 

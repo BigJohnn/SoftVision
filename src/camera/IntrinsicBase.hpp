@@ -13,7 +13,7 @@
 #include <camera/IntrinsicInitMode.hpp>
 #include <geometry/Pose3.hpp>
 #include <string>
-#include <version.hpp>
+#include <system/version.hpp>
 
 namespace camera {
 /**

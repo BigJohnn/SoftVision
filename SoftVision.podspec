@@ -90,6 +90,15 @@ Pod::Spec.new do |spec|
 
 #      ss.dependency 'SoftVision/feature'
   end
+  
+  spec.subspec 'fuseCut' do |ss|
+      ss.source_files = "src/fuseCut/*.{hpp,cpp}"
+  end
+  
+  spec.subspec 'mesh' do |ss|
+      ss.source_files = "src/mesh/*.{hpp,cpp}"
+  end
+  
 ##
   spec.subspec 'numeric' do |ss|
       ss.source_files = "src/numeric/*.{h,hpp,cpp}"
@@ -181,7 +190,7 @@ Pod::Spec.new do |spec|
   end
   
   spec.subspec 'boost' do |ss|
-      ss.source_files = "src/boost/**/*.{hpp,cpp}"
+      ss.source_files = "src/boost/**/*.{hpp,cpp}","src/boost/**/*.{h}"
   end
   
   spec.subspec 'graph' do |ss|
@@ -261,9 +270,10 @@ Pod::Spec.new do |spec|
 #   spec.dependency "JSONKit", "~> 1.4"
 
   spec.dependency "Alembic"
+  spec.dependency "boost"
   spec.dependency "assimp"
   spec.dependency "glog"
-#  spec.dependency "coin"
+  spec.dependency "geogram"
   spec.dependency "Eigen"
   spec.dependency "libpng"
   spec.dependency "libyuv"

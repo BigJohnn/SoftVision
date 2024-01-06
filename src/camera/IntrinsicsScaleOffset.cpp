@@ -6,7 +6,7 @@
 
 #include "IntrinsicsScaleOffset.hpp"
 
-#include <version.hpp>
+#include <system/version.hpp>
 
 
 namespace camera {

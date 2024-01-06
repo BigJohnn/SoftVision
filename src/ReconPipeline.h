@@ -60,6 +60,7 @@ public:
     
     void SetOutputDataDir(const char* directory);
     
+    void SetTempDir(const char* directory);
 private:
     ReconPipeline() = default;
     
