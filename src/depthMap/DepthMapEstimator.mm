@@ -287,12 +287,9 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
         for(int j = 0; j < nbTilesPerCamera; ++j)
         {
           if(_depthMapParams.useRefine)
-//              [depthSimMapTile allocate:<#(MTLSize)#> elemSizeInBytes:<#(int)#>]
               [depthSimMapTile allocate:[refinePerStream.front().getDeviceDepthSimMap() getSize] elemSizeInBytes:sizeof(simd_float2) elemType:@"float2"];
-//            depthSimMapTiles.at(j).allocate(refinePerStream.front().getDeviceDepthSimMap().getSize());
           else // final depth/similarity map is SGM only
               [depthSimMapTile allocate:[sgmPerStream.front().getDeviceDepthSimMap() getSize] elemSizeInBytes:sizeof(simd_float2) elemType:@"float2"];
-//            depthSimMapTiles.at(j).allocate(sgmPerStream.front().getDeviceDepthSimMap().getSize());
             
             [depthSimMapTiles insertObject:depthSimMapTile atIndex:j];
         }
@@ -485,8 +482,6 @@ void DepthMapEstimator::compute(int cudaDeviceId, const std::vector<int>& cams)
         }
     }
 
-    // some objects countains CUDA objects
-    // this objects should be destroyed before the end of the program (i.e. the end of the CUDA context)
     DeviceCache::getInstance().clear();
     sgmPerStream.clear();
     refinePerStream.clear();

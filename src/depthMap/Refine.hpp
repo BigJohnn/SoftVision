@@ -117,7 +117,6 @@ private:
     DeviceBuffer* _volumeRefineSim_dmp;   //< rc refine similarity volume
     DeviceBuffer* _optTmpDepthMap_dmp;         //< for color optimization: temporary depth map buffer
     DeviceBuffer* _optImgVariance_dmp;         //< for color optimization: image variance buffer
-//    cudaStream_t _stream;                                          //< stream for gpu execution
 };
 
 } // namespace depthMap

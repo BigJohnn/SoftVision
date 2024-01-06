@@ -173,7 +173,6 @@ void computeSgmUpscaledDepthPixSizeMap(DeviceBuffer* out_upscaledDepthPixSizeMap
     // kernel execution
     if(refineParams.interpolateMiddleDepth)
     {
-
         NSArray* args = @[
                         [out_upscaledDepthPixSizeMap_dmp getBuffer],
                         @([out_upscaledDepthPixSizeMap_dmp getBytesUpToDim:0]),

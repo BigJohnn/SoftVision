@@ -140,7 +140,6 @@ private:
 
     // private members in device memory
 
-//    CudaHostMemoryHeap<float, 2> _depths_hmh;                   //< rc depth data host memory
     DeviceBuffer* _depths_dmp;              //< rc depth data device memory
     DeviceBuffer* _depthThicknessMap_dmp;  //< rc result depth thickness map
     DeviceBuffer* _depthSimMap_dmp;        //< rc result depth/sim map
@@ -150,8 +149,6 @@ private:
     DeviceBuffer* _volumeSliceAccA_dmp;   //< for optimization: volume accumulation slice A
     DeviceBuffer* _volumeSliceAccB_dmp;   //< for optimization: volume accumulation slice B
     DeviceBuffer* _volumeAxisAcc_dmp;     //< for optimization: volume accumulation axis
-//    cudaStream_t _stream;                                       //< stream for gpu execution
-//    void* _device;
 };
 
 } // namespace depthMap

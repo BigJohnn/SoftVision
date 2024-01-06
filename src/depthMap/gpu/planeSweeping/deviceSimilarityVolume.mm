@@ -165,15 +165,10 @@ void volumeInitialize(DeviceBuffer* inout_volume_dmp, TSimRefine value)
 void volumeUpdateUninitializedSimilarity(DeviceBuffer* in_volBestSim_dmp,
                                                        DeviceBuffer* inout_volSecBestSim_dmp)
 {
-//    assert(in_volBestSim_dmp.getSize() == inout_volSecBestSim_dmp.getSize());
-//
     // get input/output volume dimensions
     const MTLSize& volDim = [inout_volSecBestSim_dmp getSize];
 
     // kernel launch parameters
-//    const dim3 block = getMaxPotentialBlockSize(volume_updateUninitialized_kernel);
-//    const dim3 grid(divUp(volDim.x(), block.x), divUp(volDim.y(), block.y), volDim.z());
-    
     const MTLSize& block = MTLSizeMake(8, 8, 1);
     const MTLSize& threads = volDim;
 
@@ -192,21 +187,6 @@ void volumeUpdateUninitializedSimilarity(DeviceBuffer* in_volBestSim_dmp,
     ];
     ComputePipeline* pipeline = [ComputePipeline createPipeline];
     [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_updateUninitialized_kernel" Args:args];
-    
-    
-    
-//    volume_updateUninitialized_kernel<<<grid, block, 0, stream>>>(
-//        inout_volSecBestSim_dmp.getBuffer(),
-//        inout_volSecBestSim_dmp.getBytesPaddedUpToDim(1),
-//        inout_volSecBestSim_dmp.getBytesPaddedUpToDim(0),
-//        in_volBestSim_dmp.getBuffer(),
-//        in_volBestSim_dmp.getBytesPaddedUpToDim(1),
-//        in_volBestSim_dmp.getBytesPaddedUpToDim(0),
-//        (unsigned int)(volDim.x()),
-//        (unsigned int)(volDim.y()));
-//
-//    // check cuda last error
-//    CHECK_CUDA_ERROR();
 }
 
 void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
@@ -250,7 +230,7 @@ void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
         @([out_volSecBestSim_dmp getBytesUpToDim:1]), //256*256
         @([out_volSecBestSim_dmp getBytesUpToDim:0]), // 256
         [in_depths_dmp getBuffer],
-        @([in_depths_dmp getBytesUpToDim:0]), // 6000
+        @([in_depths_dmp getBytesUpToDim:0]), // 1500*4
         [NSData dataWithBytes:&rcDeviceCameraParams length:sizeof(rcDeviceCameraParams)],
         [NSData dataWithBytes:&tcDeviceCameraParams length:sizeof(rcDeviceCameraParams)],
         rcDeviceMipmapImage.getTextureObject(),
@@ -277,10 +257,10 @@ void volumeComputeSimilarity(DeviceBuffer* out_volBestSim_dmp,
 
     [pipeline Exec:threads ThreadgroupSize:block KernelFuncName:@"depthMap::volume_computeSimilarity_kernel" Args:args];
 
-    
+//    id<MTLTexture> texture_d0 = [in_depths_dmp getDebugTexture];
 //    id<MTLTexture> texture_d1 = [out_volBestSim_dmp getDebugTexture:depthRange_d[0]];
 //    id<MTLTexture> texture_d2 = [out_volSecBestSim_dmp getDebugTexture:depthRange_d[0]];
-////    
+////
 //    NSLog(@"debug pause");//
     // kernel execution
 //    volume_computeSimilarity_kernel<<<grid, block, 0, stream>>>(
@@ -590,7 +570,7 @@ void volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
                 [xzSliceForYm1_dmpPtr getBuffer],// in:    xzSliceForYm1
                 @([xzSliceForYm1_dmpPtr getBytesUpToDim:0]), // wbytes
                 [bestSimInYm1_dmpPtr getBuffer],// in:    bestSimInYm1
-                [out_volAgr_dmp getBuffer],// in:    bestSimInYm1
+                [out_volAgr_dmp getBuffer],// out: volumn
                 @([out_volAgr_dmp getBytesUpToDim:1]), //wbytes * h
                 @([out_volAgr_dmp getBytesUpToDim:0]), // wbytes
                 [NSData dataWithBytes:&volDim_ length:sizeof(volDim_)],
@@ -608,6 +588,7 @@ void volumeAggregatePath(DeviceBuffer* out_volAgr_dmp,
 
             {
 //                id<MTLTexture> texture_d = [xzSliceForY_dmpPtr getDebugTexture];
+//                id<MTLTexture> texture_d2 = [xzSliceForYm1_dmpPtr getDebugTexture];
 //                
 //                
 //                id<MTLTexture> texture_d1 = [out_volAgr_dmp getDebugTexture:y];
@@ -755,7 +736,7 @@ void volumeRetrieveBestDepth(DeviceBuffer* out_sgmDepthThicknessMap_dmp,
 //    id<MTLTexture> texture_d3 = [in_depths_dmp getDebugTexture:0];
 //    id<MTLTexture> texture_d4 = [in_volSim_dmp getDebugTexture:10];
 //    id<MTLTexture> texture_d1 = [out_sgmDepthThicknessMap_dmp getDebugTexture:0];
-//    id<MTLTexture> texture_d2 = [out_sgmDepthSimMap_dmp getDebugTexture:0];
+//    id<MTLTexture> texture_d2 = [out_sgmDepthSimMap_dmp getDebugTexture:0]; //sim -1~1
 //    NSLog(@"volumeRetrieveBestDepth");
 }
 

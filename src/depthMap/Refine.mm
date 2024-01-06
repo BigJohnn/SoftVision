@@ -34,43 +34,33 @@ Refine::Refine(const mvsUtils::MultiViewParams& mp,
     const int maxTileHeight = divideRoundUp(tileParams.bufferHeight, downscale);
 
     // compute depth/sim map maximum dimensions
-//    const CudaSize<2> depthSimMapDim(maxTileWidth, maxTileHeight);
     MTLSize depthSimMapDim = MTLSizeMake(maxTileWidth, maxTileHeight, 1);
 
     // allocate depth/sim maps in device memory
     _sgmDepthPixSizeMap_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(simd_float2) elemType:@"float2"];
     _refinedDepthSimMap_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(simd_float2) elemType:@"float2"];
     _optimizedDepthSimMap_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(simd_float2) elemType:@"float2"];
-//    _sgmDepthPixSizeMap_dmp.allocate(depthSimMapDim);
-//    _refinedDepthSimMap_dmp.allocate(depthSimMapDim);
-//    _optimizedDepthSimMap_dmp.allocate(depthSimMapDim);
 
     // allocate SGM upscaled normal map in device memory
     if(_refineParams.useSgmNormalMap)
         _sgmNormalMap_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(simd_float3) elemType:@"float3"];
-//        _sgmNormalMap_dmp.allocate(depthSimMapDim);
 
     // allocate normal map in device memory
     if(_refineParams.exportIntermediateNormalMaps)
         _normalMap_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(simd_float3) elemType:@"float3"];
-//        _normalMap_dmp.allocate(depthSimMapDim);
 
     // compute volume maximum dimensions
     const int nbDepthsToRefine = _refineParams.halfNbDepths * 2 + 1;
-//    const CudaSize<3> volDim(maxTileWidth, maxTileHeight, nbDepthsToRefine);
     MTLSize volDim = MTLSizeMake(maxTileWidth, maxTileHeight, nbDepthsToRefine);
 
     // allocate refine volume in device memory
     _volumeRefineSim_dmp = [DeviceBuffer allocate:volDim elemSizeInBytes:sizeof(TSimRefine) elemType:@"TSimRefine"];
-//    _volumeRefineSim_dmp.allocate(volDim);
 
     // allocate depth/sim map optimization buffers
     if(_refineParams.useColorOptimization)
     {
         _optTmpDepthMap_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(float) elemType:@"float"];
         _optImgVariance_dmp = [DeviceBuffer allocate:depthSimMapDim elemSizeInBytes:sizeof(float) elemType:@"float"];
-//        _optTmpDepthMap_dmp.allocate(depthSimMapDim);
-//        _optImgVariance_dmp.allocate(depthSimMapDim);
     }
 }
 
@@ -89,22 +79,6 @@ double Refine::getDeviceMemoryConsumption() const
 
     return (double(bytes) / (1024.0 * 1024.0));
 }
-
-//double Refine::getDeviceMemoryConsumptionUnpadded() const
-//{
-//    size_t bytes = 0;
-//
-//    bytes += _sgmDepthPixSizeMap_dmp.getBytesUnpadded();
-//    bytes += _refinedDepthSimMap_dmp.getBytesUnpadded();
-//    bytes += _optimizedDepthSimMap_dmp.getBytesUnpadded();
-//    bytes += _sgmNormalMap_dmp.getBytesUnpadded();
-//    bytes += _normalMap_dmp.getBytesUnpadded();
-//    bytes += _volumeRefineSim_dmp.getBytesUnpadded();
-//    bytes += _optTmpDepthMap_dmp.getBytesUnpadded();
-//    bytes += _optImgVariance_dmp.getBytesUnpadded();
-//
-//    return (double(bytes) / (1024.0 * 1024.0));
-//}
 
 void Refine::refineRc(const Tile& tile, DeviceBuffer* in_sgmDepthThicknessMap_dmp, DeviceBuffer* in_sgmNormalMap_dmp)
 {
@@ -177,8 +151,8 @@ void Refine::refineRc(const Tile& tile, DeviceBuffer* in_sgmDepthThicknessMap_dm
     }
     else
     {
-        LOG_X(tile << "Color optimize depth/sim map disabled. //TODO: check");
-//        _optimizedDepthSimMap_dmp.copyFrom(_refinedDepthSimMap_dmp);
+        LOG_X(tile << "Color optimize depth/sim map disabled. ");
+        [_optimizedDepthSimMap_dmp copyFrom:_refinedDepthSimMap_dmp];
     }
 
     // export intermediate normal map (if requested by user)
@@ -341,7 +315,7 @@ void Refine::exportVolumeInformation(const Tile& tile, const std::string& name) 
 
 //        exportSimilarityVolumeCross(volumeSim_hmh, depthPixSizeMapSgmUpscale_hmh, _mp, tile.rc, _refineParams, volumeCrossPath, tile.roi);
 
-        LOG_X(tile << "Export similarity volume cross (" << name << ") done.");
+        LOG_X(tile << "Export similarity volume cross (" << name << ") done. TODO: fill volumeSim_hmh, depthPixSizeMapSgmUpscale_hmh");
     }
 
     if(_refineParams.exportIntermediateTopographicCutVolumes)

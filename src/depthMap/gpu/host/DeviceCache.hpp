@@ -92,6 +92,8 @@ public:
     const int requestCameraParamsId(int camId, int downscale, const mvsUtils::MultiViewParams& mp);
     
     DeviceCameraParams const& requestCameraParamsBuffer(int camId, int downscale, const mvsUtils::MultiViewParams& mp);
+    
+    DeviceCameraParams const& requestCameraParamsBuffer(int index);
 
 private:
 

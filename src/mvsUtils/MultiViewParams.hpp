@@ -14,7 +14,7 @@
 #include <mvsData/StaticVector.hpp>
 #include <mvsData/structures.hpp>
 
-//#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 #include <string>
 #include <vector>
@@ -22,7 +22,7 @@
 
 
 
-//namespace bpt = boost::property_tree;
+namespace bpt = boost::property_tree;
 
 namespace sfmData {
 class SfMData;
@@ -112,7 +112,7 @@ public:
     
     std::vector<std::vector<uint8_t>> imageBuffersCache;
 
-//    boost::property_tree::ptree userParams;
+    boost::property_tree::ptree userParams;
 
     MultiViewParams(const sfmData::SfMData& sfmData,
                     const std::string& imagesFolder = "",

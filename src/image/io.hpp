@@ -204,6 +204,13 @@ std::string EImageExrCompression_enumToString(const EImageExrCompression exrComp
 std::string EImageFileType_enumToString(const EImageFileType imageFileType);
 
 /**
+ * @brief It returns the EImageFileType enum from a string.
+ * @param[in] imageFileType the input string.
+ * @return the associated EImageFileType enum.
+ */
+EImageFileType EImageFileType_stringToEnum(const std::string& imageFileType);
+
+/**
  * @brief write an image with a given path and buffer
  * @param[in] path The given path to the image
  * @param[in] image The output image buffer

@@ -8,6 +8,7 @@
 #import <depthMap/gpu/host/DeviceTexture.hpp>
 #import <depthMap/gpu/host/ComputePipeline.hpp>
 
+#include <depthMap/gpu/host/utils.hpp>
 @interface DeviceTexture()
 @end
 
@@ -33,8 +34,7 @@
 {
     MTLTextureDescriptor * descriptor = [MTLTextureDescriptor new];
     
-//    descriptor.pixelFormat = MTLPixelFormatBGRA8Unorm;
-    descriptor.pixelFormat = MTLPixelFormatRGBA8Unorm_sRGB;
+    descriptor.pixelFormat = MTLPixelFormatRGBA8Unorm;
     descriptor.textureType      = MTLTextureType2D;
     
     MTLSize size = [buffer getSize];
@@ -72,7 +72,7 @@
     MTLTextureDescriptor * descriptor = [MTLTextureDescriptor new];
     
 //    descriptor.pixelFormat = MTLPixelFormatBGRA8Unorm;
-    descriptor.pixelFormat = MTLPixelFormatRGBA8Unorm_sRGB;
+    descriptor.pixelFormat = MTLPixelFormatRGBA8Unorm;
     descriptor.textureType      = MTLTextureType2D;
     
     MTLSize size = [buffer getSize];
@@ -102,6 +102,7 @@
     [cmdbuf commit];
     [cmdbuf waitUntilCompleted];
     
+    depthMap::logDeviceMemoryInfo();
     return texture;
 }
 
@@ -128,6 +129,8 @@
                mipmapLevel:0
                  withBytes:[buffer getBuffer].contents
                bytesPerRow:[buffer getBytesUpToDim:0]];
+    
+    depthMap::logDeviceMemoryInfo();
     return texture;
 }
 
@@ -136,7 +139,7 @@
     MTLTextureDescriptor * descriptor = [MTLTextureDescriptor new];
     
 //    descriptor.pixelFormat = MTLPixelFormatBGRA8Unorm;
-    descriptor.pixelFormat = MTLPixelFormatR8Unorm_sRGB;
+    descriptor.pixelFormat = MTLPixelFormatR8Unorm;
     descriptor.textureType      = MTLTextureType2D;
     
     MTLSize size = [buffer getSize];
@@ -165,7 +168,7 @@
 //    [encoder endEncoding];
 //    [cmdbuf commit];
 //    [cmdbuf waitUntilCompleted];
-    
+    depthMap::logDeviceMemoryInfo();
     return texture;
 }
 
@@ -203,7 +206,7 @@
 //    [encoder endEncoding];
 //    [cmdbuf commit];
 //    [cmdbuf waitUntilCompleted];
-    
+    depthMap::logDeviceMemoryInfo();
     return texture;
 }
 
@@ -247,6 +250,8 @@
                mipmapLevel:0
                  withBytes:[buffer getBuffer].contents
                bytesPerRow:[buffer getBytesUpToDim:0]];
+    
+    depthMap::logDeviceMemoryInfo();
     
 //    ComputePipeline* pipeline = [ComputePipeline createPipeline];
 //    id<MTLCommandQueue> queue =  [pipeline getCommandQueue];

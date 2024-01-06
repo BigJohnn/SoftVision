@@ -6,7 +6,7 @@
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "SfMLocalizer.hpp"
-#include <config.hpp>
+//#include <config.hpp>
 #include <sfm/BundleAdjustmentCeres.hpp>
 #include <sfm/BundleAdjustmentSymbolicCeres.hpp>
 #include <robustEstimation/ACRansac.hpp>

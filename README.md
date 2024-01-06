@@ -1,7 +1,7 @@
 # SoftVision
 Open Source Soft Vision Framework.
 
-Adapted && subtraction from [AliceVision](https://github.com/AliceVision).
+Adapted && subtraction from [AliceVision](https://github.com/AliceVision), but the depthmap process is implemented in apple's metal framework.
 
 Designed to have thin package and fast speed, thus can be applied to mobile devices, such as a mobilephone with only rgb camera(s).
 
@@ -20,7 +20,7 @@ RoadMap for iOS:
 
 ToDoList:
 
-> DepthMap. # with gpu, metal acc
+> DepthMap. # with gpu, metal acc (translation done, but need more test)
 
 > DepthMapFilter.
 

@@ -58,8 +58,11 @@ public:
     
     int DepthMapEstimation();
     
+    int Meshing();
+    
     void SetOutputDataDir(const char* directory);
     
+    void SetTempDir(const char* directory);
 private:
     ReconPipeline() = default;
     
@@ -68,11 +71,13 @@ private:
 //    static ReconPipeline* pPipeline;
     sfmData::SfMData* m_sfmData = nullptr;
     std::string m_outputFolder;
+    std::string m_tmpFolder;
     std::string m_featureFolder;
     std::string m_matchesFolder;
     std::string m_imagesUndistortFolder;
     std::string m_depthMapsFolder;
     std::string m_depthMapsFilterFolder;
+    std::string m_outputMeshFolder;
     static std::vector<std::vector<uint8_t>> m_cachedBuffers;
     std::string m_describerTypesName;
     featureEngine::FeatureExtractor* m_extractor = nullptr;

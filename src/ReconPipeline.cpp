@@ -62,6 +62,12 @@
 #include <depthMap/RefineParams.hpp>
 #include <gpu/gpu.hpp>
 
+#include <fuseCut/Fuser.hpp>
+#include <fuseCut/delaunayGraphCut.hpp>
+#include <fuseCut/VoxelsGrid.hpp>
+
+#include <mesh/meshPostProcessing.hpp>
+
 std::vector<std::vector<uint8_t>> ReconPipeline::m_cachedBuffers;
 
 #ifdef SOFTVISION_DEBUG
@@ -141,6 +147,11 @@ void ReconPipeline::AppendSfMData(uint32_t viewId,
     std::cout<<"[tid] AppendSfMData"<<std::this_thread::get_id()<<std::endl;
     
     std::map<std::string, std::string> metadata_; //TODO: fill this
+    metadata_["ExposureTime"] = "0.008333";
+    metadata_["FNumber"] = "1.8";
+    metadata_["ApertureValue"] = "1.69599";
+    metadata_["ISO"] = "40";
+    
     
     const int buffer_n_bytes = width * height;//width/2 * height/2 * 4 , downscale by 2
     
@@ -224,6 +235,13 @@ void ReconPipeline::SetOutputDataDir(const char* directory)
     m_imagesUndistortFolder = m_outputFolder + "imagesUndistort/";
     m_depthMapsFolder = m_outputFolder + "depthMaps/";
     m_depthMapsFilterFolder = m_outputFolder + "depthMapsFilter/";
+    m_outputMeshFolder = m_outputFolder + "mesh/";
+}
+
+void ReconPipeline::SetTempDir(const char* directory)
+{
+    utils::temp_directory_path() = directory;
+    m_tmpFolder = directory;
 }
 
 bool ReconPipeline::FeatureExtraction()
@@ -1396,5 +1414,402 @@ int ReconPipeline::DepthMapEstimation()
     depthMap::computeOnMultiGPUs(cams, depthMapEstimator, nbGPUs);
     
     LOG_INFO("DepthMapEstimation Done!");
+    
+    ALICEVISION_LOG_INFO("Filter depth maps.");
+
+    {
+        int minNumOfConsistentCams = 3;
+        int minNumOfConsistentCamsWithLowSimilarity = 4;
+        float pixToleranceFactor = 2.0f;
+        int pixSizeBall = 0;
+        int pixSizeBallWithLowSimilarity = 0;
+        int nNearestCams = 10;
+        bool computeNormalMaps = false;
+        fuseCut::Fuser fs(mp);
+        fs.filterGroups(cams, pixToleranceFactor, pixSizeBall, pixSizeBallWithLowSimilarity, nNearestCams);
+        fs.filterDepthMaps(cams, minNumOfConsistentCams, minNumOfConsistentCamsWithLowSimilarity);
+    }
+    
+    LOG_INFO("DepthMapFiltered!");
+
+    
+    return EXIT_SUCCESS;
+}
+
+enum EPartitioningMode
+{
+    ePartitioningUndefined = 0,
+    ePartitioningSingleBlock = 1,
+    ePartitioningAuto = 2,
+};
+
+EPartitioningMode EPartitioning_stringToEnum(const std::string& s)
+{
+    if(s == "singleBlock")
+        return ePartitioningSingleBlock;
+    if(s == "auto")
+        return ePartitioningAuto;
+    return ePartitioningUndefined;
+}
+
+inline std::istream& operator>>(std::istream& in, EPartitioningMode& out_mode)
+{
+    std::string s;
+    in >> s;
+    out_mode = EPartitioning_stringToEnum(s);
+    return in;
+}
+
+enum ERepartitionMode
+{
+    eRepartitionUndefined = 0,
+    eRepartitionMultiResolution = 1,
+};
+
+ERepartitionMode ERepartitionMode_stringToEnum(const std::string& s)
+{
+    if(s == "multiResolution")
+        return eRepartitionMultiResolution;
+    return eRepartitionUndefined;
+}
+
+inline std::istream& operator>>(std::istream& in, ERepartitionMode& out_mode)
+{
+    std::string s;
+    in >> s;
+    out_mode = ERepartitionMode_stringToEnum(s);
+    return in;
+}
+
+/// Create a dense SfMData based on reference \p sfmData,
+/// using \p vertices as landmarks and \p ptCams as observations
+void createDenseSfMData(const sfmData::SfMData& sfmData,
+                        const mvsUtils::MultiViewParams& mp,
+                        const std::vector<Point3d>& vertices,
+                        const StaticVector<StaticVector<int>>& ptsCams,
+                        sfmData::SfMData& outSfmData
+)
+{
+  outSfmData = sfmData;
+  outSfmData.getLandmarks().clear();
+
+  const double unknownScale = 0.0;
+  for(std::size_t i = 0; i < vertices.size(); ++i)
+  {
+    const Point3d& point = vertices.at(i);
+    const Vec3 pt3D(point.x, point.y, point.z);
+    sfmData::Landmark landmark(pt3D, feature::EImageDescriberType::UNKNOWN);
+    // set landmark observations from ptsCams if any
+    if(!ptsCams[i].empty())
+    {
+      for(int cam : ptsCams[i])
+      {
+        const sfmData::View& view = sfmData.getView(mp.getViewId(cam));
+        const camera::IntrinsicBase* intrinsicPtr = sfmData.getIntrinsicPtr(view.getIntrinsicId());
+        const sfmData::Observation observation(intrinsicPtr->project(sfmData.getPose(view).getTransform(), pt3D.homogeneous(), true), UndefinedIndexT, unknownScale); // apply distortion
+        landmark.observations[view.getViewId()] = observation;
+      }
+    }
+    outSfmData.getLandmarks()[i] = landmark;
+  }
+}
+
+/// Remove all landmarks without observations from \p sfmData.
+void removeLandmarksWithoutObservations(sfmData::SfMData& sfmData)
+{
+  auto& landmarks = sfmData.getLandmarks();
+  for(auto it = landmarks.begin(); it != landmarks.end();)
+  {
+    if(it->second.observations.empty())
+      it = landmarks.erase(it);
+    else
+      ++it;
+  }
+}
+
+/// BoundingBox Structure stocking ordered values from the command line
+struct BoundingBox
+{
+    Eigen::Vector3d translation = Eigen::Vector3d::Zero();
+    Eigen::Vector3d rotation = Eigen::Vector3d::Zero();
+    Eigen::Vector3d scale = Eigen::Vector3d::Zero();
+
+    inline bool isInitialized() const
+    {
+        return scale(0) != 0.0;
+    }
+
+    Eigen::Matrix4d modelMatrix() const
+    {
+        // Compute the translation matrix
+        Eigen::Matrix4d translateMat = Eigen::Matrix4d::Identity();
+        translateMat.col(3).head<3>() << translation.x(), translation.y(), translation.z();
+
+        // Compute the rotation matrix from quaternion made with Euler angles in that order: ZXY (same as Qt algorithm)
+        Eigen::Matrix4d rotateMat = Eigen::Matrix4d::Identity();
+
+        {
+            double pitch = rotation.x() * M_PI / 180;
+            double yaw = rotation.y() * M_PI / 180;
+            double roll = rotation.z() * M_PI / 180;
+
+            pitch *= 0.5;
+            yaw *= 0.5;
+            roll *= 0.5;
+
+            const double cy = std::cos(yaw);
+            const double sy = std::sin(yaw);
+            const double cr = std::cos(roll);
+            const double sr = std::sin(roll);
+            const double cp = std::cos(pitch);
+            const double sp = std::sin(pitch);
+            const double cycr = cy * cr;
+            const double sysr = sy * sr;
+
+            const double w = cycr * cp + sysr * sp;
+            const double x = cycr * sp + sysr * cp;
+            const double y = sy * cr * cp - cy * sr * sp;
+            const double z = cy * sr * cp - sy * cr * sp;
+
+            Eigen::Quaterniond quaternion(w, x, y, z);
+            rotateMat.block<3, 3>(0, 0) = quaternion.matrix();
+        }
+
+        // Compute the scale matrix
+        Eigen::Matrix4d scaleMat = Eigen::Matrix4d::Identity();
+        scaleMat.diagonal().head<3>() << scale.x(), scale.y(), scale.z();
+
+        // Model matrix
+        Eigen::Matrix4d modelMat = translateMat * rotateMat * scaleMat;
+
+        return modelMat;
+    }
+
+    void toHexahedron(Point3d* hexah) const
+    {
+        Eigen::Matrix4d modelMat = modelMatrix();
+
+        // Retrieve the eight vertices of the bounding box
+        // Based on VoxelsGrid::getHexah implementation
+        Eigen::Vector4d origin = Eigen::Vector4d(-1, -1, -1, 1);
+        Eigen::Vector4d vvx = Eigen::Vector4d(2, 0, 0, 0);
+        Eigen::Vector4d vvy = Eigen::Vector4d(0, 2, 0, 0);
+        Eigen::Vector4d vvz = Eigen::Vector4d(0, 0, 2, 0);
+
+        Eigen::Vector4d vertex0 = modelMat * origin;
+        Eigen::Vector4d vertex1 = modelMat * (origin + vvx);
+        Eigen::Vector4d vertex2 = modelMat * (origin + vvx + vvy);
+        Eigen::Vector4d vertex3 = modelMat * (origin + vvy);
+        Eigen::Vector4d vertex4 = modelMat * (origin + vvz);
+        Eigen::Vector4d vertex5 = modelMat * (origin + vvz + vvx);
+        Eigen::Vector4d vertex6 = modelMat * (origin + vvz + vvx + vvy);
+        Eigen::Vector4d vertex7 = modelMat * (origin + vvz + vvy);
+
+        // Apply those eight vertices to the hexah
+        hexah[0] = Point3d(vertex0.x(), vertex0.y(), vertex0.z());
+        hexah[1] = Point3d(vertex1.x(), vertex1.y(), vertex1.z());
+        hexah[2] = Point3d(vertex2.x(), vertex2.y(), vertex2.z());
+        hexah[3] = Point3d(vertex3.x(), vertex3.y(), vertex3.z());
+        hexah[4] = Point3d(vertex4.x(), vertex4.y(), vertex4.z());
+        hexah[5] = Point3d(vertex5.x(), vertex5.y(), vertex5.z());
+        hexah[6] = Point3d(vertex6.x(), vertex6.y(), vertex6.z());
+        hexah[7] = Point3d(vertex7.x(), vertex7.y(), vertex7.z());
+    }
+};
+
+
+int ReconPipeline::Meshing()
+{
+    system2::Timer timer;
+    
+    EPartitioningMode partitioningMode = ePartitioningSingleBlock;
+    ERepartitionMode repartitionMode = eRepartitionMultiResolution;
+    std::size_t estimateSpaceMinObservations = 3;
+    float estimateSpaceMinObservationAngle = 10.0f;
+    double universePercentile = 0.999;
+    int maxPtsPerVoxel = 6000000;
+    bool meshingFromDepthMaps = true;
+    bool estimateSpaceFromSfM = true;
+    bool addLandmarksToTheDensePointCloud = false;
+    bool saveRawDensePointCloud = false;
+    bool colorizeOutput = false;
+    bool voteFilteringForWeaklySupportedSurfaces = true;
+    int invertTetrahedronBasedOnNeighborsNbIterations = 10;
+    double minSolidAngleRatio = 0.2;
+    int nbSolidAngleFilteringIterations = 2;
+    unsigned int seed = 0;
+    BoundingBox boundingBox;
+
+    fuseCut::FuseParams fuseParams;
+
+    int helperPointsGridSize = 10;
+    int densifyNbFront = 0;
+    int densifyNbBack = 0;
+    double densifyScale = 1.0;
+    double nPixelSizeBehind = 4.0;
+    double fullWeight = 1.0;
+    bool exportDebugTetrahedralization = false;
+    int maxNbConnectedHelperPoints = 50;
+    
+    mvsUtils::MultiViewParams mp(*m_sfmData, "", "", m_depthMapsFilterFolder, true);
+
+    mp.userParams.put("LargeScale.universePercentile", universePercentile);
+        mp.userParams.put("LargeScale.helperPointsGridSize", helperPointsGridSize);
+        mp.userParams.put("LargeScale.densifyNbFront", densifyNbFront);
+        mp.userParams.put("LargeScale.densifyNbBack", densifyNbBack);
+        mp.userParams.put("LargeScale.densifyScale", densifyScale);
+
+        mp.userParams.put("delaunaycut.seed", seed);
+        mp.userParams.put("delaunaycut.nPixelSizeBehind", nPixelSizeBehind);
+        mp.userParams.put("delaunaycut.fullWeight", fullWeight);
+        mp.userParams.put("delaunaycut.voteFilteringForWeaklySupportedSurfaces", voteFilteringForWeaklySupportedSurfaces);
+        mp.userParams.put("hallucinationsFiltering.invertTetrahedronBasedOnNeighborsNbIterations", invertTetrahedronBasedOnNeighborsNbIterations);
+        mp.userParams.put("hallucinationsFiltering.minSolidAngleRatio", minSolidAngleRatio);
+        mp.userParams.put("hallucinationsFiltering.nbSolidAngleFilteringIterations", nbSolidAngleFilteringIterations);
+
+        int ocTreeDim = mp.userParams.get<int>("LargeScale.gridLevel0", 1024);
+        const auto baseDir = mp.userParams.get<std::string>("LargeScale.baseDirName", "root01024");
+
+        std::string outDirectory = m_outputMeshFolder;
+        if(!utils::is_directory(outDirectory))
+            utils::create_directory(outDirectory);
+
+        std::string tmpDirectory = m_tmpFolder;
+
+        ALICEVISION_LOG_WARNING("repartitionMode: " << repartitionMode);
+        ALICEVISION_LOG_WARNING("partitioningMode: " << partitioningMode);
+
+        mesh::Mesh* mesh = nullptr;
+        StaticVector<StaticVector<int>> ptsCams;
+
+        switch(repartitionMode)
+        {
+            case eRepartitionMultiResolution:
+            {
+                switch(partitioningMode)
+                {
+                    case ePartitioningAuto:
+                    {
+                        throw std::invalid_argument("Meshing mode: 'multiResolution', partitioning: 'auto' is not yet implemented.");
+                    }
+                    case ePartitioningSingleBlock:
+                    {
+                        ALICEVISION_LOG_INFO("Meshing mode: multi-resolution, partitioning: single block.");
+                        std::array<Point3d, 8> hexah;
+
+                        float minPixSize;
+                        fuseCut::Fuser fs(mp);
+
+                        if (boundingBox.isInitialized())
+                            boundingBox.toHexahedron(&hexah[0]);
+                        else if(meshingFromDepthMaps && (!estimateSpaceFromSfM || m_sfmData->getLandmarks().empty()))
+                          fs.divideSpaceFromDepthMaps(&hexah[0], minPixSize);
+                        else
+                          fs.divideSpaceFromSfM(*m_sfmData, &hexah[0], estimateSpaceMinObservations, estimateSpaceMinObservationAngle);
+
+                        {
+                            const double length = hexah[0].x - hexah[1].x;
+                            const double width = hexah[0].y - hexah[3].y;
+                            const double height = hexah[0].z - hexah[4].z;
+
+                            ALICEVISION_LOG_INFO("bounding Box : length: " << length << ", width: " << width << ", height: " << height);
+                        }
+
+                        StaticVector<int> cams;
+                        if(meshingFromDepthMaps)
+                        {
+                          cams = mp.findCamsWhichIntersectsHexahedron(&hexah[0]);
+                        }
+                        else
+                        {
+                          cams.resize(mp.getNbCameras());
+                          for(int i = 0; i < cams.size(); ++i)
+                              cams[i] = i;
+                        }
+
+                        if(cams.empty())
+                            throw std::logic_error("No camera to make the reconstruction");
+                        
+                        fuseCut::DelaunayGraphCut delaunayGC(mp);
+                        delaunayGC.createDensePointCloud(&hexah[0], cams, addLandmarksToTheDensePointCloud ? m_sfmData : nullptr, meshingFromDepthMaps ? &fuseParams : nullptr);
+                        if(saveRawDensePointCloud)
+                        {
+                          ALICEVISION_LOG_INFO("Save dense point cloud before cut and filtering.");
+                          StaticVector<StaticVector<int>> ptsCams;
+                          delaunayGC.createPtsCams(ptsCams);
+                          sfmData::SfMData densePointCloud;
+                          createDenseSfMData(*m_sfmData, mp, delaunayGC._verticesCoords, ptsCams, densePointCloud);
+                          removeLandmarksWithoutObservations(densePointCloud);
+                          if(colorizeOutput)
+                            sfmData::colorizeTracks(densePointCloud);
+                          sfmDataIO::Save(densePointCloud, outDirectory, (outDirectory + "densePointCloud_raw.abc"), sfmDataIO::ESfMData::ALL_DENSE);
+                        }
+
+                        delaunayGC.createGraphCut(&hexah[0], cams, outDirectory + "/",
+                                                  outDirectory + "/SpaceCamsTracks/", false,
+                                                  exportDebugTetrahedralization);
+
+                        delaunayGC.graphCutPostProcessing(&hexah[0], outDirectory+"/");
+
+                        mesh = delaunayGC.createMesh(maxNbConnectedHelperPoints);
+                        delaunayGC.createPtsCams(ptsCams);
+                        mesh::meshPostProcessing(mesh, ptsCams, mp, outDirectory+"/", nullptr, &hexah[0]);
+
+                        break;
+                    }
+                    case ePartitioningUndefined:
+                    default:
+                        throw std::invalid_argument("Partitioning mode is not defined");
+                }
+                break;
+            }
+            case eRepartitionUndefined:
+            default:
+                throw std::invalid_argument("Repartition mode is not defined");
+        }
+
+        // Generate output files:
+        // - dense point-cloud with observations as sfmData
+        // - mesh as .obj
+
+        if(mesh == nullptr || mesh->pts.empty() || mesh->tris.empty())
+          throw std::runtime_error("No valid mesh was generated.");
+
+        if(ptsCams.empty())
+          throw std::runtime_error("Points visibilities data has not been initialized.");
+
+        sfmData::SfMData densePointCloud;
+        createDenseSfMData(*m_sfmData, mp, mesh->pts.getData(), ptsCams, densePointCloud);
+
+        if(colorizeOutput)
+        {
+          sfmData::colorizeTracks(densePointCloud);
+          // colorize output mesh before landmarks filtering
+          // to have a 1:1 mapping between points and mesh vertices
+          const auto& landmarks = densePointCloud.getLandmarks();
+          std::vector<rgb>& colors = mesh->colors();
+          colors.resize(mesh->pts.size(), {0, 0, 0});
+          for(std::size_t i = 0; i < mesh->pts.size(); ++i)
+          {
+            const auto& c = landmarks.at(i).rgb;
+            colors[i] = {c.r(), c.g(), c.b()};
+          }
+        }
+
+        removeLandmarksWithoutObservations(densePointCloud);
+        ALICEVISION_LOG_INFO("Save dense point cloud.");
+    
+    std::string outputDensePointCloud = m_outputMeshFolder;// + "";
+    sfmDataIO::Save(densePointCloud, m_outputMeshFolder, outputDensePointCloud, sfmDataIO::ESfMData::ALL_DENSE);
+
+    ALICEVISION_LOG_INFO("Save obj mesh file.");
+    ALICEVISION_LOG_INFO("OUTPUT MESH " << m_outputMeshFolder);
+    mesh->save(m_outputMeshFolder);
+    delete mesh;
+
+
+    ALICEVISION_LOG_INFO("Task done in (s): " + std::to_string(timer.elapsed()));
+
+    
     return EXIT_SUCCESS;
 }

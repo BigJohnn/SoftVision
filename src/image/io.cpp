@@ -115,6 +115,18 @@ std::string EImageExrCompression_enumToString(const EImageExrCompression exrComp
     throw std::out_of_range("Invalid EImageExrCompression enum");
 }
 
+EImageFileType EImageFileType_stringToEnum(const std::string& imageFileType)
+{
+  const std::string type = utils::to_lower_copy(imageFileType);
+
+  if(type == "jpg" || type == "jpeg") return EImageFileType::JPEG;
+  if(type == "png")                   return EImageFileType::PNG;
+  if(type == "tif" || type == "tiff") return EImageFileType::TIFF;
+  if(type == "exr")                   return EImageFileType::EXR;
+
+  throw std::out_of_range("Invalid image file type: " + imageFileType);
+}
+
 template<typename T>
 void writeImage(const std::string& path,
                 oiio::TypeDesc typeDesc,

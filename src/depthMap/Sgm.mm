@@ -39,32 +39,25 @@ Sgm::Sgm(const mvsUtils::MultiViewParams& mp,
     const int maxTileHeight = divideRoundUp(tileParams.bufferHeight, downscale);
 
     // compute map maximum dimensions
-//    const CudaSize<2> mapDim(maxTileWidth, maxTileHeight);
     MTLSize mapDim = MTLSizeMake(maxTileWidth, maxTileHeight, 1);
 
     // allocate depth list in device memory
     {
-//        const CudaSize<2> depthsDim(_sgmParams.maxDepths, 1);
         MTLSize depthsDim = MTLSizeMake(_sgmParams.maxDepths, 1, 1);
 
-//        _depths_hmh.allocate(depthsDim);
-//        _depths_dmp.allocate(depthsDim);
         _depths_dmp = [DeviceBuffer allocate:depthsDim elemSizeInBytes:sizeof(float) elemType:@"float"];
     }
 
     // allocate depth thickness map in device memory
-//    _depthThicknessMap_dmp.allocate(mapDim);
     _depthThicknessMap_dmp = [DeviceBuffer allocate:mapDim elemSizeInBytes:sizeof(simd_float2) elemType:@"float2"];
 
     // allocate depth/sim map in device memory
     if(_computeDepthSimMap)
         _depthSimMap_dmp = [DeviceBuffer allocate:mapDim elemSizeInBytes:sizeof(simd_float2) elemType:@"float2"];
-//        _depthSimMap_dmp.allocate(mapDim);
 
     // allocate normal map in device memory
     if(_computeNormalMap)
         _normalMap_dmp = [DeviceBuffer allocate:mapDim elemSizeInBytes:sizeof(simd_float3) elemType:@"float3"];
-//        _normalMap_dmp.allocate(mapDim);
 
     // allocate similarity volumes in device memory
     {
@@ -72,8 +65,6 @@ Sgm::Sgm(const mvsUtils::MultiViewParams& mp,
 
         _volumeBestSim_dmp = [DeviceBuffer allocate:volDim elemSizeInBytes:sizeof(TSim) elemType:@"TSim"];
         _volumeSecBestSim_dmp = [DeviceBuffer allocate:volDim elemSizeInBytes:sizeof(TSim) elemType:@"TSim"];
-//        _volumeBestSim_dmp.allocate(volDim);
-//        _volumeSecBestSim_dmp.allocate(volDim);
     }
 
     // allocate similarity volume optimization buffers
@@ -84,8 +75,6 @@ Sgm::Sgm(const mvsUtils::MultiViewParams& mp,
         MTLSize sliceAccSz = MTLSizeMake(maxTileSide, _sgmParams.maxDepths, 1);
         _volumeSliceAccA_dmp = [DeviceBuffer allocate:sliceAccSz elemSizeInBytes:sizeof(TSimAcc) elemType:@"TSimAcc"];
         _volumeSliceAccB_dmp = [DeviceBuffer allocate:sliceAccSz elemSizeInBytes:sizeof(TSimAcc) elemType:@"TSimAcc"];
-//        _volumeSliceAccA_dmp.allocate(CudaSize<2>(maxTileSide, _sgmParams.maxDepths));
-//        _volumeSliceAccB_dmp.allocate(CudaSize<2>(maxTileSide, _sgmParams.maxDepths));
         MTLSize axisAccSz = MTLSizeMake(maxTileSide, 1, 1);
         _volumeAxisAcc_dmp = [DeviceBuffer allocate:axisAccSz elemSizeInBytes:sizeof(TSimAcc) elemType:@"TSimAcc"];
     }
@@ -108,23 +97,6 @@ double Sgm::getDeviceMemoryConsumption() const
     return (double(bytes) / (1024.0 * 1024.0));
 }
 
-//double Sgm::getDeviceMemoryConsumptionUnpadded() const
-//{
-//    size_t bytes = 0;
-//
-//    bytes += _depths_dmp.getBytesUnpadded();
-//    bytes += _depthThicknessMap_dmp.getBytesUnpadded();
-//    bytes += _depthSimMap_dmp.getBytesUnpadded();
-//    bytes += _normalMap_dmp.getBytesUnpadded();
-//    bytes += _volumeBestSim_dmp.getBytesUnpadded();
-//    bytes += _volumeSecBestSim_dmp.getBytesUnpadded();
-//    bytes += _volumeSliceAccA_dmp.getBytesUnpadded();
-//    bytes += _volumeSliceAccB_dmp.getBytesUnpadded();
-//    bytes += _volumeAxisAcc_dmp.getBytesUnpadded();
-//
-//    return (double(bytes) / (1024.0 * 1024.0));
-//}
-
 void Sgm::sgmRc(const Tile& tile, const SgmDepthList& tileDepthList)
 {
     const IndexT viewId = _mp.getViewId(tile.rc);
@@ -138,10 +110,6 @@ void Sgm::sgmRc(const Tile& tile, const SgmDepthList& tileDepthList)
     // copy rc depth data in page-locked host memory
     for(int i = 0; i < tileDepthList.getDepths().size(); ++i)
         [_depths_dmp setVec1f:tileDepthList.getDepths()[i] x:i y:0];
-//        _depths_hmh(i, 0) = tileDepthList.getDepths()[i];
-
-    // copy rc depth data in device memory
-//    _depths_dmp.copyFrom(_depths_hmh, _device);
 
     // compute best sim and second best sim volumes
     computeSimilarityVolumes(tile, tileDepthList);
@@ -159,7 +127,7 @@ void Sgm::sgmRc(const Tile& tile, const SgmDepthList& tileDepthList)
     else
     {
         // best sim volume is normally reuse to put optimized similarity
-//        _volumeBestSim_dmp.copyFrom(_volumeSecBestSim_dmp, _device); //check
+        [_volumeBestSim_dmp copyFrom:_volumeSecBestSim_dmp];
     }
 
     // export intermediate volume information (if requested by user)
@@ -320,7 +288,7 @@ void Sgm::retrieveBestDepth(const Tile& tile, const SgmDepthList& tileDepthList)
 
     // get R device camera parameters id from cache
     DeviceCache& deviceCache = DeviceCache::getInstance();
-    const int rcDeviceCameraParamsId = deviceCache.requestCameraParamsId(tile.rc, 1, _mp);
+//    const int rcDeviceCameraParamsId = deviceCache.requestCameraParamsId(tile.rc, 1, _mp);
     const DeviceCameraParams& rcDeviceCameraParams = deviceCache.requestCameraParamsBuffer(tile.rc, 1, _mp);
 
     volumeRetrieveBestDepth(_depthThicknessMap_dmp, // output depth thickness map

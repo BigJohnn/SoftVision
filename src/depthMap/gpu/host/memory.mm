@@ -31,18 +31,17 @@
     [cmdbuf commit];
     [cmdbuf waitUntilCompleted];
 
-//    buffer = [src getBuffer]; // shallow copy
     sz = [src getSize];
     elemSizeInBytes = [src getElemSize];
     nBytesPerRow = [src getBytesUpToDim:0];
-//    bufferLengthInBytes = [src getBufferLength];
+    bufferLengthInBytes = [src getBufferLength]; //check
     elemType = src->elemType;
 }
 
 +(DeviceBuffer*) allocate:(MTLSize)size elemSizeInBytes:(int)nBytes elemType:(NSString*)type
 {
     DeviceBuffer* buf = [DeviceBuffer new];
-    //    buf->buffer
+    
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
     
     buf->nBytesPerRow = static_cast<int>(size.width) * nBytes;

@@ -43,38 +43,6 @@ void copyFloat2Map(image::Image<float>& out_mapX, image::Image<float>& out_mapY,
     }
 }
 
-//void copyFloat2Map(image::Image<float>& out_mapX, image::Image<float>& out_mapY, DeviceBuffer* in_map_dmp, const ROI& roi, int downscale)
-//{
-//    // copy float2 map from device pitched memory to host memory
-//    CudaHostMemoryHeap<float2, 2> map_hmh(in_map_dmp.getSize());
-//    map_hmh.copyFrom(in_map_dmp);
-//
-//    copyFloat2Map(out_mapX, out_mapY, map_hmh, roi, downscale);
-//}
-
-//void writeFloat2Map(int rc,
-//                    const mvsUtils::MultiViewParams& mp,
-//                    const mvsUtils::TileParams& tileParams,
-//                    const ROI& roi,
-//                    DeviceBuffer* in_map_hmh,
-//                    const mvsUtils::EFileType fileTypeX,
-//                    const mvsUtils::EFileType fileTypeY,
-//                    int scale,
-//                    int step,
-//                    const std::string& name)
-//{
-//    const std::string customSuffix = (name.empty()) ? "" : "_" + name;
-//    const int scaleStep = scale * step;
-//
-//    image::Image<float> mapX;
-//    image::Image<float> mapY;
-//
-//    copyFloat2Map(mapX, mapY, in_map_hmh, roi, scaleStep);
-//
-//    mvsUtils::writeMap(rc, mp, fileTypeX, tileParams, roi, mapX, scale, step, customSuffix);
-//    mvsUtils::writeMap(rc, mp, fileTypeY, tileParams, roi, mapY, scale, step, customSuffix);
-//}
-
 void writeFloat2Map(int rc,
                     const mvsUtils::MultiViewParams& mp,
                     const mvsUtils::TileParams& tileParams,
@@ -268,7 +236,6 @@ void writeDepthSimMapFromTileList(int rc,
     image::Image<float> tileSimMap;
 
     // copy tile depth/sim map from host memory
-//      LOG_INFO("copyFloat2Map in writeDepthSimMapFromTileList, todo...");
     copyFloat2Map(tileDepthMap, tileSimMap, [in_depthSimMapTiles_hmh objectAtIndex:i], roi, scaleStep);
 
     // add tile maps to the full-size maps with weighting
@@ -289,10 +256,7 @@ void resetDepthSimMap(DeviceBuffer* inout_depthSimMap_hmh, float depth, float si
   {
       for(size_t y = 0; y < depthSimMapSize.height; ++y)
       {
-          simd_float2 depthSim_hmh = [inout_depthSimMap_hmh getVec2f:x y:y];
-//          float2& depthSim_hmh = inout_depthSimMap_hmh(x, y);
-          depthSim_hmh.x = depth;
-          depthSim_hmh.y = sim;
+          [inout_depthSimMap_hmh setVec2f:simd_make_float2(depth, sim) x:x y:y];
       }
   }
 }

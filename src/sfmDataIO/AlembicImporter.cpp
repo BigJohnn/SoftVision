@@ -13,7 +13,7 @@
 
 #include <SoftVisionLog.h>
 #include <camera/camera.hpp>
-#include <version.hpp>
+#include <system/version.hpp>
 
 
 namespace sfmDataIO {

@@ -64,4 +64,14 @@ namespace utils {
         
         return true;
     }
+
+    bool remove_all(const std::string& depthMapsPtsSimsTmpDir) {
+        LOG_ERROR("remove_all TODO: impl");
+        return true;
+    }
+
+    bool remove(const std::string& filePath) {
+        LOG_ERROR("remove TODO: impl");
+        return true;
+    }
 }

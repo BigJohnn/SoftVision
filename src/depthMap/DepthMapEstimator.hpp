@@ -84,8 +84,6 @@ private:
     const SgmParams& _sgmParams;               //< parameters of Sgm process
     const RefineParams& _refineParams;         //< parameters of Refine process
     std::vector<ROI> _tileRoiList;             //< depth maps region-of-interest list
-    
-    void* _cmdEncoder;
 };
 
 } // namespace depthMap

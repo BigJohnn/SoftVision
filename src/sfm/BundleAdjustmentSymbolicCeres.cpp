@@ -8,7 +8,7 @@
 #include <sfm/BundleAdjustmentSymbolicCeres.hpp>
 #include <sfmData/SfMData.hpp>
 #include <softvision_omp.hpp>
-#include <config.hpp>
+//#include <config.hpp>
 #include <camera/Equidistant.hpp>
 #include <utils/CeresUtils.hpp>
 #include <SoftVisionLog.h>

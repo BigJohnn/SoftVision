@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <config.hpp>
+//#include <config.hpp>
 #include <numeric/numeric.hpp>
 #include <robustEstimation/conditioning.hpp>
 #include <robustEstimation/ISolver.hpp>

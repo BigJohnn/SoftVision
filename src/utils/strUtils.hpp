@@ -3,6 +3,7 @@
 #include <sstream>
 
 namespace utils{
+
     std::string GetFileExtension(std::string const& filepath)
     {
         return filepath.substr(filepath.find_last_of("."));
@@ -38,5 +39,23 @@ namespace utils{
         std::string ret = str;
         std::transform(str.begin(), str.end(), ret.begin(), ::tolower);
         return ret;
+    }
+
+    std::string& temp_directory_path();
+
+    std::string random_string( size_t length = 10 )
+    {
+        auto randchar = []() -> char
+        {
+            const char charset[] =
+            "0123456789"
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            "abcdefghijklmnopqrstuvwxyz";
+            const size_t max_index = (sizeof(charset) - 1);
+            return charset[ rand() % max_index ];
+        };
+        std::string str(length,0);
+        std::generate_n( str.begin(), length, randchar );
+        return str;
     }
 }

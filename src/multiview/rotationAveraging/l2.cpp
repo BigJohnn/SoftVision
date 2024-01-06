@@ -6,7 +6,7 @@
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "multiview/rotationAveraging/l2.hpp"
-#include <config.hpp>
+//#include <config.hpp>
 #include <softvision_omp.hpp>
 #include <SoftVisionLog.h>
 

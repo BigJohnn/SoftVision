@@ -1,41 +1,5 @@
 #pragma once
 
-// Macros for checking gpu errors
-//#define CHECK_GPU_RETURN_ERROR(err)                                                                                   \
-//    if(err != gpuSuccess)                                                                                             \
-//    {                                                                                                                  \
-//        fprintf(stderr, "\n\nGPUError: %s\n", gpuGetErrorString(err));                                               \
-//        fprintf(stderr, "  file:       %s\n", __FILE__);                                                               \
-//        fprintf(stderr, "  function:   %s\n", __FUNCTION__);                                                           \
-//        fprintf(stderr, "  line:       %d\n\n", __LINE__);                                                             \
-//        std::stringstream s;                                                                                           \
-//        s << "\n  GPU Error: " << gpuGetErrorString(err)                                                             \
-//          << "\n  file:  " << __FILE__                                                                                 \
-//          << "\n  function:   " << __FUNCTION__                                                                        \
-//          << "\n  line:       " << __LINE__                                                                            \
-//          << "\n";                                                                                                     \
-//        throw std::runtime_error(s.str());                                                                             \
-//    }                                                                                                                  \
-
-//#define CHECK_GPU_RETURN_ERROR_NOEXCEPT(err)                                                                          \
-//    if(err != gpuSuccess)                                                                                             \
-//    {                                                                                                                  \
-//        fprintf(stderr, "\n\nGPUError: %s\n", gpuGetErrorString(err));                                               \
-//        fprintf(stderr, "  file:       %s\n", __FILE__);                                                               \
-//        fprintf(stderr, "  function:   %s\n", __FUNCTION__);                                                           \
-//        fprintf(stderr, "  line:       %d\n\n", __LINE__);                                                             \
-//    }                                                                                                                  \
-
-//#define CHECK_GPU_ERROR() CHECK_GPU_RETURN_ERROR(gpuGetLastError());
-
-//#define THROW_ON_GPU_ERROR(rcode, message)                                                                            \
-//    if(rcode != gpuSuccess)                                                                                           \
-//    {                                                                                                                  \
-//        std::stringstream s;                                                                                           \
-//        s << message << ": " << gpuGetErrorString(err);                                                               \
-//        throw std::runtime_error(s.str());                                                                             \
-//    }                                                                                                                  \
-
 namespace depthMap {
 
 /**
